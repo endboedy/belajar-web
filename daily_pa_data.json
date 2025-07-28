@@ -1,0 +1,3128 @@
+[
+  {
+    "Unit_ID": "XCD1275",
+    "Model": "AUXILIARY",
+    "PIT": "SITARUM",
+    "Date": "2024-08-01"
+  },
+  {
+    "Unit_ID": "XCT3438",
+    "Model": "COAL HAULING",
+    "PIT": "SITARUM",
+    "Date": "2024-08-02"
+  },
+  {
+    "Unit_ID": "CO2420",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "2024-08-03"
+  },
+  {
+    "Unit_ID": "CE7136",
+    "Model": "LOADING",
+    "PIT": "SITARUM",
+    "Date": "2024-08-04"
+  },
+  {
+    "Unit_ID": "CO4472",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "2024-08-05"
+  },
+  {
+    "Unit_ID": "CO4411",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "2024-08-06"
+  },
+  {
+    "Unit_ID": "CO4164",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "2024-08-07"
+  },
+  {
+    "Unit_ID": "CO4331",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "2024-08-08"
+  },
+  {
+    "Unit_ID": "CO4214",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "2024-08-09"
+  },
+  {
+    "Unit_ID": "CO4452",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "2024-08-10"
+  },
+  {
+    "Unit_ID": "CO4157",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "2024-08-11"
+  },
+  {
+    "Unit_ID": "CE6157",
+    "Model": "LOADING",
+    "PIT": "SITARUM",
+    "Date": "2024-08-12"
+  },
+  {
+    "Unit_ID": "CG3003",
+    "Model": "GRADING",
+    "PIT": "SITARUM",
+    "Date": "2024-08-13"
+  },
+  {
+    "Unit_ID": "CO2307",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "2024-08-14"
+  },
+  {
+    "Unit_ID": "CG2160",
+    "Model": "GRADING",
+    "PIT": "SITARUM",
+    "Date": "2024-08-15"
+  },
+  {
+    "Unit_ID": "XCD1248",
+    "Model": "AUXILIARY",
+    "PIT": "TABUHAN",
+    "Date": "2024-08-16"
+  },
+  {
+    "Unit_ID": "CO4402",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "2024-08-17"
+  },
+  {
+    "Unit_ID": "CO4660",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "2024-08-18"
+  },
+  {
+    "Unit_ID": "CO4319",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "2024-08-19"
+  },
+  {
+    "Unit_ID": "CO4403",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "2024-08-20"
+  },
+  {
+    "Unit_ID": "CO4154",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "2024-08-21"
+  },
+  {
+    "Unit_ID": "XCO4561",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "2024-08-22"
+  },
+  {
+    "Unit_ID": "CO4535",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "2024-08-23"
+  },
+  {
+    "Unit_ID": "CO4341",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "2024-08-24"
+  },
+  {
+    "Unit_ID": "CO3193",
+    "Model": "HAULING",
+    "PIT": "TABUHAN",
+    "Date": "2024-08-25"
+  },
+  {
+    "Unit_ID": "CE5148",
+    "Model": "LOADING",
+    "PIT": "SITARUM",
+    "Date": "2024-08-26"
+  },
+  {
+    "Unit_ID": "CO4475",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "2024-08-27"
+  },
+  {
+    "Unit_ID": "CE4059",
+    "Model": "LOADING",
+    "PIT": "SITARUM",
+    "Date": "2024-08-28"
+  },
+  {
+    "Unit_ID": "CO4424",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "2024-08-29"
+  },
+  {
+    "Unit_ID": "CD4186",
+    "Model": "DOZING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4216",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4511",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CD4162",
+    "Model": "DOZING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CE6155",
+    "Model": "LOADING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CE5258",
+    "Model": "LOADING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4165",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4406",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CE4272",
+    "Model": "LOADING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CE3240",
+    "Model": "COAL GETTING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CG2055",
+    "Model": "GRADING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4163",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4381",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4162",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4365",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4376",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4464",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4522",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4457",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4473",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4456",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CG2134",
+    "Model": "GRADING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4397",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO2246",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4463",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4327",
+    "Model": "HAULING",
+    "PIT": "TABUHAN",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CE7138",
+    "Model": "LOADING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CD2049",
+    "Model": "DOZING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4332",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4353",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "WT6005",
+    "Model": "SE",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO2413",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4407",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCE1297",
+    "Model": "AUXILIARY",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4388",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO2224",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO2436",
+    "Model": "HAULING",
+    "PIT": "TABUHAN",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCT2827",
+    "Model": "COAL HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CD3186",
+    "Model": "DOZING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4324",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CE4255",
+    "Model": "LOADING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CE3242",
+    "Model": "COAL GETTING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4672",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4659",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "WT2271",
+    "Model": "SE",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4408",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4539",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4166",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4395",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCE1305",
+    "Model": "AUXILIARY",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCT2835",
+    "Model": "COAL HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCT2829",
+    "Model": "COAL HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCO2486",
+    "Model": "HAULING",
+    "PIT": "TABUHAN",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO2454",
+    "Model": "HAULING",
+    "PIT": "TABUHAN",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCD2077",
+    "Model": "DOZING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO2415",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4478",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCT2815",
+    "Model": "COAL HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCE2170",
+    "Model": "AUXILIARY",
+    "PIT": "TABUHAN",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCE3260",
+    "Model": "COAL GETTING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO2297",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CD3142",
+    "Model": "DOZING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CE3244",
+    "Model": "COAL GETTING",
+    "PIT": "TABUHAN",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCT2891",
+    "Model": "COAL HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4481",
+    "Model": "HAULING",
+    "PIT": "TABUHAN",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CE5252",
+    "Model": "LOADING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO2435",
+    "Model": "HAULING",
+    "PIT": "TABUHAN",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCO4560",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4519",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4423",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4155",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCT3419",
+    "Model": "COAL HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "WT2278",
+    "Model": "SE",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCE3173",
+    "Model": "COAL GETTING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CD4157",
+    "Model": "DOZING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCE1306",
+    "Model": "AUXILIARY",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCG2070",
+    "Model": "GRADING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4520",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CE4057",
+    "Model": "LOADING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4161",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CT3291",
+    "Model": "COAL HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CT3288",
+    "Model": "COAL HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CE7135",
+    "Model": "LOADING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCE1253",
+    "Model": "AUXILIARY",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "WT2236",
+    "Model": "SE",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "WT2270",
+    "Model": "SE",
+    "PIT": "TABUHAN",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCC1067",
+    "Model": "AUXILIARY",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4356",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCD1285",
+    "Model": "AUXILIARY",
+    "PIT": "TABUHAN",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4409",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCE4092",
+    "Model": "LOADING",
+    "PIT": "TABUHAN",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCG2156",
+    "Model": "GRADING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCT3418",
+    "Model": "COAL HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCT3417",
+    "Model": "COAL HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCT2892",
+    "Model": "COAL HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO2315",
+    "Model": "HAULING",
+    "PIT": "TABUHAN",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4323",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CD3169",
+    "Model": "DOZING",
+    "PIT": "TABUHAN",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCT2843",
+    "Model": "COAL HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCD3182",
+    "Model": "DOZING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CE6151",
+    "Model": "LOADING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCT2853",
+    "Model": "COAL HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCT2877",
+    "Model": "COAL HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCT2865",
+    "Model": "COAL HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO2421",
+    "Model": "HAULING",
+    "PIT": "TABUHAN",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCT3432",
+    "Model": "COAL HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4364",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCT2846",
+    "Model": "COAL HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCE1299",
+    "Model": "AUXILIARY",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCT2874",
+    "Model": "COAL HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCD1296",
+    "Model": "AUXILIARY",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCT2875",
+    "Model": "COAL HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCO2483",
+    "Model": "HAULING",
+    "PIT": "TABUHAN",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO2429",
+    "Model": "HAULING",
+    "PIT": "TABUHAN",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCO4562",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CG2040",
+    "Model": "GRADING",
+    "PIT": "TABUHAN",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4322",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4349",
+    "Model": "HAULING",
+    "PIT": "TABUHAN",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CG2069",
+    "Model": "GRADING",
+    "PIT": "TABUHAN",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCT2849",
+    "Model": "COAL HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CD3177",
+    "Model": "DOZING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCT2884",
+    "Model": "COAL HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCT2826",
+    "Model": "COAL HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CE4058",
+    "Model": "LOADING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCG2163",
+    "Model": "GRADING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4219",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4347",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4338",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO2416",
+    "Model": "HAULING",
+    "PIT": "TABUHAN",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CE4244",
+    "Model": "LOADING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4158",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCO4557",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCT2842",
+    "Model": "COAL HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CE3219",
+    "Model": "COAL GETTING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CE2264",
+    "Model": "AUXILIARY",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4371",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4537",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCD2075",
+    "Model": "DOZING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCO4564",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4209",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO2331",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCD3181",
+    "Model": "DOZING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCT3431",
+    "Model": "COAL HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4208",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCO4558",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4368",
+    "Model": "HAULING",
+    "PIT": "TABUHAN",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CE2237",
+    "Model": "AUXILIARY",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCE4091",
+    "Model": "LOADING",
+    "PIT": "TABUHAN",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO2335",
+    "Model": "HAULING",
+    "PIT": "TABUHAN",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCE3263",
+    "Model": "COAL GETTING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4326",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4210",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCO4559",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CT3281",
+    "Model": "COAL HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4655",
+    "Model": "HAULING",
+    "PIT": "TABUHAN",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCO4565",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4343",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCO4555",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO2342",
+    "Model": "HAULING",
+    "PIT": "TABUHAN",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4404",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCT3415",
+    "Model": "COAL HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CT3282",
+    "Model": "COAL HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCE3262",
+    "Model": "COAL GETTING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4156",
+    "Model": "HAULING",
+    "PIT": "TABUHAN",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4363",
+    "Model": "HAULING",
+    "PIT": "TABUHAN",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4458",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XWT2016",
+    "Model": "SE",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CD4182",
+    "Model": "DOZING",
+    "PIT": "TABUHAN",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4090",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CD4185",
+    "Model": "DOZING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4213",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCE3254",
+    "Model": "COAL GETTING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCG2165",
+    "Model": "GRADING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO3175",
+    "Model": "HAULING",
+    "PIT": "TABUHAN",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4486",
+    "Model": "HAULING",
+    "PIT": "TABUHAN",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCG2158",
+    "Model": "GRADING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4215",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4474",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCE1298",
+    "Model": "AUXILIARY",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCT2880",
+    "Model": "COAL HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4312",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCT2856",
+    "Model": "COAL HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4540",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCO2484",
+    "Model": "HAULING",
+    "PIT": "TABUHAN",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4160",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CE7137",
+    "Model": "LOADING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CE4251",
+    "Model": "LOADING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CE3238",
+    "Model": "COAL GETTING",
+    "PIT": "TABUHAN",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CT3284",
+    "Model": "COAL HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCD2076",
+    "Model": "DOZING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4656",
+    "Model": "HAULING",
+    "PIT": "TABUHAN",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCG2066",
+    "Model": "GRADING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4370",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCE4090",
+    "Model": "LOADING",
+    "PIT": "TABUHAN",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCT2886",
+    "Model": "COAL HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCG2071",
+    "Model": "GRADING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4483",
+    "Model": "HAULING",
+    "PIT": "TABUHAN",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4336",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCT3433",
+    "Model": "COAL HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CE5259",
+    "Model": "LOADING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "DP4010",
+    "Model": "SE",
+    "PIT": "TABUHAN",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCD1295",
+    "Model": "AUXILIARY",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO2412",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4538",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCT2894",
+    "Model": "COAL HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CD4160",
+    "Model": "DOZING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "WT6006",
+    "Model": "SE",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CD4134",
+    "Model": "DOZING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4342",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4346",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCT2836",
+    "Model": "COAL HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCC1046",
+    "Model": "AUXILIARY",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CT3297",
+    "Model": "COAL HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4518",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4420",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4453",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCT3428",
+    "Model": "COAL HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CE5254",
+    "Model": "LOADING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CG2161",
+    "Model": "GRADING",
+    "PIT": "TABUHAN",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCD2070",
+    "Model": "DOZING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO2410",
+    "Model": "HAULING",
+    "PIT": "TABUHAN",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4391",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCT2876",
+    "Model": "COAL HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCT2883",
+    "Model": "COAL HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4211",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCT2885",
+    "Model": "COAL HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO2316",
+    "Model": "HAULING",
+    "PIT": "TABUHAN",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCT2893",
+    "Model": "COAL HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCT3427",
+    "Model": "COAL HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "WT2268",
+    "Model": "SE",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4454",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CT3289",
+    "Model": "COAL HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4355",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCT3416",
+    "Model": "COAL HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CE5255",
+    "Model": "LOADING",
+    "PIT": "TABUHAN",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCG2162",
+    "Model": "GRADING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCE1337",
+    "Model": "AUXILIARY",
+    "PIT": "TABUHAN",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CD4132",
+    "Model": "DOZING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCT2841",
+    "Model": "COAL HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO3286",
+    "Model": "HAULING",
+    "PIT": "TABUHAN",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CE4076",
+    "Model": "LOADING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4205",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CE2276",
+    "Model": "AUXILIARY",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4321",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4516",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CE5249",
+    "Model": "LOADING",
+    "PIT": "TABUHAN",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCD1282",
+    "Model": "AUXILIARY",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCC1057",
+    "Model": "AUXILIARY",
+    "PIT": "TABUHAN",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XWT3001",
+    "Model": "SE",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCD2138",
+    "Model": "DOZING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCT2867",
+    "Model": "COAL HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCO4554",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCT2879",
+    "Model": "COAL HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCE3261",
+    "Model": "COAL GETTING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCT2873",
+    "Model": "COAL HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCE3249",
+    "Model": "COAL GETTING",
+    "PIT": "TABUHAN",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4412",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCD1293",
+    "Model": "AUXILIARY",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4335",
+    "Model": "HAULING",
+    "PIT": "TABUHAN",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4459",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4517",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4462",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CE3239",
+    "Model": "COAL GETTING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO2072",
+    "Model": "HAULING",
+    "PIT": "TABUHAN",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4386",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4513",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4536",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4515",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4348",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CD3007",
+    "Model": "DOZING",
+    "PIT": "TABUHAN",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO2327",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCE1301",
+    "Model": "AUXILIARY",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCT3437",
+    "Model": "COAL HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CD3008",
+    "Model": "DOZING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO2484",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4320",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4670",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4333",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCE1228",
+    "Model": "AUXILIARY",
+    "PIT": "TABUHAN",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCE1332",
+    "Model": "AUXILIARY",
+    "PIT": "TABUHAN",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCE1284",
+    "Model": "AUXILIARY",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4421",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO2453",
+    "Model": "HAULING",
+    "PIT": "TABUHAN",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO2425",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4514",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCT2882",
+    "Model": "COAL HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "WT2263",
+    "Model": "SE",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4480",
+    "Model": "HAULING",
+    "PIT": "TABUHAN",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCE1340",
+    "Model": "AUXILIARY",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCT2844",
+    "Model": "COAL HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4477",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CE5257",
+    "Model": "LOADING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCT2818",
+    "Model": "COAL HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCE3146",
+    "Model": "COAL GETTING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4357",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCT2890",
+    "Model": "COAL HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCT3426",
+    "Model": "COAL HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCT2834",
+    "Model": "COAL HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4461",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XWT2018",
+    "Model": "SE",
+    "PIT": "TABUHAN",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCT2870",
+    "Model": "COAL HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCT2864",
+    "Model": "COAL HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CE5241",
+    "Model": "LOADING",
+    "PIT": "TABUHAN",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCT2816",
+    "Model": "COAL HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4487",
+    "Model": "HAULING",
+    "PIT": "TABUHAN",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4152",
+    "Model": "HAULING",
+    "PIT": "TABUHAN",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XWT3002",
+    "Model": "SE",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XWT2021",
+    "Model": "SE",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCD2136",
+    "Model": "DOZING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4203",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4410",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCE3148",
+    "Model": "COAL GETTING",
+    "PIT": "TABUHAN",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCT3429",
+    "Model": "COAL HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCE1330",
+    "Model": "AUXILIARY",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCT2888",
+    "Model": "COAL HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CE4236",
+    "Model": "LOADING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCE3255",
+    "Model": "COAL GETTING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCT3440",
+    "Model": "COAL HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCT2833",
+    "Model": "COAL HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4482",
+    "Model": "HAULING",
+    "PIT": "TABUHAN",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CE3145",
+    "Model": "COAL GETTING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCT3434",
+    "Model": "COAL HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCD1252",
+    "Model": "AUXILIARY",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCO4563",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4398",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CT3283",
+    "Model": "COAL HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4671",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CT3286",
+    "Model": "COAL HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "WT2261",
+    "Model": "SE",
+    "PIT": "TABUHAN",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCT2840",
+    "Model": "COAL HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4479",
+    "Model": "HAULING",
+    "PIT": "TABUHAN",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCT3442",
+    "Model": "COAL HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCT2878",
+    "Model": "COAL HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4379",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4669",
+    "Model": "HAULING",
+    "PIT": "TABUHAN",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CE3232",
+    "Model": "COAL GETTING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4352",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XWT2024",
+    "Model": "SE",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCD1242",
+    "Model": "AUXILIARY",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CT3287",
+    "Model": "COAL HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "WT2259",
+    "Model": "SE",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "WT2283",
+    "Model": "SE",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "WT2255",
+    "Model": "SE",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CD3192",
+    "Model": "DOZING",
+    "PIT": "TABUHAN",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCT3443",
+    "Model": "COAL HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCT3430",
+    "Model": "COAL HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CD3195",
+    "Model": "DOZING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4385",
+    "Model": "HAULING",
+    "PIT": "TABUHAN",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CE5253",
+    "Model": "LOADING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CE3216",
+    "Model": "COAL GETTING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CE5256",
+    "Model": "LOADING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCT3424",
+    "Model": "COAL HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCT2872",
+    "Model": "COAL HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XWT3000",
+    "Model": "SE",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCT2837",
+    "Model": "COAL HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCT3421",
+    "Model": "COAL HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCT2868",
+    "Model": "COAL HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO2417",
+    "Model": "HAULING",
+    "PIT": "TABUHAN",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO2428",
+    "Model": "HAULING",
+    "PIT": "TABUHAN",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCT3420",
+    "Model": "COAL HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCT2828",
+    "Model": "COAL HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4460",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCT2830",
+    "Model": "COAL HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CE4245",
+    "Model": "LOADING",
+    "PIT": "TABUHAN",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCE1325",
+    "Model": "AUXILIARY",
+    "PIT": "TABUHAN",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4451",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CD3204",
+    "Model": "DOZING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCE1302",
+    "Model": "AUXILIARY",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CD4180",
+    "Model": "DOZING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4217",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4658",
+    "Model": "HAULING",
+    "PIT": "TABUHAN",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4399",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCT2887",
+    "Model": "COAL HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CD4189",
+    "Model": "DOZING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4422",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4325",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CE7140",
+    "Model": "LOADING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4382",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCC1056",
+    "Model": "AUXILIARY",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4314",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCO2487",
+    "Model": "HAULING",
+    "PIT": "TABUHAN",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CT3296",
+    "Model": "COAL HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4202",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCD1283",
+    "Model": "AUXILIARY",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4521",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "WT6004",
+    "Model": "SE",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCO4556",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4373",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCD2132",
+    "Model": "DOZING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CG2032",
+    "Model": "GRADING",
+    "PIT": "TABUHAN",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCE3250",
+    "Model": "COAL GETTING",
+    "PIT": "TABUHAN",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCT2839",
+    "Model": "COAL HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "WT2269",
+    "Model": "SE",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCE1324",
+    "Model": "AUXILIARY",
+    "PIT": "TABUHAN",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCE1342",
+    "Model": "AUXILIARY",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CE5260",
+    "Model": "LOADING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCT3441",
+    "Model": "COAL HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCE1336",
+    "Model": "AUXILIARY",
+    "PIT": "TABUHAN",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CD4167",
+    "Model": "DOZING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCT3435",
+    "Model": "COAL HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCD1258",
+    "Model": "AUXILIARY",
+    "PIT": "TABUHAN",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4081",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4405",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CD3005",
+    "Model": "DOZING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCT2848",
+    "Model": "COAL HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCT2845",
+    "Model": "COAL HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CE3192",
+    "Model": "COAL GETTING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4159",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CT3290",
+    "Model": "COAL HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCD2133",
+    "Model": "DOZING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCT2832",
+    "Model": "COAL HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CT3285",
+    "Model": "COAL HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4657",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4476",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCT3436",
+    "Model": "COAL HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4413",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCT2881",
+    "Model": "COAL HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4455",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4318",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4337",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCT2824",
+    "Model": "COAL HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO2383",
+    "Model": "HAULING",
+    "PIT": "TABUHAN",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CT3292",
+    "Model": "COAL HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCE1341",
+    "Model": "AUXILIARY",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO2411",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCD1272",
+    "Model": "AUXILIARY",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCG2157",
+    "Model": "GRADING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCT2866",
+    "Model": "COAL HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4329",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CD4159",
+    "Model": "DOZING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CD3006",
+    "Model": "DOZING",
+    "PIT": "TABUHAN",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4204",
+    "Model": "HAULING",
+    "PIT": "TABUHAN",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCE1259",
+    "Model": "AUXILIARY",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCD1284",
+    "Model": "AUXILIARY",
+    "PIT": "TABUHAN",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCT3425",
+    "Model": "COAL HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4313",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO2426",
+    "Model": "HAULING",
+    "PIT": "TABUHAN",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO2427",
+    "Model": "HAULING",
+    "PIT": "TABUHAN",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCO2490",
+    "Model": "HAULING",
+    "PIT": "TABUHAN",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4212",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CG2133",
+    "Model": "GRADING",
+    "PIT": "TABUHAN",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4396",
+    "Model": "HAULING",
+    "PIT": "TABUHAN",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CE3237",
+    "Model": "COAL GETTING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CE5207",
+    "Model": "LOADING",
+    "PIT": "TABUHAN",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCO2485",
+    "Model": "HAULING",
+    "PIT": "TABUHAN",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4380",
+    "Model": "HAULING",
+    "PIT": "TABUHAN",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CE4273",
+    "Model": "LOADING",
+    "PIT": "TABUHAN",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCE1331",
+    "Model": "AUXILIARY",
+    "PIT": "TABUHAN",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCT3422",
+    "Model": "COAL HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CD3167",
+    "Model": "DOZING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "WT2284",
+    "Model": "SE",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "WT2256",
+    "Model": "SE",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCO2488",
+    "Model": "HAULING",
+    "PIT": "TABUHAN",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CE3193",
+    "Model": "COAL GETTING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CE3149",
+    "Model": "COAL GETTING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "WT2258",
+    "Model": "SE",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCE1313",
+    "Model": "AUXILIARY",
+    "PIT": "TABUHAN",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCD1294",
+    "Model": "AUXILIARY",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCT3414",
+    "Model": "COAL HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO3192",
+    "Model": "HAULING",
+    "PIT": "TABUHAN",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCT2889",
+    "Model": "COAL HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO2414",
+    "Model": "HAULING",
+    "PIT": "TABUHAN",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCE1265",
+    "Model": "AUXILIARY",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCE3256",
+    "Model": "COAL GETTING",
+    "PIT": "TABUHAN",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "DP1121",
+    "Model": "SE",
+    "PIT": "TABUHAN",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XWT2019",
+    "Model": "SE",
+    "PIT": "TABUHAN",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCT3423",
+    "Model": "COAL HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCT3439",
+    "Model": "COAL HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCO2491",
+    "Model": "HAULING",
+    "PIT": "TABUHAN",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CE2240",
+    "Model": "AUXILIARY",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO2311",
+    "Model": "HAULING",
+    "PIT": "TABUHAN",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCT2871",
+    "Model": "COAL HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCT2831",
+    "Model": "COAL HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCE3147",
+    "Model": "COAL GETTING",
+    "PIT": "TABUHAN",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCT2869",
+    "Model": "COAL HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CE3241",
+    "Model": "COAL GETTING",
+    "PIT": "TABUHAN",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCO2489",
+    "Model": "HAULING",
+    "PIT": "TABUHAN",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4153",
+    "Model": "HAULING",
+    "PIT": "TABUHAN",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "DP2108",
+    "Model": "SE",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4056",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XWT2017",
+    "Model": "SE",
+    "PIT": "TABUHAN",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "WT2285",
+    "Model": "SE",
+    "PIT": "TABUHAN",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCO2482",
+    "Model": "HAULING",
+    "PIT": "TABUHAN",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO4351",
+    "Model": "HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CC1017",
+    "Model": "AUXILIARY",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CT3293",
+    "Model": "COAL HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CT3294",
+    "Model": "COAL HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CT3295",
+    "Model": "COAL HAULING",
+    "PIT": "SITARUM",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO3185",
+    "Model": "HAULING",
+    "PIT": "TABUHAN",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CO2060",
+    "Model": "HAULING",
+    "PIT": "TABUHAN",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "XCD2137",
+    "Model": "DOZING",
+    "PIT": "TABUHAN",
+    "Date": "NaT"
+  },
+  {
+    "Unit_ID": "CD4158",
+    "Model": "DOZING",
+    "PIT": "TABUHAN",
+    "Date": "NaT"
+  }
+]
