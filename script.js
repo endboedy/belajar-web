@@ -1,6 +1,6 @@
 // script.js
+// Handles: reading excel files, lookup logic, add multi orders, save/load localStorage, edit/delete, download
 
-// Data stores (global)
 let iwData = [];      // IW39 rows (array of objects)
 let data1 = [];       // Data1 rows
 let data2 = [];       // Data2 rows
@@ -23,22 +23,9 @@ function normalizeRows(rows){
   });
 }
 function asNumber(v){
-  if(v===undefined || v===null || v==="") return 0;
+  if(v===undefined || v===null || v==="" ) return 0;
   const num = Number(String(v).toString().replace(/[^0-9.\-]/g,''));
   return isNaN(num) ? 0 : num;
-}
-// Format date "dd-mmm-yyyy"
-function formatDate(d){
-  if(!d) return "";
-  let dateObj;
-  if(d instanceof Date) dateObj = d;
-  else dateObj = new Date(d);
-  if(isNaN(dateObj.getTime())) return "";
-  const day = dateObj.getDate().toString().padStart(2,'0');
-  const monthNames = ["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Agu","Sep","Okt","Nov","Des"];
-  const mon = monthNames[dateObj.getMonth()] || "";
-  const year = dateObj.getFullYear();
-  return `${day}-${mon}-${year}`;
 }
 
 // Read file as json rows (sheet 0)
@@ -62,74 +49,6 @@ function readExcelFile(file){
   });
 }
 
-// Show page helper
-function showPage(pageId) {
-  document.querySelectorAll('.page').forEach(p => p.style.display = 'none');
-  const page = document.getElementById(pageId);
-  if (page) page.style.display = 'block';
-}
-
-// Nav menu buttons
-document.getElementById('navUpload').addEventListener('click', () => showPage('pageUpload'));
-document.getElementById('navLembar').addEventListener('click', () => showPage('pageLembar'));
-document.getElementById('navSummary').addEventListener('click', () => showPage('pageSummary'));
-document.getElementById('navDownload').addEventListener('click', () => showPage('pageDownload'));
-
-// Load Files button
-document.getElementById('btnLoad').addEventListener('click', async () => {
-  const loadMsg = document.getElementById('loadMsg');
-  if (loadMsg) loadMsg.textContent = "Loading files...";
-
-  const fIW = document.getElementById('fileIW39').files[0];
-  const fSUM = document.getElementById('fileSUM57').files[0];
-  const fPlan = document.getElementById('filePlanning').files[0];
-  const fBud = document.getElementById('fileBudget').files[0];
-  const fD1 = document.getElementById('fileData1').files[0];
-  const fD2 = document.getElementById('fileData2').files[0];
-
-  iwData = fIW ? await readExcelFile(fIW) : [];
-  sum57 = fSUM ? await readExcelFile(fSUM) : [];
-  planning = fPlan ? await readExcelFile(fPlan) : [];
-  budget = fBud ? await readExcelFile(fBud) : [];
-  data1 = fD1 ? await readExcelFile(fD1) : [];
-  data2 = fD2 ? await readExcelFile(fD2) : [];
-
-  if (loadMsg) loadMsg.textContent = "Files loaded.";
-});
-
-// Add Orders button - tanpa input Month & Reman di luar
-document.getElementById('btnAddOrders').addEventListener('click', ()=>{
-  const raw = document.getElementById('inputOrders').value || "";
-  if(raw.trim() === ""){
-    document.getElementById('lmMsg').textContent = "Tidak ada order yang dimasukkan.";
-    return;
-  }
-  if(!iwData || iwData.length === 0){
-    document.getElementById('lmMsg').textContent = "Belum load IW39. Silakan upload & Load Files terlebih dahulu.";
-    return;
-  }
-
-  const iwNorm = normalizeRows(iwData);
-  const d1Norm = normalizeRows(data1);
-  const d2Norm = normalizeRows(data2);
-  const sumNorm = normalizeRows(sum57);
-  const planNorm = normalizeRows(planning);
-
-  const arr = raw.split(/\r?\n|,/).map(s=>s.trim()).filter(s=>s!=="");
-  arr.forEach(orderKey=>{
-    const iwRow = iwNorm.find(r => Object.values(r).some(v => String(v).trim() === String(orderKey).trim()));
-    if(!iwRow){
-      merged.push(buildMergedRow({}, orderKey, "", "", d1Norm, d2Norm, sumNorm, planNorm));
-    } else {
-      merged.push(buildMergedRow(iwRow, iwRow['order'] || orderKey, "", "", d1Norm, d2Norm, sumNorm, planNorm));
-    }
-  });
-
-  document.getElementById('inputOrders').value = "";
-  document.getElementById('lmMsg').textContent = `Berhasil menambahkan ${arr.length} order.`;
-  renderTable(merged);
-});
-
 // Build merged row from normalized iw row (origNormalized), orderKey, month, reman
 function buildMergedRow(origNorm, orderKey, monthVal, remanVal, d1Norm, d2Norm, sumNorm, planNorm){
   const get = (o, names) => {
@@ -140,6 +59,7 @@ function buildMergedRow(origNorm, orderKey, monthVal, remanVal, d1Norm, d2Norm, 
     return "";
   };
 
+  // Read IW fields
   const Room = get(origNorm, ['room','location','area']);
   const OrderType = get(origNorm, ['ordertype','type']);
   const Order = orderKey || get(origNorm, ['order','orderno','no','noorder']);
@@ -148,38 +68,57 @@ function buildMergedRow(origNorm, orderKey, monthVal, remanVal, d1Norm, d2Norm, 
   const UserStatus = get(origNorm, ['userstatus','status']);
   const MAT = get(origNorm, ['mat','material','materialcode']);
 
+  // Format Created On "dd-mmm-yyyy"
+  let CreatedOn = "";
+  if(CreatedOnRaw){
+    const d = new Date(CreatedOnRaw);
+    if(!isNaN(d)) {
+      CreatedOn = d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+    } else {
+      CreatedOn = CreatedOnRaw;
+    }
+  }
+
+  // lookups: Data1 (section), Data2 (cph), SUM57 (status part & aging), Planning (planning,status amt)
   const d1row = (d1Norm || []).find(r => Object.values(r).some(v => String(v).trim() === String(MAT).trim())) || {};
   const d2row = (d2Norm || []).find(r => Object.values(r).some(v => String(v).trim() === String(MAT).trim())) || {};
   const sumrow = (sumNorm || []).find(r => Object.values(r).some(v => String(v).trim() === String(Order).trim())) || {};
   const planrow = (planNorm || []).find(r => Object.values(r).some(v => String(v).trim() === String(Order).trim())) || {};
 
-  // Description rule
+  // Description rule (if IW39 desc starts with JR -> Description = JR)
   let Description = "";
   if(String(DescriptionRaw).toUpperCase().startsWith("JR")) Description = "JR";
   else Description = get(d1row, ['description','desc','keterangan','shortdesc']) || "";
 
-  // CPH rule
+  // CPH rule: if Description starts with JR => CPH = "JR"; else lookup in data2 by MAT, fallback data1
   let CPH = "";
   if(String(DescriptionRaw).toUpperCase().startsWith("JR")) CPH = "JR";
   else CPH = get(d2row, ['cph','costperhour','cphvalue']) || get(d1row, ['cph','costperhour','cphvalue']) || "";
 
   const Section = get(d1row, ['section','dept','deptcode','department']);
   const StatusPart = get(sumrow, ['statuspart','status','status_part']) || "";
-  let AgingRaw = get(sumrow, ['aging','age']) || "";
-
-  // Format Aging tanpa angka di belakang koma
+  
+  // Format Aging no decimal
+  let AgingRaw = get(sumrow, ['aging','age']);
   let Aging = "";
-  if(typeof AgingRaw === "number") Aging = Math.round(AgingRaw).toString();
-  else Aging = String(AgingRaw).split('.')[0]; // fallback
+  if(AgingRaw !== "" && AgingRaw !== undefined && AgingRaw !== null){
+    Aging = parseInt(Number(AgingRaw));
+  }
 
-  // Format tanggal
-  const CreatedOn = formatDate(CreatedOnRaw);
-  const Planning = formatDate(get(planrow, ['planning','eventstart','description','date']));
-
-  // Status AMT
+  // Format Planning "dd-mmm-yyyy"
+  let PlanningRaw = get(planrow, ['planning','eventstart','description']);
+  let Planning = "";
+  if(PlanningRaw){
+    const d = new Date(PlanningRaw);
+    if(!isNaN(d)) {
+      Planning = d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+    } else {
+      Planning = PlanningRaw;
+    }
+  }
   const StatusAMT = get(planrow, ['statusamt','status']) || "";
 
-  // Cost calculation from origNorm keys containing 'plan' and 'actual'
+  // Cost calculation: from origNorm find keys containing 'plan' and 'actual'
   const planKey = Object.keys(origNorm||{}).find(k => k.includes('plan')) || null;
   const actualKey = Object.keys(origNorm||{}).find(k => k.includes('actual')) || null;
   const planVal = planKey ? asNumber(origNorm[planKey]) : 0;
@@ -188,9 +127,11 @@ function buildMergedRow(origNorm, orderKey, monthVal, remanVal, d1Norm, d2Norm, 
   const rawCost = (planVal - actualVal) / 16500;
   if(!isNaN(rawCost) && isFinite(rawCost) && rawCost >= 0) Cost = Number(rawCost.toFixed(2));
 
-  // Include & Exclude calculation
+  // Include & Exclude
   let Include = "-";
-  if(typeof Cost === "number") Include = (String(remanVal).toLowerCase().includes("reman") ? Number((Cost * 0.25).toFixed(2)) : Number(Cost.toFixed(2)));
+  if(typeof Cost === "number"){
+    Include = (String(remanVal).toLowerCase().includes("reman") ? Number((Cost * 0.25).toFixed(2)) : Number(Cost.toFixed(2)));
+  }
   let Exclude = (String(OrderType).toUpperCase() === "PM38") ? "-" : Include;
 
   return {
@@ -205,9 +146,9 @@ function buildMergedRow(origNorm, orderKey, monthVal, remanVal, d1Norm, d2Norm, 
     "Section": Section||"",
     "Status Part": StatusPart||"",
     "Aging": Aging||"",
-    "Month": monthVal || "",
+    "Month": monthVal||"",
     "Cost": Cost,
-    "Reman": remanVal || "",
+    "Reman": remanVal||"",
     "Include": Include,
     "Exclude": Exclude,
     "Planning": Planning||"",
@@ -215,10 +156,9 @@ function buildMergedRow(origNorm, orderKey, monthVal, remanVal, d1Norm, d2Norm, 
   };
 }
 
-// Display columns including Month & Reman
+// Render table with action column (edit/delete)
 const DISPLAY = ["Room","Order Type","Order","Description","Created On","User Status","MAT","CPH","Section","Status Part","Aging","Month","Cost","Reman","Include","Exclude","Planning","Status AMT","Action"];
 
-// Render table with edit/delete and inline editing for Month & Reman
 function renderTable(data){
   const container = document.getElementById('tableContainer');
   if(!data || data.length===0){
@@ -226,13 +166,14 @@ function renderTable(data){
     return;
   }
 
-  // Maksimalkan lebar dengan scroll horizontal
-  container.style.overflowX = 'auto';
-  container.style.width = '100%';
+  // Maksimalkan lebar container ke 100vw
+  container.style.overflowX = "auto";
+  container.style.width = "100vw";
 
-  let html = "<table><thead><tr>";
+  let html = "<table style='min-width: 1200px; border-collapse: collapse;'>";
+  html += "<thead><tr>";
   DISPLAY.forEach(col => {
-    html += `<th>${col}</th>`;
+    html += `<th style="border:1px solid #ccc; padding:6px 8px; text-align:left;">${col}</th>`;
   });
   html += "</tr></thead><tbody>";
 
@@ -242,28 +183,24 @@ function renderTable(data){
     cols.forEach(col => {
       let cls = (col==="Description") ? "col-desc" : "";
       let v = row[col];
-
       if(col === "Order"){
-        // Hilangkan angka di belakang koma (tanda titik), tampilkan saja tanpa desimal
-        if(typeof v === "number") v = Math.floor(v).toString();
-        else if(typeof v === "string") v = v.split('.')[0];
-      } else if(col === "Created On" || col === "Planning"){
-        // Sudah diformat tanggal (dd-mmm-yyyy)
-      } else if(col === "Aging"){
-        // Sudah dibulatkan
-      } else if(typeof v === "number") {
-        v = v.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
+        // hapus tanda titik dan angka dibelakang koma
+        if(typeof v === "string") v = v.replace(/\./g, "").split(",")[0];
       }
-
-      html += `<td class="${cls}">${v !== undefined && v !== null ? v : ""}</td>`;
+      if(col === "Created On" || col === "Planning"){
+        // tanggal sudah diformat di buildMergedRow
+      }
+      if(col === "Aging"){
+        // hapus angka dibelakang koma sudah di buildMergedRow
+      }
+      if(typeof v === "number") v = v.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
+      html += `<td class="${cls}" style="border:1px solid #ccc; padding:6px 8px;">${v !== undefined && v !== null ? v : ""}</td>`;
     });
-
     // Action buttons
-    html += `<td>
+    html += `<td style="border:1px solid #ccc; padding:6px 8px;">
       <button class="action-btn small" onclick="editRow(${idx})">Edit</button>
       <button class="action-btn small" onclick="deleteRow(${idx})">Delete</button>
     </td>`;
-
     html += "</tr>";
   });
 
@@ -271,17 +208,12 @@ function renderTable(data){
   container.innerHTML = html;
 }
 
-// Edit row inline for Month & Reman
 function editRow(idx){
   const row = merged[idx];
   if(!row) return;
   const container = document.getElementById('tableContainer');
-
-  container.style.overflowX = 'auto';
-  container.style.width = '100%';
-
-  let html = "<table><thead><tr>";
-  DISPLAY.forEach(col => html += `<th>${col}</th>`);
+  let html = "<table style='min-width: 1200px; border-collapse: collapse;'><thead><tr>";
+  DISPLAY.forEach(col => html += `<th style="border:1px solid #ccc; padding:6px 8px; text-align:left;">${col}</th>`);
   html += "</tr></thead><tbody>";
 
   merged.forEach((r,i)=>{
@@ -291,7 +223,7 @@ function editRow(idx){
       let cls = (col==="Description") ? "col-desc" : "";
       if(i === idx){
         if(col === "Month"){
-          html += `<td class="${cls}">
+          html += `<td class="${cls}" style="border:1px solid #ccc; padding:6px 8px;">
             <select id="edit_month" >
               <option value="">--Pilih--</option>
               <option>Jan</option><option>Feb</option><option>Mar</option>
@@ -301,26 +233,26 @@ function editRow(idx){
             </select>
           </td>`;
         } else if(col === "Reman"){
-          html += `<td class="${cls}"><input id="edit_reman" type="text" value="${r.Reman||""}" /></td>`;
+          html += `<td class="${cls}" style="border:1px solid #ccc; padding:6px 8px;"><input id="edit_reman" type="text" value="${r.Reman||""}" /></td>`;
         } else {
           let v = r[col];
-          if(typeof v === "number") v = v.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
-          html += `<td class="${cls}">${v !== undefined && v !== null ? v : ""}</td>`;
+          if(typeof v === "number") v = v.toLocaleString();
+          html += `<td class="${cls}" style="border:1px solid #ccc; padding:6px 8px;">${v !== undefined && v !== null ? v : ""}</td>`;
         }
       } else {
         let v = r[col];
         if(typeof v === "number") v = v.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
-        html += `<td class="${cls}">${v !== undefined && v !== null ? v : ""}</td>`;
+        html += `<td class="${cls}" style="border:1px solid #ccc; padding:6px 8px;">${v !== undefined && v !== null ? v : ""}</td>`;
       }
     });
 
     if(i === idx){
-      html += `<td>
+      html += `<td style="border:1px solid #ccc; padding:6px 8px;">
         <button class="action-btn small" onclick="saveEdit(${i})">Save</button>
         <button class="action-btn small" onclick="cancelEdit()">Cancel</button>
       </td>`;
     } else {
-      html += `<td>
+      html += `<td style="border:1px solid #ccc; padding:6px 8px;">
         <button class="action-btn small" onclick="editRow(${i})">Edit</button>
         <button class="action-btn small" onclick="deleteRow(${i})">Delete</button>
       </td>`;
@@ -344,7 +276,7 @@ function saveEdit(idx){
   if(merged[idx]){
     merged[idx].Month = month;
     merged[idx].Reman = reman;
-    // Recompute Include & Exclude if needed
+    // recompute Include & Exclude if needed
     const cost = merged[idx].Cost;
     if(typeof cost === "number"){
       merged[idx].Include = String(reman).toLowerCase().includes("reman") ? Number((cost * 0.25).toFixed(2)) : Number(cost.toFixed(2));
@@ -354,7 +286,8 @@ function saveEdit(idx){
     merged[idx].Exclude = String(merged[idx]["Order Type"]).toUpperCase() === "PM38" ? "-" : merged[idx].Include;
   }
   renderTable(merged);
-  document.getElementById('lmMsg').textContent = "Perubahan disimpan (sementara). Jangan lupa klik Save Lembar Kerja untuk persist.";
+  const lmMsg = document.getElementById('lmMsg');
+  if(lmMsg) lmMsg.textContent = "Perubahan disimpan (sementara). Jangan lupa klik Save Lembar Kerja untuk persist.";
 }
 
 function cancelEdit(){
@@ -365,22 +298,101 @@ function deleteRow(idx){
   if(!confirm("Hapus baris ini?")) return;
   merged.splice(idx,1);
   renderTable(merged);
-  document.getElementById('lmMsg').textContent = "Baris dihapus (sementara). Klik Save Lembar Kerja untuk persist.";
+  const lmMsg = document.getElementById('lmMsg');
+  if(lmMsg) lmMsg.textContent = "Baris dihapus (sementara). Klik Save Lembar Kerja untuk persist.";
 }
 
-// Save / Load Lembar Kerja to localStorage
 document.addEventListener('DOMContentLoaded', () => {
-  // Save / Load Lembar Kerja to localStorage
-  const btnSave = document.getElementById('btnSave');
-  if (btnSave) {
-    btnSave.addEventListener('click', () => {
-      localStorage.setItem('ndarboe_merged', JSON.stringify(merged));
-      const lmMsg = document.getElementById('lmMsg');
-      if(lmMsg) lmMsg.textContent = "Lembar Kerja tersimpan di localStorage.";
-    });
-  }
+  // Pasang event click di menu utama (cek dulu elemen agar tidak error)
+  const navUpload = document.getElementById('navUpload');
+  if(navUpload) navUpload.addEventListener('click', () => showPage('pageUpload'));
 
-  function loadSaved() {
+  const navLembar = document.getElementById('navLembar');
+  if(navLembar) navLembar.addEventListener('click', () => showPage('pageLembar'));
+
+  const navSummary = document.getElementById('navSummary');
+  if(navSummary) navSummary.addEventListener('click', () => showPage('pageSummary'));
+
+  const navDownload = document.getElementById('navDownload');
+  if(navDownload) navDownload.addEventListener('click', () => showPage('pageDownload'));
+
+  const btnLoad = document.getElementById('btnLoad');
+  if(btnLoad) btnLoad.addEventListener('click', async () => {
+    const loadMsg = document.getElementById('loadMsg');
+    if(loadMsg) loadMsg.textContent = "Loading files...";
+
+    const fIW = document.getElementById('fileIW39')?.files[0];
+    const fSUM = document.getElementById('fileSUM57')?.files[0];
+    const fPlan = document.getElementById('filePlanning')?.files[0];
+    const fBud = document.getElementById('fileBudget')?.files[0];
+    const fD1 = document.getElementById('fileData1')?.files[0];
+    const fD2 = document.getElementById('fileData2')?.files[0];
+
+    iwData = fIW ? await readExcelFile(fIW) : [];
+    sum57 = fSUM ? await readExcelFile(fSUM) : [];
+    planning = fPlan ? await readExcelFile(fPlan) : [];
+    budget = fBud ? await readExcelFile(fBud) : [];
+    data1 = fD1 ? await readExcelFile(fD1) : [];
+    data2 = fD2 ? await readExcelFile(fD2) : [];
+
+    const iwNorm = normalizeRows(iwData);
+    const d1Norm = normalizeRows(data1);
+    const d2Norm = normalizeRows(data2);
+    const sumNorm = normalizeRows(sum57);
+    const planNorm = normalizeRows(planning);
+
+    window.__nd = {iw:iwNorm,d1:d1Norm,d2:d2Norm,sum:sumNorm,plan:planNorm};
+
+    if(loadMsg) loadMsg.textContent = `Selesai load. IW39 baris: ${iwData.length}`;
+  });
+
+  const btnAddOrders = document.getElementById('btnAddOrders');
+  if(btnAddOrders) btnAddOrders.addEventListener('click', ()=>{
+    const raw = document.getElementById('inputOrders')?.value || "";
+    if(raw.trim()===""){
+      const lmMsg = document.getElementById('lmMsg');
+      if(lmMsg) lmMsg.textContent = "Tidak ada order yang dimasukkan.";
+      return;
+    }
+    if(!iwData || iwData.length===0){
+      const lmMsg = document.getElementById('lmMsg');
+      if(lmMsg) lmMsg.textContent = "File IW39 belum di-load.";
+      return;
+    }
+    const orders = raw.split(/[\r\n]+/).map(s=>s.trim()).filter(s=>s.length>0);
+
+    const iwNorm = normalizeRows(iwData);
+    const d1Norm = normalizeRows(data1);
+    const d2Norm = normalizeRows(data2);
+    const sumNorm = normalizeRows(sum57);
+    const planNorm = normalizeRows(planning);
+
+    orders.forEach(orderKey => {
+      const row = iwNorm.find(r => {
+        const v = r['order'] || r['orderno'] || r['no'] || "";
+        return String(v).trim() === orderKey.trim();
+      });
+      if(row){
+        // default Month & Reman empty at first
+        const m = "";
+        const rmn = "";
+        const newRow = buildMergedRow(row, orderKey, m, rmn, d1Norm, d2Norm, sumNorm, planNorm);
+        merged.push(newRow);
+      }
+    });
+    renderTable(merged);
+    const lmMsg = document.getElementById('lmMsg');
+    if(lmMsg) lmMsg.textContent = `${orders.length} order berhasil ditambahkan.`;
+  });
+
+  const btnSave = document.getElementById('btnSave');
+  if(btnSave) btnSave.addEventListener('click', ()=>{
+    localStorage.setItem('ndarboe_merged', JSON.stringify(merged));
+    const lmMsg = document.getElementById('lmMsg');
+    if(lmMsg) lmMsg.textContent = "Lembar Kerja tersimpan di localStorage.";
+  });
+
+  function loadSaved(){
     const raw = localStorage.getItem('ndarboe_merged');
     if(raw){
       try{
@@ -397,82 +409,47 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   loadSaved();
 
-  // Clear Lembar Kerja
   const btnClear = document.getElementById('btnClear');
-  if(btnClear){
-    btnClear.addEventListener('click', () => {
-      if(!confirm("Yakin ingin hapus semua Lembar Kerja?")) return;
-      merged = [];
-      renderTable(merged);
-      localStorage.removeItem('ndarboe_merged');
-      const lmMsg = document.getElementById('lmMsg');
-      if(lmMsg) lmMsg.textContent = "Lembar Kerja dihapus.";
-    });
-  }
+  if(btnClear) btnClear.addEventListener('click', ()=>{
+    if(!confirm("Yakin ingin hapus semua Lembar Kerja?")) return;
+    merged = [];
+    renderTable(merged);
+    localStorage.removeItem('ndarboe_merged');
+    const lmMsg = document.getElementById('lmMsg');
+    if(lmMsg) lmMsg.textContent = "Lembar Kerja dihapus.";
+  });
 
-  // Show hint message clear on inputOrders focus
   const inputOrders = document.getElementById('inputOrders');
-  if(inputOrders){
-    inputOrders.addEventListener('focus', () => {
+  if(inputOrders) inputOrders.addEventListener('focus', ()=>{
+    const lmMsg = document.getElementById('lmMsg');
+    if(lmMsg) lmMsg.textContent = "";
+  });
+
+  // Download JSON as Excel file
+  const btnDownload = document.getElementById('btnDownload');
+  if(btnDownload) btnDownload.addEventListener('click', ()=>{
+    if(!merged || merged.length===0){
       const lmMsg = document.getElementById('lmMsg');
-      if(lmMsg) lmMsg.textContent = "";
-    });
-  }
+      if(lmMsg) lmMsg.textContent = "Tidak ada data untuk diunduh.";
+      return;
+    }
+    const ws = XLSX.utils.json_to_sheet(merged);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "LembarKerja");
+    XLSX.writeFile(wb, "LembarKerja.xlsx");
+  });
 });
 
-// Maksimalkan section#id container lebar penuh
-const sectionLembar = document.getElementById('pageLembar');
-if(sectionLembar){
-  sectionLembar.style.width = '100%';
-  sectionLembar.style.maxWidth = '100vw';
-  sectionLembar.style.overflowX = 'auto';
-  sectionLembar.style.boxSizing = 'border-box';
+// Show / Hide pages
+function showPage(pageId){
+  document.querySelectorAll('.page').forEach(p => {
+    if(p.id === pageId) p.style.display = "block";
+    else p.style.display = "none";
+  });
 }
 
-// CSS style inject untuk tabel
-const style = document.createElement('style');
-style.textContent = `
-  table {
-    border-collapse: collapse;
-    width: 100%;
-    max-width: 100vw;
-    table-layout: fixed;
-    font-family: Arial, sans-serif;
-    font-size: 14px;
-  }
-  th, td {
-    border: 1px solid #666;
-    padding: 8px 10px;
-    word-wrap: break-word;
-    white-space: normal;
-    text-align: center;
-  }
-  th {
-    background-color: #f0f0f0;
-  }
-  .col-desc {
-    text-align: left;
-    max-width: 200px;
-    white-space: normal;
-  }
-  .action-btn {
-    margin: 2px 4px;
-    padding: 3px 6px;
-    font-size: 12px;
-    cursor: pointer;
-  }
-  .small {
-    font-size: 11px;
-    padding: 2px 5px;
-  }
-  #tableContainer {
-    overflow-x: auto;
-  }
-  #inputOrders {
-    width: 100%;
-    min-height: 60px;
-    font-family: monospace;
-    font-size: 14px;
-  }
-`;
-document.head.appendChild(style);
+// Expose edit and delete globally so buttons in table can access
+window.editRow = editRow;
+window.deleteRow = deleteRow;
+window.saveEdit = saveEdit;
+window.cancelEdit = cancelEdit;
