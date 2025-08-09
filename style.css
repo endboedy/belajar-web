@@ -42,3 +42,14 @@ th, td {
     padding: 8px;
     text-align: left;
 }
+.filter-container {
+    background: #eaf4ff;
+    padding: 10px;
+    margin-bottom: 10px;
+}
+.filter-container label {
+    margin-right: 15px;
+}
+.filter-container input {
+    padding: 4px;
+}
