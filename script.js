@@ -1,7 +1,7 @@
 // script.js
 // Handles: reading excel files, lookup logic, add multi orders, save/load localStorage, edit/delete, download
 
-// Global data stores
+// Data stores
 let iwData = [];      // IW39 rows (array of objects)
 let data1 = [];       // Data1 rows
 let data2 = [];       // Data2 rows
@@ -50,14 +50,14 @@ function readExcelFile(file){
   });
 }
 
-// Show page helper
+// Fungsi ganti halaman
 function showPage(pageId) {
   document.querySelectorAll('.page').forEach(p => p.style.display = 'none');
   const page = document.getElementById(pageId);
   if (page) page.style.display = 'block';
 }
 
-// Pasang event click di menu utama (sekali saja)
+// Pasang event click di menu utama
 document.getElementById('navUpload').addEventListener('click', () => showPage('pageUpload'));
 document.getElementById('navLembar').addEventListener('click', () => showPage('pageLembar'));
 document.getElementById('navSummary').addEventListener('click', () => showPage('pageSummary'));
@@ -68,7 +68,6 @@ document.getElementById('btnLoad').addEventListener('click', async () => {
   const loadMsg = document.getElementById('loadMsg');
   if (loadMsg) loadMsg.textContent = "Loading files...";
 
-  // Ambil file dari input
   const fIW = document.getElementById('fileIW39').files[0];
   const fSUM = document.getElementById('fileSUM57').files[0];
   const fPlan = document.getElementById('filePlanning').files[0];
@@ -76,7 +75,6 @@ document.getElementById('btnLoad').addEventListener('click', async () => {
   const fD1 = document.getElementById('fileData1').files[0];
   const fD2 = document.getElementById('fileData2').files[0];
 
-  // Load file excel ke json (array of objects)
   iwData = fIW ? await readExcelFile(fIW) : [];
   sum57 = fSUM ? await readExcelFile(fSUM) : [];
   planning = fPlan ? await readExcelFile(fPlan) : [];
@@ -84,23 +82,13 @@ document.getElementById('btnLoad').addEventListener('click', async () => {
   data1 = fD1 ? await readExcelFile(fD1) : [];
   data2 = fD2 ? await readExcelFile(fD2) : [];
 
-  // Normalize data untuk lookup lebih mudah
-  const iwNorm = normalizeRows(iwData);
-  const d1Norm = normalizeRows(data1);
-  const d2Norm = normalizeRows(data2);
-  const sumNorm = normalizeRows(sum57);
-  const planNorm = normalizeRows(planning);
-
-  // Simpan di global window (debug)
-  window.__nd = {iw:iwNorm,d1:d1Norm,d2:d2Norm,sum:sumNorm,plan:planNorm};
-
-  if (loadMsg) loadMsg.textContent = `Selesai load. IW39 baris: ${iwData.length}`;
+  if (loadMsg) loadMsg.textContent = `Files loaded. IW39 baris: ${iwData.length}`;
 });
 
 // Tombol Add Orders
-document.getElementById('btnAddOrders').addEventListener('click', () => {
+document.getElementById('btnAddOrders').addEventListener('click', ()=>{
   const raw = document.getElementById('inputOrders').value || "";
-  if(raw.trim() === ""){
+  if(raw.trim()===""){
     document.getElementById('lmMsg').textContent = "Tidak ada order yang dimasukkan.";
     return;
   }
@@ -109,11 +97,10 @@ document.getElementById('btnAddOrders').addEventListener('click', () => {
     return;
   }
 
+  // parse orders: split by newline or comma
   const arr = raw.split(/\r?\n|,/).map(s=>s.trim()).filter(s=>s!=="");
-  const month = document.getElementById('inputMonth').value || "";
-  const remanVal = document.getElementById('inputReman').value || "";
 
-  // Normalisasi data untuk lookup
+  // Build normalized rows for lookup
   const iwNorm = normalizeRows(iwData);
   const d1Norm = normalizeRows(data1);
   const d2Norm = normalizeRows(data2);
@@ -121,17 +108,17 @@ document.getElementById('btnAddOrders').addEventListener('click', () => {
   const planNorm = normalizeRows(planning);
 
   arr.forEach(orderKey=>{
-    // cari baris di iwNorm: cocokkan di salah satu field
+    // find row in iwNorm: search any field equals orderKey (string compare)
     const iwRow = iwNorm.find(r => Object.values(r).some(v => String(v).trim() === String(orderKey).trim()));
     if(!iwRow){
-      // kalau gak ketemu, buat baris minimal
-      merged.push(buildMergedRow({}, orderKey, month, remanVal, d1Norm, d2Norm, sumNorm, planNorm));
+      // no found -> push a minimal row with Order = orderKey and empty lookups
+      merged.push(buildMergedRow({}, orderKey, "", "", d1Norm, d2Norm, sumNorm, planNorm));
     } else {
-      merged.push(buildMergedRow(iwRow, iwRow['order'] || orderKey, month, remanVal, d1Norm, d2Norm, sumNorm, planNorm));
+      merged.push(buildMergedRow(iwRow, iwRow['order'] || orderKey, "", "", d1Norm, d2Norm, sumNorm, planNorm));
     }
   });
 
-  // Kosongkan input
+  // clear input area
   document.getElementById('inputOrders').value = "";
   document.getElementById('lmMsg').textContent = `Berhasil menambahkan ${arr.length} order.`;
   renderTable(merged);
@@ -147,33 +134,54 @@ function buildMergedRow(origNorm, orderKey, monthVal, remanVal, d1Norm, d2Norm, 
     return "";
   };
 
+  // Dari IW39
   const Room = get(origNorm, ['room','location','area']);
   const OrderType = get(origNorm, ['ordertype','type']);
   const Order = orderKey || get(origNorm, ['order','orderno','no','noorder']);
   const DescriptionRaw = get(origNorm, ['description','desc','keterangan']);
-  const CreatedOn = get(origNorm, ['createdon','created','date']);
+  const CreatedOnRaw = get(origNorm, ['createdon','created','date']);
   const UserStatus = get(origNorm, ['userstatus','status']);
   const MAT = get(origNorm, ['mat','material','materialcode']);
 
+  // Lookup Section dari Data1 by MAT
   const d1row = (d1Norm || []).find(r => Object.values(r).some(v => String(v).trim() === String(MAT).trim())) || {};
-  const d2row = (d2Norm || []).find(r => Object.values(r).some(v => String(v).trim() === String(MAT).trim())) || {};
+  // Lookup Status Part dari SUM57 by Order
   const sumrow = (sumNorm || []).find(r => Object.values(r).some(v => String(v).trim() === String(Order).trim())) || {};
+  // Lookup Planning by Order
   const planrow = (planNorm || []).find(r => Object.values(r).some(v => String(v).trim() === String(Order).trim())) || {};
 
-  let Description = "";
-  if(String(DescriptionRaw).toUpperCase().startsWith("JR")) Description = "JR";
-  else Description = get(d1row, ['description','desc','keterangan','shortdesc']) || "";
+  // Description dari IW39 langsung
+  const Description = DescriptionRaw || "";
 
-  let CPH = "";
-  if(String(DescriptionRaw).toUpperCase().startsWith("JR")) CPH = "JR";
-  else CPH = get(d2row, ['cph','costperhour','cphvalue']) || get(d1row, ['cph','costperhour','cphvalue']) || "";
+  // Section dari Data1
+  const Section = get(d1row, ['section','dept','deptcode','department']) || "";
 
-  const Section = get(d1row, ['section','dept','deptcode','department']);
+  // Status Part dari SUM57
   const StatusPart = get(sumrow, ['statuspart','status','status_part']) || "";
-  const Aging = get(sumrow, ['aging','age']) || "";
-  const Planning = get(planrow, ['planning','eventstart','description']) || "";
-  const StatusAMT = get(planrow, ['statusamt','status']) || "";
 
+  // Aging dari SUM57, hapus angka di belakang koma
+  let Aging = get(sumrow, ['aging','age']) || "";
+  if(typeof Aging === "number") Aging = Math.floor(Aging);
+  else if(!isNaN(Number(Aging))) Aging = Math.floor(Number(Aging));
+
+  // Format Created On jadi "dd-mmm-yyyy"
+  let CreatedOn = "";
+  if(CreatedOnRaw){
+    const d = new Date(CreatedOnRaw);
+    if(!isNaN(d)) CreatedOn = d.toLocaleDateString('en-GB', {day:'2-digit', month:'short', year:'numeric'}).replace(/ /g, '-');
+    else CreatedOn = CreatedOnRaw;
+  }
+
+  // Format Planning jadi "dd-mmm-yyyy" jika berupa tanggal
+  let Planning = "";
+  const planDateRaw = get(planrow, ['planning','eventstart','description']);
+  if(planDateRaw){
+    const dp = new Date(planDateRaw);
+    if(!isNaN(dp)) Planning = dp.toLocaleDateString('en-GB', {day:'2-digit', month:'short', year:'numeric'}).replace(/ /g, '-');
+    else Planning = planDateRaw;
+  }
+
+  // Cost dan Reman sama seperti sebelumnya
   const planKey = Object.keys(origNorm||{}).find(k => k.includes('plan')) || null;
   const actualKey = Object.keys(origNorm||{}).find(k => k.includes('actual')) || null;
   const planVal = planKey ? asNumber(origNorm[planKey]) : 0;
@@ -189,27 +197,25 @@ function buildMergedRow(origNorm, orderKey, monthVal, remanVal, d1Norm, d2Norm, 
   return {
     "Room": Room||"",
     "Order Type": OrderType||"",
-    "Order": Order||"",
+    "Order": Order ? String(Order) : "",
     "Description": Description||"",
     "Created On": CreatedOn||"",
     "User Status": UserStatus||"",
     "MAT": MAT||"",
-    "CPH": CPH||"",
+    "CPH": get(d1row, ['cph','costperhour','cphvalue']) || "",
     "Section": Section||"",
     "Status Part": StatusPart||"",
     "Aging": Aging||"",
-    "Month": monthVal||"",
     "Cost": Cost,
-    "Reman": remanVal||"",
     "Include": Include,
     "Exclude": Exclude,
     "Planning": Planning||"",
-    "Status AMT": StatusAMT||""
+    "Status AMT": get(planrow, ['statusamt','status']) || ""
   };
 }
 
-// Display columns with Edit/Delete
-const DISPLAY = ["Room","Order Type","Order","Description","Created On","User Status","MAT","CPH","Section","Status Part","Aging","Month","Cost","Reman","Include","Exclude","Planning","Status AMT","Action"];
+// Render table with action column (edit/delete)
+const DISPLAY = ["Room","Order Type","Order","Description","Created On","User Status","MAT","CPH","Section","Status Part","Aging","Cost","Include","Exclude","Planning","Status AMT","Action"];
 
 function renderTable(data){
   const container = document.getElementById('tableContainer');
@@ -218,40 +224,54 @@ function renderTable(data){
     return;
   }
 
-  let html = "<table><thead><tr>";
+  let html = `<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;"><thead><tr>`;
   DISPLAY.forEach(col => {
-    html += `<th>${col}</th>`;
+    html += `<th style="border:1px solid #ccc;padding:8px;white-space:nowrap;">${col}</th>`;
   });
   html += "</tr></thead><tbody>";
 
   data.forEach((row, idx) => {
     html += "<tr>";
-    const cols = DISPLAY.filter(c=>c!=="Action");
+    const cols = DISPLAY.filter(c => c !== "Action");
     cols.forEach(col => {
-      let cls = (col==="Description") ? "col-desc" : "";
+      let cls = (col === "Description") ? "col-desc" : "";
       let v = row[col];
-      if(typeof v === "number") v = v.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
-      html += `<td class="${cls}">${v !== undefined && v !== null ? v : ""}</td>`;
+
+      // Formatting khusus
+      if(col === "Order"){
+        v = String(v); // tampil utuh tanpa desimal
+      } else if(col === "Aging"){
+        if(typeof v === "number") v = Math.floor(v);
+        else if(!isNaN(Number(v))) v = Math.floor(Number(v));
+      } else if(typeof v === "number"){
+        // angka lain tampil 2 desimal
+        v = v.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
+      }
+
+      html += `<td class="${cls}" style="border:1px solid #ccc;padding:8px;white-space:nowrap;">${v !== undefined && v !== null ? v : ""}</td>`;
     });
-    html += `<td>
+
+    // Action buttons
+    html += `<td style="border:1px solid #ccc;padding:8px;white-space:nowrap;">
       <button class="action-btn small" onclick="editRow(${idx})">Edit</button>
       <button class="action-btn small" onclick="deleteRow(${idx})">Delete</button>
     </td>`;
+
     html += "</tr>";
   });
 
-  html += "</tbody></table>";
+  html += "</tbody></table></div>";
   container.innerHTML = html;
 }
 
-// Edit mode for row (Month & Reman editable inline)
+// Edit row: convert row to inline editable (Month & Reman editable) - kita hapus edit Month & Reman sesuai request
 function editRow(idx){
   const row = merged[idx];
   if(!row) return;
   const container = document.getElementById('tableContainer');
-
-  let html = "<table><thead><tr>";
-  DISPLAY.forEach(col => html += `<th>${col}</th>`);
+  // build table but replace the edited row with inputs
+  let html = "<table style='width:100%;border-collapse:collapse;'><thead><tr>";
+  DISPLAY.forEach(col => html += `<th style="border:1px solid #ccc;padding:8px;white-space:nowrap;">${col}</th>`);
   html += "</tr></thead><tbody>";
 
   merged.forEach((r,i)=>{
@@ -260,37 +280,24 @@ function editRow(idx){
     cols.forEach(col=>{
       let cls = (col==="Description") ? "col-desc" : "";
       if(i === idx){
-        if(col === "Month"){
-          html += `<td class="${cls}">
-            <select id="edit_month" >
-              <option value="">--Pilih--</option>
-              <option>Jan</option><option>Feb</option><option>Mar</option>
-              <option>Apr</option><option>Mei</option><option>Jun</option>
-              <option>Jul</option><option>Agu</option><option>Sep</option>
-              <option>Okt</option><option>Nov</option><option>Des</option>
-            </select>
-          </td>`;
-        } else if(col === "Reman"){
-          html += `<td class="${cls}"><input id="edit_reman" type="text" value="${r.Reman||""}" /></td>`;
-        } else {
-          let v = r[col];
-          if(typeof v === "number") v = v.toLocaleString();
-          html += `<td class="${cls}">${v !== undefined && v !== null ? v : ""}</td>`;
-        }
+        // Karena Month dan Reman sudah dihilangkan, tampil semua read-only kecuali Reman dan Month tidak ada
+        let v = r[col];
+        if(typeof v === "number") v = v.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
+        html += `<td class="${cls}" style="border:1px solid #ccc;padding:8px;white-space:nowrap;">${v !== undefined && v !== null ? v : ""}</td>`;
       } else {
         let v = r[col];
         if(typeof v === "number") v = v.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
-        html += `<td class="${cls}">${v !== undefined && v !== null ? v : ""}</td>`;
+        html += `<td class="${cls}" style="border:1px solid #ccc;padding:8px;white-space:nowrap;">${v !== undefined && v !== null ? v : ""}</td>`;
       }
     });
 
+    // action column
     if(i === idx){
-      html += `<td>
-        <button class="action-btn small" onclick="saveEdit(${i})">Save</button>
+      html += `<td style="border:1px solid #ccc;padding:8px;white-space:nowrap;">
         <button class="action-btn small" onclick="cancelEdit()">Cancel</button>
       </td>`;
     } else {
-      html += `<td>
+      html += `<td style="border:1px solid #ccc;padding:8px;white-space:nowrap;">
         <button class="action-btn small" onclick="editRow(${i})">Edit</button>
         <button class="action-btn small" onclick="deleteRow(${i})">Delete</button>
       </td>`;
@@ -299,39 +306,20 @@ function editRow(idx){
     html += "</tr>";
   });
 
-  html += "</tbody></table>";
+  html += "</tbody></table></div>";
   container.innerHTML = html;
-
-  // Set current values
-  const sel = document.getElementById('edit_month');
-  if(sel) sel.value = row.Month || "";
-  const rin = document.getElementById('edit_reman');
-  if(rin) rin.value = row.Reman || "";
 }
 
 function saveEdit(idx){
-  const month = document.getElementById('edit_month') ? document.getElementById('edit_month').value : "";
-  const reman = document.getElementById('edit_reman') ? document.getElementById('edit_reman').value : "";
-  if(merged[idx]){
-    merged[idx].Month = month;
-    merged[idx].Reman = reman;
-    // recalc Include & Exclude
-    const cost = merged[idx].Cost;
-    if(typeof cost === "number"){
-      merged[idx].Include = String(reman).toLowerCase().includes("reman") ? Number((cost * 0.25).toFixed(2)) : Number(cost.toFixed(2));
-    } else {
-      merged[idx].Include = "-";
-    }
-    merged[idx].Exclude = String(merged[idx]["Order Type"]).toUpperCase() === "PM38" ? "-" : merged[idx].Include;
-  }
-  renderTable(merged);
-  document.getElementById('lmMsg').textContent = "Perubahan disimpan (sementara). Jangan lupa klik Save Lembar Kerja untuk persist.";
+  // Karena tidak ada field yg bisa diedit, saveEdit hanya batal saja
+  cancelEdit();
 }
 
 function cancelEdit(){
   renderTable(merged);
 }
 
+// delete row
 function deleteRow(idx){
   if(!confirm("Hapus baris ini?")) return;
   merged.splice(idx,1);
@@ -339,13 +327,13 @@ function deleteRow(idx){
   document.getElementById('lmMsg').textContent = "Baris dihapus (sementara). Klik Save Lembar Kerja untuk persist.";
 }
 
-// Save / Load Lembar Kerja ke localStorage
+// Save / Load Lembar Kerja to localStorage
 document.getElementById('btnSave').addEventListener('click', ()=>{
   localStorage.setItem('ndarboe_merged', JSON.stringify(merged));
   document.getElementById('lmMsg').textContent = "Lembar Kerja tersimpan di localStorage.";
 });
 
-// Load saved on start
+// load on start
 function loadSaved(){
   const raw = localStorage.getItem('ndarboe_merged');
   if(raw){
@@ -359,19 +347,16 @@ function loadSaved(){
 }
 loadSaved();
 
-// Summary page: filter by month & show totals
+// Summary page logic
 document.getElementById('summaryMonth').addEventListener('change', ()=>{
   const month = document.getElementById('summaryMonth').value;
-  if(!month){
-    document.getElementById('summaryResult').innerHTML = "Pilih bulan untuk melihat ringkasan.";
-    return;
-  }
+  if(!month){ document.getElementById('summaryResult').innerHTML = "Pilih bulan untuk melihat ringkasan."; return; }
   const rows = (merged||[]).filter(r => String(r.Month||"").toLowerCase() === String(month).toLowerCase());
   if(!rows || rows.length===0){
     document.getElementById('summaryResult').innerHTML = `<div class="hint">Tidak ada data untuk bulan ${month}.</div>`;
     return;
   }
-  // Hitung total
+  // compute totals
   const totalCost = rows.reduce((s,r)=> s + (typeof r.Cost === 'number' ? r.Cost : 0), 0);
   const totalInclude = rows.reduce((s,r)=> s + (typeof r.Include === 'number' ? r.Include : 0), 0);
   const totalExclude = rows.reduce((s,r)=> s + (typeof r.Exclude === 'number' ? r.Exclude : 0), 0);
@@ -384,19 +369,55 @@ document.getElementById('summaryMonth').addEventListener('change', ()=>{
   document.getElementById('summaryResult').innerHTML = html;
 });
 
-// Download Excel hasil merged
+// Download excel
 document.getElementById('btnDownloadExcel').addEventListener('click', ()=>{
-  if(!merged || merged.length===0){
-    alert("Tidak ada data untuk di-download.");
+  if(!merged || merged.length === 0){
+    alert("Tidak ada data untuk diunduh.");
     return;
   }
-  const header = ["Room","Order Type","Order","Description","Created On","User Status","MAT","CPH","Section","Status Part","Aging","Month","Cost","Reman","Include","Exclude","Planning","Status AMT"];
-  const ws = XLSX.utils.json_to_sheet(merged, {header: header});
-  XLSX.utils.sheet_add_aoa(ws, [header], {origin:"A1"});
   const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "Hasil_Merge");
-  XLSX.writeFile(wb, "Hasil_Merge.xlsx");
+  const ws_data = [];
+  const cols = DISPLAY.filter(c => c !== "Action");
+  ws_data.push(cols);
+  merged.forEach(r=>{
+    ws_data.push(cols.map(c=>r[c]));
+  });
+  const ws = XLSX.utils.aoa_to_sheet(ws_data);
+  XLSX.utils.book_append_sheet(wb, ws, "Lembar Kerja");
+  XLSX.writeFile(wb, "LembarKerja_Export.xlsx");
 });
 
-// Initial page
+// CSS styles
+const style = document.createElement('style');
+style.textContent = `
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: Arial, sans-serif;
+    font-size: 14px;
+  }
+  th, td {
+    border: 1px solid #ccc;
+    padding: 6px 10px;
+    white-space: nowrap;
+  }
+  .col-desc {
+    max-width: 300px;
+    white-space: normal;
+    word-wrap: break-word;
+  }
+  .action-btn.small {
+    font-size: 12px;
+    padding: 4px 8px;
+    margin: 0 2px;
+    cursor: pointer;
+  }
+  .hint {
+    font-style: italic;
+    color: #555;
+  }
+`;
+document.head.appendChild(style);
+
+// Init page awal: tampil halaman upload
 showPage('pageUpload');
