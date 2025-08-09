@@ -6,8 +6,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Lembar Kerja - ndarboe</title>
   <link rel="stylesheet" href="style.css" />
-  https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js
-</head>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx</head>
 <body>
   <header>
     <div class="brand">ndarboe</div>
@@ -20,7 +19,7 @@
   </header>
 
   <main>
-    <!-- UPLOAD PAGE -->
+    <!-- MENU 1: UPLOAD FILE -->
     <section id="pageUpload" class="page">
       <h2>Upload File Excel</h2>
       <p>Upload file Excel dari komputer. Jika tidak ada file, biarkan kosong.</p>
@@ -31,6 +30,19 @@
         <label>Data2.xlsx<br><input type="file" id="fileData2" accept=".xlsx,.xls"></label>
         <label>SUM57.xlsx<br><input type="file" id="fileSUM57" accept=".xlsx,.xls"></label>
         <label>Planning.xlsx<br><input type="file" id="filePlanning" accept=".xlsx,.xls"></label>
+      </div>
+    </section>
+
+    <!-- MENU 2: LEMBAR KERJA -->
+    <section id="pageLembar" class="page" style="display:none;">
+      <h2>Lembar Kerja</h2>
+
+      <div class="filter-container">
+        <label>Room: <input type="text" id="filterRoom" oninput="filterTable()"></label>
+        <label>Order: <input type="text" id="filterOrder" oninput="filterTable()"></label>
+        <label>MAT: <input type="text" id="filterMAT" oninput="filterTable()"></label>
+        <label>Section: <input type="text" id="filterSection" oninput="filterTable()"></label>
+        <label>CPH: <input type="text" id="filterCPH" oninput="filterTable()"></label>
       </div>
 
       <div class="form-row">
@@ -52,24 +64,10 @@
       </div>
 
       <div id="uploadMessage" class="hint"></div>
-    </section>
-
-    <!-- LEMBAR KERJA -->
-    <section id="pageLembar" class="page" style="display:none;">
-      <h2>Lembar Kerja</h2>
-
-      <div class="filter-container">
-        <label>Room: <input type="text" id="filterRoom" oninput="filterTable()"></label>
-        <label>Order: <input type="text" id="filterOrder" oninput="filterTable()"></label>
-        <label>MAT: <input type="text" id="filterMAT" oninput="filterTable()"></label>
-        <label>Section: <input type="text" id="filterSection" oninput="filterTable()"></label>
-        <label>CPH: <input type="text" id="filterCPH" oninput="filterTable()"></label>
-      </div>
-
       <div id="tableContainer" class="table-wrap"></div>
     </section>
 
-    <!-- SUMMARY -->
+    <!-- MENU 3: SUMMARY -->
     <section id="pageSummary" class="page" style="display:none;">
       <h2>Summary Cost RM</h2>
       <div id="summaryContainer" class="summary"></div>
@@ -82,4 +80,4 @@
 
   <script src="script.js"></script>
 </body>
-</html>
+</.js` agar tombol menu aktif berubah warna dan konten tampil sesuai menu, tinggal bilang aja bro. Mau lanjut ke isi konten menu 3 dan 4 juga?
