@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Excel Upload & Download</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    button { margin: 5px; padding: 8px 15px; }
+    ul { list-style: none; padding: 0; }
+    li { margin: 5px 0; }
+    a { color: blue; text-decoration: none; }
+  </style>
+  <script type="module">
+    // 🔹 Import Firebase Modules
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
+    import { getStorage, ref, uploadBytes, listAll, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-storage.js";
+
+    // 🔹 Firebase Config
+    const firebaseConfig = {
+      apiKey: "AIzaSyA9OAiNLQd8jcSJAhQTbVAEWus1nevatfc",
+      authDomain: "monthly-plan-2baf5.firebaseapp.com",
+      projectId: "monthly-plan-2baf5",
+      storageBucket: "monthly-plan-2baf5.appspot.com",
+      messagingSenderId: "42911040784",
+      appId: "1:42911040784:web:5b54401d854b933b84d195",
+      measurementId: "G-LVY6V58JS0"
+    };
+
+    // 🔹 Init Firebase
+    const app = initializeApp(firebaseConfig);
+    const storage = getStorage(app);
+
+    // 🔹 Upload File
+    document.getElementById("uploadBtn").addEventListener("click", async () => {
+      const file = document.getElementById("fileInput").files[0];
+      if (!file) return alert("Pilih file dulu!");
+
+      const storageRef = ref(storage, "excel/" + file.name);
+      await uploadBytes(storageRef, file);
+      alert("✅ File berhasil diupload!");
+      loadFiles(); // refresh list
+    });
+
+    // 🔹 Load File List
+    async function loadFiles() {
+      const listRef = ref(storage, "excel");
+      const res = await listAll(listRef);
+      const fileList = document.getElementById("fileList");
+      fileList.innerHTML = "";
+
+      for (let item of res.items) {
+        const url = await getDownloadURL(item);
+        const li = document.createElement("li");
+        li.innerHTML = `<a href="${url}" target="_blank">${item.name}</a>`;
+        fileList.appendChild(li);
+      }
+    }
+
+    loadFiles();
+  </script>
+</head>
+<body>
+  <h2>📤 Upload Excel</h2>
+  <input type="file" id="fileInput" accept=".xlsx, .xls"/>
+  <button id="uploadBtn">Upload</button>
+
+  <h2>📂 File List</h2>
+  <ul id="fileList"></ul>
+</body>
+</html>
