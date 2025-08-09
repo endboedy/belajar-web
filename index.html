@@ -17,7 +17,15 @@
         <button onclick="downloadExcel()">Download Excel</button>
     </nav>
 </header>
-
+<!-- Filter -->
+<div class="filter-container">
+    <label>Room: <input type="text" id="filterRoom" oninput="filterTable()"></label>
+    <label>Order: <input type="text" id="filterOrder" oninput="filterTable()"></label>
+    <label>MAT: <input type="text" id="filterMAT" oninput="filterTable()"></label>
+    <label>Section: <input type="text" id="filterSection" oninput="filterTable()"></label>
+    <label>CPH: <input type="text" id="filterCPH" oninput="filterTable()"></label>
+</div>
+<div id="tableContainer"></div>
 <main>
     <!-- Menu 1 -->
     <section id="lembarKerja" class="page">
