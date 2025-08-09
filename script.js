@@ -257,7 +257,7 @@ function normalizeRows(rows){
                                         // render header only
                                         let html = "<div class='table-wrap'><table><thead><tr>";
                                         DISPLAY_COLUMNS.forEach(c => html += `<th>${c}</th>`);
-                                        html += "</tr></thead><tbody><tr><td colspan='"+DISPLAY_COLUMNS.length+"' style='text-align:center;padding:18px;color:#666'>Tidak ada data. Silakan upload file dan klik Proses Data.</td></tr></tbody></table></div>`;
+                                        html += "</tr></thead><tbody><tr><td colspan='" + DISPLAY_COLUMNS.length + "' style='text-align:center;padding:18px;color:#666'>Tidak ada data. Silakan upload file dan klik Proses Data.</td></tr></tbody></table></div>";
                                         container.innerHTML = html;
                                         return;
                                     }
