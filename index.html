@@ -1,65 +1,85 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Lembar Kerja - Cost RM</title>
-<link rel="stylesheet" href="style.css">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Lembar Kerja - ndarboe</title>
+  <link rel="stylesheet" href="style.css" />
+  <!-- SheetJS untuk baca/write Excel di browser -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
 <body>
-
-<header>
-    <h1>Belajar Web</h1>
+  <header>
+    <div class="brand">ndarboe</div>
     <nav>
-        <button onclick="showPage('lembarKerja')">Lembar Kerja</button>
-        <button onclick="showPage('summary')">Summary Cost RM</button>
-        <button onclick="downloadExcel()">Download Excel</button>
+      <button id="btnUpload" class="nav-btn">Upload File</button>
+      <button id="btnLembar" class="nav-btn">Lembar Kerja</button>
+      <button id="btnSummary" class="nav-btn">Summary Cost RM</button>
+      <button id="btnDownload" class="nav-btn">Download Excel</button>
     </nav>
-</header>
-<!-- Filter -->
-<div class="filter-container">
-    <label>Room: <input type="text" id="filterRoom" oninput="filterTable()"></label>
-    <label>Order: <input type="text" id="filterOrder" oninput="filterTable()"></label>
-    <label>MAT: <input type="text" id="filterMAT" oninput="filterTable()"></label>
-    <label>Section: <input type="text" id="filterSection" oninput="filterTable()"></label>
-    <label>CPH: <input type="text" id="filterCPH" oninput="filterTable()"></label>
-</div>
-<div id="tableContainer"></div>
-<main>
-    <!-- Menu 1 -->
-    <section id="lembarKerja" class="page">
-        <h2>Upload Data Excel</h2>
-        <label>IW39.xlsx: <input type="file" id="fileIW39"></label><br>
-        <label>Data1.xlsx: <input type="file" id="fileData1"></label><br>
-        <label>Data2.xlsx: <input type="file" id="fileData2"></label><br>
-        <label>SUM57.xlsx: <input type="file" id="fileSUM57"></label><br>
-        <label>Planning.xlsx: <input type="file" id="filePlanning"></label><br><br>
-        <label>Month: 
-            <select id="monthInput">
-                <option value="">Pilih</option>
-                <option>Jan</option><option>Feb</option><option>Mar</option>
-                <option>Apr</option><option>Mei</option><option>Jun</option>
-                <option>Jul</option><option>Agu</option><option>Sep</option>
-                <option>Okt</option><option>Nov</option><option>Des</option>
-            </select>
-        </label><br><br>
-        <label>Reman: <input type="text" id="remanInput"></label><br><br>
-        <button onclick="processData()">Proses Data</button>
-        <div id="tableContainer"></div>
+  </header>
+
+  <main>
+    <!-- UPLOAD PAGE -->
+    <section id="pageUpload" class="page">
+      <h2>Upload File Excel</h2>
+      <p>Upload file Excel dari komputer. Jika tidak ada file, biarkan kosong.</p>
+
+      <div class="upload-grid">
+        <label>IW39.xlsx<br><input type="file" id="fileIW39" accept=".xlsx,.xls"></label>
+        <label>Data1.xlsx<br><input type="file" id="fileData1" accept=".xlsx,.xls"></label>
+        <label>Data2.xlsx<br><input type="file" id="fileData2" accept=".xlsx,.xls"></label>
+        <label>SUM57.xlsx<br><input type="file" id="fileSUM57" accept=".xlsx,.xls"></label>
+        <label>Planning.xlsx<br><input type="file" id="filePlanning" accept=".xlsx,.xls"></label>
+      </div>
+
+      <div class="form-row">
+        <label>Month
+          <select id="monthInput">
+            <option value="">--Pilih--</option>
+            <option>Jan</option><option>Feb</option><option>Mar</option>
+            <option>Apr</option><option>Mei</option><option>Jun</option>
+            <option>Jul</option><option>Agu</option><option>Sep</option>
+            <option>Okt</option><option>Nov</option><option>Des</option>
+          </select>
+        </label>
+
+        <label>Reman
+          <input type="text" id="remanInput" placeholder="Tulis Reman jika ada (mis: Reman)">
+        </label>
+
+        <button id="btnProcess" class="primary">Proses Data</button>
+      </div>
+
+      <div id="uploadMessage" class="hint"></div>
     </section>
 
-    <!-- Menu 2 -->
-    <section id="summary" class="page" style="display:none;">
-        <h2>Summary Cost RM</h2>
-        <div id="summaryContainer"></div>
-    </section>
-</main>
+    <!-- LEMBAR KERJA -->
+    <section id="pageLembar" class="page" style="display:none;">
+      <h2>Lembar Kerja</h2>
 
-<footer>
+      <div class="filter-container">
+        <label>Room: <input type="text" id="filterRoom" oninput="filterTable()"></label>
+        <label>Order: <input type="text" id="filterOrder" oninput="filterTable()"></label>
+        <label>MAT: <input type="text" id="filterMAT" oninput="filterTable()"></label>
+        <label>Section: <input type="text" id="filterSection" oninput="filterTable()"></label>
+        <label>CPH: <input type="text" id="filterCPH" oninput="filterTable()"></label>
+      </div>
+
+      <div id="tableContainer" class="table-wrap"></div>
+    </section>
+
+    <!-- SUMMARY -->
+    <section id="pageSummary" class="page" style="display:none;">
+      <h2>Summary Cost RM</h2>
+      <div id="summaryContainer" class="summary"></div>
+    </section>
+  </main>
+
+  <footer>
     <p>© 2025 ndarboe - GitHub Pages</p>
-</footer>
+  </footer>
 
-<script src="script.js"></script>
+  <script src="script.js"></script>
 </body>
 </html>
