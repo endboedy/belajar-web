@@ -369,42 +369,55 @@ function deleteRow(idx){
 }
 
 // Save / Load Lembar Kerja to localStorage
-document.getElementById('btnSave').addEventListener('click', ()=>{
-  localStorage.setItem('ndarboe_merged', JSON.stringify(merged));
-  document.getElementById('lmMsg').textContent = "Lembar Kerja tersimpan di localStorage.";
-});
-function loadSaved(){
-  const raw = localStorage.getItem('ndarboe_merged');
-  if(raw){
-    try{
-      merged = JSON.parse(raw);
-      renderTable(merged);
-      document.getElementById('lmMsg').textContent = "Lembar Kerja dimuat dari localStorage.";
-    }catch(e){
-      console.error(e);
-      document.getElementById('lmMsg').textContent = "Gagal memuat Lembar Kerja dari localStorage.";
+document.addEventListener('DOMContentLoaded', () => {
+  // Save / Load Lembar Kerja to localStorage
+  const btnSave = document.getElementById('btnSave');
+  if (btnSave) {
+    btnSave.addEventListener('click', () => {
+      localStorage.setItem('ndarboe_merged', JSON.stringify(merged));
+      const lmMsg = document.getElementById('lmMsg');
+      if(lmMsg) lmMsg.textContent = "Lembar Kerja tersimpan di localStorage.";
+    });
+  }
+
+  function loadSaved() {
+    const raw = localStorage.getItem('ndarboe_merged');
+    if(raw){
+      try{
+        merged = JSON.parse(raw);
+        renderTable(merged);
+        const lmMsg = document.getElementById('lmMsg');
+        if(lmMsg) lmMsg.textContent = "Lembar Kerja dimuat dari localStorage.";
+      }catch(e){
+        console.error(e);
+        const lmMsg = document.getElementById('lmMsg');
+        if(lmMsg) lmMsg.textContent = "Gagal memuat Lembar Kerja dari localStorage.";
+      }
     }
   }
-}
-
-// Clear Lembar Kerja
-document.getElementById('btnClear').addEventListener('click', ()=>{
-  if(!confirm("Yakin ingin hapus semua Lembar Kerja?")) return;
-  merged = [];
-  renderTable(merged);
-  localStorage.removeItem('ndarboe_merged');
-  document.getElementById('lmMsg').textContent = "Lembar Kerja dihapus.";
-});
-
-// Show hint message clear on inputOrders focus
-document.getElementById('inputOrders').addEventListener('focus', ()=>{
-  document.getElementById('lmMsg').textContent = "";
-});
-
-// Auto load saved on page load
-window.addEventListener('load', () => {
   loadSaved();
-  showPage('pageUpload');
+
+  // Clear Lembar Kerja
+  const btnClear = document.getElementById('btnClear');
+  if(btnClear){
+    btnClear.addEventListener('click', () => {
+      if(!confirm("Yakin ingin hapus semua Lembar Kerja?")) return;
+      merged = [];
+      renderTable(merged);
+      localStorage.removeItem('ndarboe_merged');
+      const lmMsg = document.getElementById('lmMsg');
+      if(lmMsg) lmMsg.textContent = "Lembar Kerja dihapus.";
+    });
+  }
+
+  // Show hint message clear on inputOrders focus
+  const inputOrders = document.getElementById('inputOrders');
+  if(inputOrders){
+    inputOrders.addEventListener('focus', () => {
+      const lmMsg = document.getElementById('lmMsg');
+      if(lmMsg) lmMsg.textContent = "";
+    });
+  }
 });
 
 // Maksimalkan section#id container lebar penuh
