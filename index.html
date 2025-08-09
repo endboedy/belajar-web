@@ -1,124 +1,347 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Excel Upload Dashboard</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Excel Upload Dashboard - ndarboe</title>
 
-<!-- Tailwind CSS -->
-<script src="https://cdn.tailwindcss.com"></script>
+  <!-- SheetJS (untuk baca/write Excel di browser) -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
-<!-- SheetJS -->
-<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+  <style>
+    :root{
+      --blue:#2c3e50;
+      --light:#f4f9ff;
+      --accent:#007bff;
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:Arial,Helvetica,sans-serif;background:#f6f8fb;color:#222;padding:20px}
+    header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+    .brand{font-weight:700;color:var(--blue);font-size:1.2rem}
+    .nav{display:flex;gap:8px}
+    .btn{background:transparent;border:1px solid var(--blue);color:var(--blue);padding:6px 10px;border-radius:6px;cursor:pointer}
+    .btn.primary{background:var(--blue);color:#fff;border:none}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-bottom:14px}
+    .card{background:#fff;padding:10px;border-radius:8px;border:1px solid #e6eef6}
+    label{display:block;font-size:0.9rem;color:#333;margin-bottom:6px}
+    input[type="file"]{width:100%}
+    .hint{color:#666;margin-top:8px}
 
-<style>
-  table {
-    border-collapse: collapse;
-    width: 100%;
-  }
-  th {
-    font-weight: 400; /* font tipis */
-    background-color: #f3f4f6;
-    padding: 6px;
-  }
-  td {
-    padding: 6px;
-    border-bottom: 1px solid #ddd;
-  }
-</style>
+    h2{color:var(--blue);margin:16px 0 10px}
+
+    /* output table */
+    .table-wrap{overflow:auto;background:#fff;padding:10px;border-radius:8px;border:1px solid #e6eef6}
+    table{width:100%;border-collapse:collapse;font-size:13px}
+    th,td{padding:8px;border-bottom:1px solid #eef6ff;text-align:left;vertical-align:top}
+    th{background:#f7fbff;font-weight:400;color:var(--blue);position:sticky;top:0;z-index:1}
+    /* make Description column wider */
+    .col-desc{min-width:340px}
+    /* responsive small screens */
+    @media (max-width:640px){
+      .col-desc{min-width:220px}
+    }
+
+    footer{margin-top:18px;text-align:center;color:#666;font-size:13px}
+  </style>
 </head>
-<body class="bg-gray-100 min-h-screen p-4">
+<body>
+  <header>
+    <div class="brand">ndarboe</div>
+    <div class="nav">
+      <button class="btn" id="btnUpload" onclick="showSection('upload')">Upload File</button>
+      <button class="btn" id="btnLembar" onclick="showSection('lembar')">Lembar Kerja</button>
+      <button class="btn" id="btnSummary" onclick="showSection('summary')">Summary Cost RM</button>
+      <button class="btn" id="btnDownload" onclick="downloadAll()">Download Excel</button>
+    </div>
+  </header>
 
-<h1 class="text-2xl font-bold mb-4">📂 Upload File Excel</h1>
+  <!-- UPLOAD -->
+  <section id="upload" class="card">
+    <h2>Upload File Excel</h2>
+    <p class="hint">Pilih file dari komputer (IW39, SUM57, Planning, Budget, Data1, Data2).</p>
 
-<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-  <div>
-    <label class="block font-medium mb-1">IW39</label>
-    <input type="file" id="fileIW39" class="block w-full border border-gray-300 rounded p-2" />
-  </div>
-  <div>
-    <label class="block font-medium mb-1">SUM57</label>
-    <input type="file" id="fileSUM57" class="block w-full border border-gray-300 rounded p-2" />
-  </div>
-  <div>
-    <label class="block font-medium mb-1">Planning</label>
-    <input type="file" id="filePlanning" class="block w-full border border-gray-300 rounded p-2" />
-  </div>
-  <div>
-    <label class="block font-medium mb-1">Budget</label>
-    <input type="file" id="fileBudget" class="block w-full border border-gray-300 rounded p-2" />
-  </div>
-  <div>
-    <label class="block font-medium mb-1">Data1</label>
-    <input type="file" id="fileData1" class="block w-full border border-gray-300 rounded p-2" />
-  </div>
-  <div>
-    <label class="block font-medium mb-1">Data2</label>
-    <input type="file" id="fileData2" class="block w-full border border-gray-300 rounded p-2" />
-  </div>
-</div>
+    <div class="grid" style="margin-top:12px">
+      <div class="card">
+        <label>IW39</label>
+        <input id="fileIW39" type="file" accept=".xlsx,.xls" />
+      </div>
+      <div class="card">
+        <label>SUM57</label>
+        <input id="fileSUM57" type="file" accept=".xlsx,.xls" />
+      </div>
+      <div class="card">
+        <label>Planning</label>
+        <input id="filePlanning" type="file" accept=".xlsx,.xls" />
+      </div>
+      <div class="card">
+        <label>Budget</label>
+        <input id="fileBudget" type="file" accept=".xlsx,.xls" />
+      </div>
+      <div class="card">
+        <label>Data1</label>
+        <input id="fileData1" type="file" accept=".xlsx,.xls" />
+      </div>
+      <div class="card">
+        <label>Data2</label>
+        <input id="fileData2" type="file" accept=".xlsx,.xls" />
+      </div>
+    </div>
 
-<h2 class="text-xl font-semibold mb-2">📑 Lembar Kerja</h2>
-<div id="output" class="overflow-x-auto bg-white shadow rounded p-4"></div>
+    <div style="margin-top:10px">
+      <button class="btn primary" id="btnProcess">Proses & Tampilkan</button>
+      <span id="uploadMsg" class="hint"></span>
+    </div>
+  </section>
+
+  <!-- LEMBAR KERJA -->
+  <section id="lembar" class="card" style="display:none;margin-top:14px">
+    <h2>Lembar Kerja</h2>
+
+    <div style="margin-bottom:10px">
+      <label style="font-size:0.9rem">Filter — ketik untuk saring (Room / Order / MAT / Section / CPH)</label>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">
+        <input id="filterRoom" placeholder="Room" style="padding:6px;border:1px solid #dfeaf7;border-radius:6px" oninput="applyFilter()" />
+        <input id="filterOrder" placeholder="Order" style="padding:6px;border:1px solid #dfeaf7;border-radius:6px" oninput="applyFilter()" />
+        <input id="filterMAT" placeholder="MAT" style="padding:6px;border:1px solid #dfeaf7;border-radius:6px" oninput="applyFilter()" />
+        <input id="filterSection" placeholder="Section" style="padding:6px;border:1px solid #dfeaf7;border-radius:6px" oninput="applyFilter()" />
+        <input id="filterCPH" placeholder="CPH" style="padding:6px;border:1px solid #dfeaf7;border-radius:6px" oninput="applyFilter()" />
+      </div>
+    </div>
+
+    <div id="outputArea" class="table-wrap">
+      <!-- table akan dimasukkan sini -->
+      <div style="color:#666;padding:18px;text-align:center">Silakan upload file lalu klik "Proses & Tampilkan".</div>
+    </div>
+  </section>
+
+  <!-- SUMMARY -->
+  <section id="summary" class="card" style="display:none;margin-top:14px">
+    <h2>Summary Cost RM</h2>
+    <div id="summaryArea" style="padding:8px;color:#333">Belum ada ringkasan. Proses data terlebih dahulu.</div>
+  </section>
+
+  <footer>
+    © 2025 ndarboe - GitHub Pages
+  </footer>
 
 <script>
-function handleFile(file) {
-  const reader = new FileReader();
-  reader.onload = function(e) {
-    const data = new Uint8Array(e.target.result);
-    const workbook = XLSX.read(data, { type: 'array' });
+/* ======= Simple reader + display (no Tailwind) ====== */
+/* We'll read each file, but merge logic is separate — here show sheet contents in single assembled table "merged" from IW39 (if present).
+   For now behavior: when user clicks Process, read IW39 + lookups and render merged table (columns requested earlier).
+*/
 
-    let htmlOutput = '';
-    workbook.SheetNames.forEach((sheetName) => {
-      // Skip sheet Month & Reman
-      if (sheetName.toLowerCase() === 'month' || sheetName.toLowerCase() === 'reman') {
-        return;
+const INPUT_IDS = ['fileIW39','fileSUM57','filePlanning','fileBudget','fileData1','fileData2'];
+let rawIW = [], rawSUM = [], rawPlan = [], rawBudget = [], rawD1 = [], rawD2 = [];
+let merged = [];
+
+function readFilePromise(file) {
+  return new Promise((resolve) => {
+    if(!file) return resolve([]);
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try{
+        const data = new Uint8Array(e.target.result);
+        const wb = XLSX.read(data, {type:'array'});
+        const first = wb.SheetNames[0];
+        const sheet = wb.Sheets[first];
+        const arr = XLSX.utils.sheet_to_json(sheet, {defval: ""});
+        resolve(arr);
+      }catch(err){
+        console.error(err);
+        resolve([]);
       }
-
-      const worksheet = workbook.Sheets[sheetName];
-      const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-
-      if (jsonData.length === 0) return;
-
-      htmlOutput += `<h3 class="text-lg font-bold mt-4 mb-2">${sheetName}</h3>`;
-      htmlOutput += '<table>';
-      
-      jsonData.forEach((row, rowIndex) => {
-        htmlOutput += '<tr>';
-        row.forEach((cell, colIndex) => {
-          let style = '';
-          // Kolom Description diperlebar
-          if (String(jsonData[0][colIndex]).toLowerCase().includes('description')) {
-            style = 'style="min-width:300px;"';
-          } else {
-            style = 'style="min-width:120px;"';
-          }
-          if (rowIndex === 0) {
-            htmlOutput += `<th ${style}>${cell !== undefined ? cell : ''}</th>`;
-          } else {
-            htmlOutput += `<td ${style}>${cell !== undefined ? cell : ''}</td>`;
-          }
-        });
-        htmlOutput += '</tr>';
-      });
-
-      htmlOutput += '</table>';
-    });
-
-    document.getElementById('output').innerHTML = htmlOutput || '<p class="text-gray-500">Tidak ada data untuk ditampilkan.</p>';
-  };
-  reader.readAsArrayBuffer(file);
+    };
+    reader.readAsArrayBuffer(file);
+  });
 }
 
-// Event listener untuk semua input file
-['fileIW39', 'fileSUM57', 'filePlanning', 'fileBudget', 'fileData1', 'fileData2'].forEach(id => {
-  document.getElementById(id).addEventListener('change', function(e) {
-    if (e.target.files.length > 0) {
-      handleFile(e.target.files[0]);
-    }
-  });
-});
-</script>
+document.getElementById('btnProcess').addEventListener('click', async () => {
+  document.getElementById('uploadMsg').textContent = "Memproses... tunggu sebentar.";
+  const fIW = document.getElementById('fileIW39').files[0];
+  const fSUM = document.getElementById('fileSUM57').files[0];
+  const fPlan = document.getElementById('filePlanning').files[0];
+  const fBudget = document.getElementById('fileBudget').files[0];
+  const fD1 = document.getElementById('fileData1').files[0];
+  const fD2 = document.getElementById('fileData2').files[0];
 
+  rawIW = await readFilePromise(fIW);
+  rawSUM = await readFilePromise(fSUM);
+  rawPlan = await readFilePromise(fPlan);
+  rawBudget = await readFilePromise(fBudget);
+  rawD1 = await readFilePromise(fD1);
+  rawD2 = await readFilePromise(fD2);
+
+  // basic normalization: ensure headers exist as strings
+  // run merging using Order (from IW39) and MAT lookups
+  mergeLogic();
+  document.getElementById('uploadMsg').textContent = `Selesai. Baris: ${merged.length}`;
+  showSection('lembar');
+  renderMergedTable(merged);
+  renderSummary();
+});
+
+function mergeLogic(){
+  merged = [];
+  if(!rawIW || rawIW.length===0) return;
+
+  // helper finders
+  const findBy = (arr, key, val) => {
+    if(!arr) return undefined;
+    return arr.find(r => {
+      for(const k in r){
+        if(String(r[k]).trim() === String(val).trim() && k.toLowerCase().includes(key.toLowerCase())) return true;
+      }
+      // fallback any field equal to val
+      return Object.values(r).some(v => String(v).trim() === String(val).trim());
+    });
+  };
+
+  rawIW.forEach(row => {
+    const Room = row.Room ?? row.room ?? row.Location ?? "";
+    const Order = row.Order ?? row.order ?? row.OrderNo ?? row.NO ?? "";
+    const OrderType = row["Order Type"] ?? row.ordertype ?? row.Type ?? "";
+    const DescriptionRaw = row.Description ?? row.description ?? "";
+    const CreatedOn = row["Created On"] ?? row.createdon ?? row.Date ?? "";
+    const UserStatus = row["User Status"] ?? row.UserStatus ?? row.Status ?? "";
+    const MAT = row.MAT ?? row.mat ?? row.Material ?? "";
+
+    // lookups
+    const d1 = (rawD1 || []).find(r => Object.values(r).some(v => String(v).trim() === String(MAT).trim())) || {};
+    const d2 = (rawD2 || []).find(r => Object.values(r).some(v => String(v).trim() === String(MAT).trim())) || {};
+    const s57 = (rawSUM || []).find(r => Object.values(r).some(v => String(v).trim() === String(Order).trim())) || {};
+    const plan = (rawPlan || []).find(r => Object.values(r).some(v => String(v).trim() === String(Order).trim())) || {};
+
+    // description rule
+    let Description = "";
+    if(String(DescriptionRaw).toUpperCase().startsWith("JR")) Description = "JR";
+    else Description = d1.Description ?? d1.description ?? d1.Desc ?? d1.ShortDesc ?? "";
+
+    const Section = d1.Section ?? d1.section ?? d1.Dept ?? d1.DeptCode ?? "";
+    const CPH = d2.CPH ?? d2.cph ?? d2.CostPerHour ?? d2.cphvalue ?? "";
+
+    const StatusPart = s57["Status Part"] ?? s57.statuspart ?? s57.Status ?? "";
+    const Aging = s57.Aging ?? s57.age ?? "";
+
+    const Planning = plan.Planning ?? plan.planning ?? plan.Description ?? "";
+    const StatusAMT = plan["Status AMT"] ?? plan.statusamt ?? plan.Status ?? "";
+
+    // Cost: try common field names
+    const planField = Object.keys(row).find(k => k.toLowerCase().includes("plan")) || "";
+    const actualField = Object.keys(row).find(k => k.toLowerCase().includes("actual")) || "";
+    const valPlan = planField ? Number(String(row[planField]).replace(/[^0-9.\-]/g,"")) : 0;
+    const valActual = actualField ? Number(String(row[actualField]).replace(/[^0-9.\-]/g,"")) : 0;
+    let Cost = "-";
+    const rawCost = ( (isNaN(valPlan)?0:valPlan) - (isNaN(valActual)?0:valActual) ) / 16500;
+    if(!isNaN(rawCost) && isFinite(rawCost) && rawCost >= 0) Cost = Number(rawCost.toFixed(2));
+
+    // Include / Exclude: we removed Reman/Month per request; set Include = Cost, Exclude = Cost unless Order Type PM38
+    let Include = (typeof Cost === "number") ? Number(Cost.toFixed(2)) : "-";
+    let Exclude = (String(OrderType).toUpperCase() === "PM38") ? "-" : Include;
+
+    merged.push({
+      "Room": Room,
+      "Order Type": OrderType,
+      "Order": Order,
+      "Description": Description,
+      "Created On": CreatedOn,
+      "User Status": UserStatus,
+      "MAT": MAT,
+      "CPH": CPH,
+      "Section": Section,
+      "Status Part": StatusPart,
+      "Aging": Aging,
+      "Month": "",
+      "Cost": Cost,
+      "Reman": "",
+      "Include": Include,
+      "Exclude": Exclude,
+      "Planning": Planning,
+      "Status AMT": StatusAMT
+    });
+  });
+}
+
+// render merged table (with filter)
+const DISPLAY = ["Room","Order Type","Order","Description","Created On","User Status","MAT","CPH","Section","Status Part","Aging","Month","Cost","Reman","Include","Exclude","Planning","Status AMT"];
+
+function renderMergedTable(data){
+  const container = document.getElementById('outputArea');
+  if(!data || data.length===0){
+    container.innerHTML = `<div style="padding:18px;color:#666;text-align:center">Tidak ada data. Upload file dan klik Proses & Tampilkan.</div>`;
+    return;
+  }
+
+  // build table
+  let html = "<table><thead><tr>";
+  DISPLAY.forEach(col => {
+    html += `<th>${col}</th>`;
+  });
+  html += "</tr></thead><tbody>";
+
+  data.forEach(row => {
+    html += "<tr>";
+    DISPLAY.forEach(col => {
+      let cls = (col === "Description") ? "col-desc" : "";
+      let v = row[col];
+      if(typeof v === "number") v = v.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
+      html += `<td class="${cls}">${v !== undefined && v !== null ? v : ""}</td>`;
+    });
+    html += "</tr>";
+  });
+
+  html += "</tbody></table>";
+  container.innerHTML = html;
+}
+
+// filter
+function applyFilter(){
+  const fr = (document.getElementById('filterRoom').value||"").toLowerCase();
+  const fo = (document.getElementById('filterOrder').value||"").toLowerCase();
+  const fm = (document.getElementById('filterMAT').value||"").toLowerCase();
+  const fs = (document.getElementById('filterSection').value||"").toLowerCase();
+  const fc = (document.getElementById('filterCPH').value||"").toLowerCase();
+
+  const filtered = merged.filter(r => {
+    return String(r.Room||"").toLowerCase().includes(fr) &&
+           String(r.Order||"").toLowerCase().includes(fo) &&
+           String(r.MAT||"").toLowerCase().includes(fm) &&
+           String(r.Section||"").toLowerCase().includes(fs) &&
+           String(r.CPH||"").toLowerCase().includes(fc);
+  });
+  renderMergedTable(filtered);
+}
+
+function renderSummary(){
+  const total = merged.length;
+  const totalCost = merged.reduce((s,r)=> s + (typeof r.Cost === 'number' ? r.Cost : 0), 0);
+  const totalInclude = merged.reduce((s,r)=> s + (typeof r.Include === 'number' ? r.Include : 0), 0);
+  const totalExclude = merged.reduce((s,r)=> s + (typeof r.Exclude === 'number' ? r.Exclude : 0), 0);
+  document.getElementById('summaryArea').innerHTML = `
+    <p><strong>Total baris:</strong> ${total}</p>
+    <p><strong>Total Cost:</strong> ${totalCost.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</p>
+    <p><strong>Total Include:</strong> ${totalInclude.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</p>
+    <p><strong>Total Exclude:</strong> ${totalExclude.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</p>
+  `;
+}
+
+function downloadAll(){
+  if(!merged || merged.length===0){ alert("Tidak ada data. Proses data terlebih dahulu."); return; }
+  const ws = XLSX.utils.json_to_sheet(merged, {header: DISPLAY});
+  XLSX.utils.sheet_add_aoa(ws, [DISPLAY], {origin:"A1"});
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Hasil_Merge");
+  XLSX.writeFile(wb, "Hasil_Merge.xlsx");
+}
+
+// small UI helpers
+function showSection(id){
+  document.getElementById('upload').style.display = (id==='upload') ? 'block' : 'none';
+  document.getElementById('lembar').style.display = (id==='lembar') ? 'block' : 'none';
+  document.getElementById('summary').style.display = (id==='summary') ? 'block' : 'none';
+}
+
+// initialize
+showSection('upload');
+</script>
 </body>
 </html>
