@@ -7,6 +7,14 @@ let planning = [];
 let budget = [];
 let merged = [];
 
+// Filter global
+const filters = {
+  room: '',
+  order: '',
+  mat: '',
+  cph: ''
+};
+
 // Helper normalize keys
 function normalizeKey(k){
   return String(k||"").toLowerCase().replace(/\s+/g,'').replace(/[^a-z0-9]/g,'');
@@ -33,7 +41,6 @@ function formatDateExcel(dateInput){
   if(typeof dateInput === "string"){
     d = new Date(dateInput);
     if(isNaN(d)) {
-      // Try parsing excel date (number)
       const n = Number(dateInput);
       if(!isNaN(n)) d = new Date(Date.UTC(1900,0,n-1));
       else return "";
@@ -79,12 +86,10 @@ function showPage(pageId){
   const page = document.getElementById(pageId);
   if(page) page.classList.add('active');
 
-  // Nav button active
   document.querySelectorAll('nav button.nav-btn').forEach(b=> b.classList.remove('active'));
   const navBtn = document.querySelector(`nav button#nav${pageId.charAt(0).toUpperCase() + pageId.slice(1)}`);
   if(navBtn) navBtn.classList.add('active');
 
-  // Clear messages on page change
   if(pageId==="pageLembar"){
     document.getElementById('lmMsg').textContent = "";
   }
@@ -124,7 +129,7 @@ document.getElementById('btnLoad').addEventListener('click', async ()=>{
   loadMsg.textContent = `Selesai load file IW39 (${iwData.length} baris)`;
 });
 
-// Build merged row for tabel
+// Build merged row untuk tabel
 function buildMergedRow(origNorm, orderKey){
   const get = (o,names)=>{
     for(const n of names){
@@ -134,7 +139,6 @@ function buildMergedRow(origNorm, orderKey){
     return "";
   };
 
-  // Ambil data dari normalized rows
   const Room = get(origNorm, ['room','location','area']);
   const OrderType = get(origNorm, ['ordertype','type']);
   const Order = orderKey || get(origNorm, ['order','orderno','no','noorder']);
@@ -143,59 +147,54 @@ function buildMergedRow(origNorm, orderKey){
   const UserStatus = get(origNorm, ['userstatus','status']);
   const MAT = get(origNorm, ['mat','material','materialcode']);
 
-  // Normalize tanggal Created On dan Planning
   const CreatedOn = formatDateExcel(CreatedOnRaw);
 
-  // Lookup data dari Data1, Data2, SUM57, Planning berdasarkan MAT atau Order
   const d1Norm = normalizeRows(data1);
   const d2Norm = normalizeRows(data2);
   const sumNorm = normalizeRows(sum57);
   const planNorm = normalizeRows(planning);
 
-  const d1row = d1Norm.find(r => Object.values(r).some(v => String(v).trim() === String(MAT).trim())) || {};
-  const d2row = d2Norm.find(r => Object.values(r).some(v => String(v).trim() === String(MAT).trim())) || {};
-  const sumrow = sumNorm.find(r => Object.values(r).some(v => String(v).trim() === String(Order).trim())) || {};
-  const planrow = planNorm.find(r => Object.values(r).some(v => String(v).trim() === String(Order).trim())) || {};
+  // Cari d1 row by MAT dan by Room
+  const d1rowByMAT = d1Norm.find(r => (r['mat'] || "") === (MAT || ""));
+  const d1rowByRoom = d1Norm.find(r => (r['room'] || "") === (Room || ""));
+  const sumrow = sumNorm.find(r => (r['order'] || "") === (Order || ""));
+  const planrow = planNorm.find(r => (r['order'] || "") === (Order || ""));
 
-  // Description rule: jika IW39 description mulai dengan JR, Description = JR
   let Description = "";
   if(String(DescriptionRaw).toUpperCase().startsWith("JR")) Description = "JR";
-  else Description = get(d1row, ['description','desc','keterangan','shortdesc']) || "";
+  else Description = get(origNorm, ['description','desc','keterangan','shortdesc']) || get(d1rowByMAT, ['description','desc','keterangan','shortdesc']) || "";
 
-  // CPH rule
   let CPH = "";
   if(String(DescriptionRaw).toUpperCase().startsWith("JR")) CPH = "JR";
-  else CPH = get(d2row, ['cph','costperhour','cphvalue']) || get(d1row, ['cph','costperhour','cphvalue']) || "";
+  else CPH = get(d2Norm.find(r => (r['mat']||"")=== (MAT||"")) || {}, ['cph','costperhour','cphvalue']) || get(d1rowByMAT, ['cph','costperhour','cphvalue']) || "";
 
-  const Section = get(d1row, ['section','dept','deptcode','department']);
+  const Section = get(d1rowByRoom, ['section','dept','deptcode','department']) || "";
   const StatusPart = get(sumrow, ['statuspart','status','status_part']) || "";
+  const StatusAMT = planrow ? (planrow['statusamt'] || "") : "";
+
+  // Aging dan cost kalkulasi
   let AgingRaw = get(sumrow, ['aging','age']) || "";
-  // Buang angka di belakang koma Aging
   let Aging = "";
   if(typeof AgingRaw === "number") Aging = Math.round(AgingRaw).toString();
   else Aging = AgingRaw.toString().split('.')[0];
 
-  // Planning tanggal format "dd-mmm-yyyy"
   const PlanningRaw = get(planrow, ['planning','eventstart','description']);
   let Planning = formatDateExcel(PlanningRaw);
 
-  // Cost calculation dari keys plan dan actual di origNorm
   const planKey = Object.keys(origNorm||{}).find(k=>k.includes('plan')) || null;
   const actualKey = Object.keys(origNorm||{}).find(k=>k.includes('actual')) || null;
   const planVal = planKey ? asNumber(origNorm[planKey]) : 0;
   const actualVal = actualKey ? asNumber(origNorm[actualKey]) : 0;
   let Cost = "-";
   const rawCost = (planVal - actualVal)/16500;
-  if(!isNaN(rawCost) && isFinite(rawCost) && rawCost >= 0) Cost = Number(rawCost.toFixed(2));
+  if(!isNaN(rawCost) && isFinite(rawCost) && rawCost >= 0) Cost = Number(rawCost.toFixed(1));
 
-  // Include & Exclude
   let Include = "-";
   if(typeof Cost === "number"){
-    Include = (String(merged.remanVal||"").toLowerCase().includes("reman") ? Number((Cost*0.25).toFixed(2)) : Number(Cost.toFixed(2)));
+    Include = (String(merged.remanVal||"").toLowerCase().includes("reman") ? Number((Cost*0.25).toFixed(1)) : Number(Cost.toFixed(1)));
   }
   let Exclude = (String(OrderType).toUpperCase() === "PM38") ? "-" : Include;
 
-  // Ambil Month dan Reman dari merged global (disimpan saat Add Orders)
   const Month = (merged.remanValMonth||"");
   const Reman = (merged.remanVal||"");
 
@@ -217,11 +216,21 @@ function buildMergedRow(origNorm, orderKey){
     "Include": Include,
     "Exclude": Exclude,
     "Planning": Planning,
-    "Status AMT": planrow['statusamt'] || ""
+    "Status AMT": StatusAMT
   };
 }
 
-// Render tabel Lembar Kerja
+// Fungsi filter data sesuai filter input global
+function filteredData(){
+  return merged.filter(row=>{
+    return (row["Room"] || "").toString().toLowerCase().includes(filters.room)
+        && (row["Order"] || "").toString().toLowerCase().includes(filters.order)
+        && (row["MAT"] || "").toString().toLowerCase().includes(filters.mat)
+        && (row["CPH"] || "").toString().toLowerCase().includes(filters.cph);
+  });
+}
+
+// Render tabel Lembar Kerja dengan filter dan action edit/delete
 function renderTable(data){
   const container = document.getElementById('tableContainer');
   container.innerHTML = "";
@@ -229,52 +238,131 @@ function renderTable(data){
     container.textContent = "Data Lembar Kerja kosong.";
     return;
   }
-  const table = document.createElement('table');
-  // Header kolom sesuai urutan
+
   const columns = ["Room","Order Type","Order","Description","Created On","User Status","MAT","CPH","Section","Status Part","Aging","Month","Cost","Reman","Include","Exclude","Planning","Status AMT"];
+
+  // Buat div filter input
+  const filterDiv = document.createElement('div');
+  filterDiv.style.marginBottom = "10px";
+  filterDiv.style.display = "flex";
+  filterDiv.style.gap = "10px";
+
+  function createFilterInput(placeholder, key){
+    const inp = document.createElement('input');
+    inp.type = 'text';
+    inp.placeholder = placeholder;
+    inp.value = filters[key] || '';
+    inp.style.padding = "5px";
+    inp.style.flex = "1";
+    inp.addEventListener('input', (e)=>{
+      filters[key] = e.target.value.toLowerCase();
+      renderTable(filteredData());
+    });
+    return inp;
+  }
+
+  filterDiv.appendChild(createFilterInput('Filter Room', 'room'));
+  filterDiv.appendChild(createFilterInput('Filter Order', 'order'));
+  filterDiv.appendChild(createFilterInput('Filter MAT', 'mat'));
+  filterDiv.appendChild(createFilterInput('Filter CPH', 'cph'));
+
+  container.appendChild(filterDiv);
+
+  const filtered = filteredData();
+
+  const table = document.createElement('table');
+  table.style.borderCollapse = "collapse";
+  table.style.width = "100%";
+
+  // Header
   const thead = document.createElement('thead');
   const trh = document.createElement('tr');
   columns.forEach(c=>{
     const th = document.createElement('th');
     th.textContent = c;
+    th.style.border = "1px solid #ddd";
+    th.style.padding = "8px";
+    th.style.backgroundColor = "#f2f2f2";
+
+    if(c === "Section"){
+      th.style.width = "15%";
+    }
+
     trh.appendChild(th);
   });
+
+  const thAction = document.createElement('th');
+  thAction.textContent = "Action";
+  thAction.style.border = "1px solid #ddd";
+  thAction.style.padding = "8px";
+  thAction.style.backgroundColor = "#f2f2f2";
+  trh.appendChild(thAction);
   thead.appendChild(trh);
   table.appendChild(thead);
 
   // Body
   const tbody = document.createElement('tbody');
-  data.forEach(row=>{
+  filtered.forEach((row, idx)=>{
     const tr = document.createElement('tr');
     columns.forEach(col=>{
       const td = document.createElement('td');
+      td.style.border = "1px solid #ddd";
+      td.style.padding = "8px";
+
       let val = row[col];
-      // Format tanggal untuk Created On dan Planning (string sudah terformat)
       if(col === "Created On" || col === "Planning"){
         val = val || "";
       }
-      // Format Aging tanpa koma
       if(col === "Aging" && val){
         val = String(val).split('.')[0];
       }
-      // Cost, Include, Exclude - tampilkan 2 desimal kalau number
-      if(["Cost","Include","Exclude"].includes(col) && typeof val === "number"){
-        val = val.toFixed(2);
+      if(["Cost","Include","Exclude"].includes(col)){
+        td.style.textAlign = "right";
+        if(typeof val === "number"){
+          val = val.toFixed(1);
+        }
       }
-      // Hilangkan koma dan angka di belakang koma untuk Order (jika ada)
       if(col === "Order" && val){
         val = String(val).split('.')[0];
       }
       td.textContent = val !== undefined && val !== null ? val : "";
       tr.appendChild(td);
     });
+
+    // Action
+    const tdAction = document.createElement('td');
+    tdAction.style.border = "1px solid #ddd";
+    tdAction.style.padding = "8px";
+
+    const btnEdit = document.createElement('button');
+    btnEdit.textContent = "Edit";
+    btnEdit.style.marginRight = "5px";
+    btnEdit.style.cursor = "pointer";
+    btnEdit.addEventListener('click', () => openEditModal(idx));
+
+    const btnDelete = document.createElement('button');
+    btnDelete.textContent = "Delete";
+    btnDelete.style.cursor = "pointer";
+    btnDelete.style.color = "white";
+    btnDelete.style.backgroundColor = "red";
+    btnDelete.addEventListener('click', () => {
+      if(confirm(`Hapus order ${row["Order"]}?`)){
+        merged.splice(idx, 1);
+        renderTable(merged);
+      }
+    });
+
+    tdAction.appendChild(btnEdit);
+    tdAction.appendChild(btnDelete);
+    tr.appendChild(tdAction);
+
     tbody.appendChild(tr);
   });
   table.appendChild(tbody);
   container.appendChild(table);
 }
 
-// Tambah order multiple dari textarea inputOrders
+// Add multiple orders dari textarea inputOrders
 document.getElementById('btnAddOrders').addEventListener('click', ()=>{
   const raw = document.getElementById('inputOrders').value || "";
   if(raw.trim() === ""){
@@ -284,14 +372,12 @@ document.getElementById('btnAddOrders').addEventListener('click', ()=>{
   document.getElementById('lmMsg').textContent = "";
   const lines = raw.split(/[\n,]+/).map(l=>l.trim()).filter(l=>l!=="");
   lines.forEach(ord=>{
-    // Cari data IW39 yang cocok dengan Order no
     const normIW = normalizeRows(iwData);
     const foundIW = normIW.find(r=>String(r['order']).split('.')[0] === ord.split('.')[0]);
     if(foundIW){
       const mergedRow = buildMergedRow(foundIW, ord);
       merged.push(mergedRow);
     } else {
-      // Jika tidak ketemu, buat row minimal (Order saja)
       merged.push({
         "Room":"-",
         "Order Type":"-",
@@ -318,7 +404,7 @@ document.getElementById('btnAddOrders').addEventListener('click', ()=>{
   document.getElementById('inputOrders').value = "";
 });
 
-// Save / Load Lembar Kerja to localStorage
+// Save / Load Lembar Kerja ke localStorage
 document.getElementById('btnSave').addEventListener('click', ()=>{
   localStorage.setItem('ndarboe_merged', JSON.stringify(merged));
   document.getElementById('lmMsg').textContent = "Lembar Kerja tersimpan di localStorage.";
@@ -346,202 +432,25 @@ document.getElementById('btnClear').addEventListener('click', ()=>{
   document.getElementById('lmMsg').textContent = "Lembar Kerja dihapus.";
 });
 
-// Show hint message clear on inputOrders focus
-document.getElementById('inputOrders').addEventListener('focus', ()=>{
+// Clear pesan saat inputOrders diubah
+document.getElementById('inputOrders').addEventListener('input', ()=>{
   document.getElementById('lmMsg').textContent = "";
 });
 
-// Download Excel dari merged data
-document.getElementById('btnDownloadExcel').addEventListener('click', ()=>{
-  if(!merged || merged.length === 0){
-    alert("Data Lembar Kerja kosong, tidak bisa download.");
-    return;
-  }
-  const wb = XLSX.utils.book_new();
-  const wsData = [];
-  const columns = ["Room","Order Type","Order","Description","Created On","User Status","MAT","CPH","Section","Status Part","Aging","Month","Cost","Reman","Include","Exclude","Planning","Status AMT"];
-  wsData.push(columns);
-  merged.forEach(r=>{
-    const row = columns.map(c=>r[c] || "");
-    wsData.push(row);
-  });
-  const ws = XLSX.utils.aoa_to_sheet(wsData);
-  XLSX.utils.book_append_sheet(wb, ws, "LembarKerja");
-  XLSX.writeFile(wb, "LembarKerja.xlsx");
-});
-
-// On load, load saved data if any
-window.addEventListener('load', ()=>{
-  loadSaved();
-  showPage('pageUpload');
-});
-// Tambahan global untuk filter values
-const filters = {
-  room: '',
-  order: '',
-  mat: '',
-  cph: ''
-};
-
-// Render tabel Lembar Kerja dengan filter dan action
-function renderTable(data){
-  const container = document.getElementById('tableContainer');
-  container.innerHTML = "";
-  if(!data || data.length === 0){
-    container.textContent = "Data Lembar Kerja kosong.";
-    return;
-  }
-  
-  const columns = ["Room","Order Type","Order","Description","Created On","User Status","MAT","CPH","Section","Status Part","Aging","Month","Cost","Reman","Include","Exclude","Planning","Status AMT"];
-  
-  // Buat elemen filter bar (input) di atas tabel
-  const filterDiv = document.createElement('div');
-  filterDiv.style.marginBottom = "10px";
-  filterDiv.style.display = "flex";
-  filterDiv.style.gap = "10px";
-  
-  // Fungsi buat input filter
-  function createFilterInput(placeholder, key){
-    const inp = document.createElement('input');
-    inp.type = 'text';
-    inp.placeholder = placeholder;
-    inp.value = filters[key] || '';
-    inp.style.padding = "5px";
-    inp.style.flex = "1";
-    inp.addEventListener('input', (e)=>{
-      filters[key] = e.target.value.toLowerCase();
-      renderTable(filteredData());
-    });
-    return inp;
-  }
-  
-  filterDiv.appendChild(createFilterInput('Filter Room', 'room'));
-  filterDiv.appendChild(createFilterInput('Filter Order', 'order'));
-  filterDiv.appendChild(createFilterInput('Filter MAT', 'mat'));
-  filterDiv.appendChild(createFilterInput('Filter CPH', 'cph'));
-  
-  container.appendChild(filterDiv);
-  
-  // Fungsi filter data sesuai input
-  function filteredData(){
-    return data.filter(row=>{
-      return (row["Room"] || "").toString().toLowerCase().includes(filters.room)
-          && (row["Order"] || "").toString().toLowerCase().includes(filters.order)
-          && (row["MAT"] || "").toString().toLowerCase().includes(filters.mat)
-          && (row["CPH"] || "").toString().toLowerCase().includes(filters.cph);
-    });
-  }
-  
-  const filtered = filteredData();
-  
-  const table = document.createElement('table');
-  table.style.borderCollapse = "collapse";
-  table.style.width = "100%";
-  
-  // Header dengan tambahan kolom Action
-  const thead = document.createElement('thead');
-  const trh = document.createElement('tr');
-  columns.forEach(c=>{
-    const th = document.createElement('th');
-    th.textContent = c;
-    th.style.border = "1px solid #ddd";
-    th.style.padding = "8px";
-    th.style.backgroundColor = "#f2f2f2";
-    trh.appendChild(th);
-  });
-  // Tambah kolom Action
-  const thAction = document.createElement('th');
-  thAction.textContent = "Action";
-  thAction.style.border = "1px solid #ddd";
-  thAction.style.padding = "8px";
-  thAction.style.backgroundColor = "#f2f2f2";
-  trh.appendChild(thAction);
-  thead.appendChild(trh);
-  table.appendChild(thead);
-
-  // Body
-  const tbody = document.createElement('tbody');
-  filtered.forEach((row, idx)=>{
-    const tr = document.createElement('tr');
-    columns.forEach(col=>{
-      const td = document.createElement('td');
-      td.style.border = "1px solid #ddd";
-      td.style.padding = "8px";
-      let val = row[col];
-      if(col === "Created On" || col === "Planning"){
-        val = val || "";
-      }
-      if(col === "Aging" && val){
-        val = String(val).split('.')[0];
-      }
-      if(["Cost","Include","Exclude"].includes(col) && typeof val === "number"){
-        val = val.toFixed(2);
-      }
-      if(col === "Order" && val){
-        val = String(val).split('.')[0];
-      }
-      td.textContent = val !== undefined && val !== null ? val : "";
-      tr.appendChild(td);
-    });
-
-    // Kolom Action dengan tombol Edit dan Delete
-    const tdAction = document.createElement('td');
-    tdAction.style.border = "1px solid #ddd";
-    tdAction.style.padding = "8px";
-
-    // Edit button
-    const btnEdit = document.createElement('button');
-    btnEdit.textContent = "Edit";
-    btnEdit.style.marginRight = "5px";
-    btnEdit.style.cursor = "pointer";
-    btnEdit.addEventListener('click', () => openEditModal(idx));
-
-    // Delete button
-    const btnDelete = document.createElement('button');
-    btnDelete.textContent = "Delete";
-    btnDelete.style.cursor = "pointer";
-    btnDelete.style.color = "white";
-    btnDelete.style.backgroundColor = "red";
-    btnDelete.addEventListener('click', () => {
-      if(confirm(`Hapus order ${row["Order"]}?`)){
-        merged.splice(idx, 1);
-        renderTable(merged);
-      }
-    });
-
-    tdAction.appendChild(btnEdit);
-    tdAction.appendChild(btnDelete);
-    tr.appendChild(tdAction);
-
-    tbody.appendChild(tr);
-  });
-  table.appendChild(tbody);
-  container.appendChild(table);
-}
-
-// Modal sederhana untuk edit row (gunakan prompt untuk simplicity)
+// Edit modal: hanya Month dan Reman
 function openEditModal(index){
   if(index < 0 || index >= merged.length) return;
   const row = merged[index];
-  const columnsEditable = ["Room", "Order", "MAT", "CPH", "Description", "User Status", "Section", "Status Part", "Aging", "Month", "Cost", "Reman", "Include", "Exclude", "Planning", "Status AMT"];
 
-  // Edit tiap kolom satu per satu dengan prompt, bisa disesuaikan buat UI modal lebih kompleks
-  columnsEditable.forEach(col=>{
-    const newVal = prompt(`Edit ${col}:`, row[col] || "");
-    if(newVal !== null){
-      // Jika kolom angka, coba convert
-      if(["Aging","Cost","Include","Exclude"].includes(col)){
-        const numVal = Number(newVal);
-        row[col] = isNaN(numVal) ? newVal : numVal;
-      } else {
-        row[col] = newVal;
-      }
-    }
-  });
+  const newMonth = prompt("Edit Month:", row.Month || "");
+  if(newMonth !== null) row.Month = newMonth;
 
-  // Setelah edit, refresh tabel
+  const newReman = prompt("Edit Reman:", row.Reman || "");
+  if(newReman !== null) row.Reman = newReman;
+
   renderTable(merged);
 }
 
-// Jangan lupa di bagian yang memanggil renderTable(merged), sudah otomatis pakai filter baru dan ada action edit/delete
-
+// Inisialisasi page
+showPage('pageUpload');
+loadSaved();
