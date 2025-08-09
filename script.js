@@ -152,9 +152,9 @@ function buildMergedRow(origNorm, orderKey, monthVal, remanVal, d1Norm, d2Norm, 
   const get = (o, names) => {
     for(const n of names){
       if(!o) continue;
-      if(o[n] !== undefined && o[n] !== null && String(o[n]) !== "") return o[n];
+      if(o[n] !== undefined && o[n] !== null && String(o[n]).trim() !== "") return o[n];
     }
-    return "";
+    return null; // null kalau tidak ketemu
   };
 
   // IW fields
@@ -167,30 +167,30 @@ function buildMergedRow(origNorm, orderKey, monthVal, remanVal, d1Norm, d2Norm, 
   const MAT = get(origNorm, ['mat','material','materialcode']);
 
   // lookups
-  const d1row = (d1Norm || []).find(r => Object.values(r).some(v => String(v).trim() === String(MAT).trim())) || {};
-  const d2row = (d2Norm || []).find(r => Object.values(r).some(v => String(v).trim() === String(MAT).trim())) || {};
-  const sumrow = (sumNorm || []).find(r => Object.values(r).some(v => String(v).trim() === String(Order).trim())) || {};
-  const planrow = (planNorm || []).find(r => Object.values(r).some(v => String(v).trim() === String(Order).trim())) || {};
+  const d1row = (d1Norm || []).find(r => Object.values(r).some(v => String(v).trim() === String(MAT).trim())) || null;
+  const d2row = (d2Norm || []).find(r => Object.values(r).some(v => String(v).trim() === String(MAT).trim())) || null;
+  const sumrow = (sumNorm || []).find(r => Object.values(r).some(v => String(v).trim() === String(Order).trim())) || null;
+  const planrow = (planNorm || []).find(r => Object.values(r).some(v => String(v).trim() === String(Order).trim())) || null;
 
   // Description rule
   let Description = "";
   if(String(DescriptionRaw).toUpperCase().startsWith("JR")) Description = "JR";
-  else Description = get(d1row, ['description','desc','keterangan','shortdesc']) || "";
+  else Description = get(d1row, ['description','desc','keterangan','shortdesc']) || "Tidak Ada";
 
   // CPH rule
   let CPH = "";
   if(String(DescriptionRaw).toUpperCase().startsWith("JR")) CPH = "JR";
-  else CPH = get(d2row, ['cph','costperhour','cphvalue']) || get(d1row, ['cph','costperhour','cphvalue']) || "";
+  else CPH = get(d2row, ['cph','costperhour','cphvalue']) || get(d1row, ['cph','costperhour','cphvalue']) || "Tidak Ada";
 
-  const Section = get(d1row, ['section','dept','deptcode','department']);
-  const StatusPart = get(sumrow, ['statuspart','status','status_part']) || "";
-  let Aging = get(sumrow, ['aging','age']) || "";
+  const Section = get(d1row, ['section','dept','deptcode','department']) || "Tidak Ada";
+  const StatusPart = get(sumrow, ['statuspart','status','status_part']) || "Tidak Ada";
+  let Aging = get(sumrow, ['aging','age']);
   const PlanningRaw = get(planrow, ['planning','eventstart','description']);
-  const StatusAMT = get(planrow, ['statusamt','status']) || "";
+  const StatusAMT = get(planrow, ['statusamt','status']) || "Tidak Ada";
 
   // Format tanggal Created On & Planning
-  const CreatedOn = formatDateString(CreatedOnRaw);
-  const Planning = formatDateString(PlanningRaw);
+  const CreatedOn = formatDateString(CreatedOnRaw) || "Tidak Ada";
+  const Planning = formatDateString(PlanningRaw) || "Tidak Ada";
 
   // Cost calculation
   const planKey = Object.keys(origNorm||{}).find(k => k.includes('plan')) || null;
@@ -206,33 +206,38 @@ function buildMergedRow(origNorm, orderKey, monthVal, remanVal, d1Norm, d2Norm, 
   if(typeof Cost === "number") Include = (String(remanVal).toLowerCase().includes("reman") ? Number((Cost * 0.25).toFixed(2)) : Number(Cost.toFixed(2)));
   let Exclude = (String(OrderType).toUpperCase() === "PM38") ? "-" : Include;
 
-  // Buat Aging bulatkan tanpa desimal
+  // Buat Aging bulatkan tanpa desimal atau jika null kasih "Tidak Ada"
   if(typeof Aging === "number") Aging = Math.floor(Aging);
   else if(!isNaN(Number(Aging))) Aging = Math.floor(Number(Aging));
+  else Aging = "Tidak Ada";
 
   // Hilangkan koma/desimal di Order (ubah ke string agar tampil bersih)
   const OrderClean = String(Order);
 
+  // UserStatus & Room & OrderType => Tampilkan "OK" kalau ada data, "Tidak Ada" kalau null/empty
+  const RoomDisp = Room ? "OK" : "Tidak Ada";
+  const OrderTypeDisp = OrderType ? "OK" : "Tidak Ada";
+  const UserStatusDisp = UserStatus ? "OK" : "Tidak Ada";
+
   return {
-    "Room": Room||"",
-    "Order Type": OrderType||"",
-    "Order": OrderClean||"",
-    "Description": Description||"",
-    "Created On": CreatedOn||"",
-    "User Status": UserStatus||"",
-    "MAT": MAT||"",
-    "CPH": CPH||"",
-    "Section": Section||"",
-    "Status Part": StatusPart||"",
-    "Aging": Aging||"",
-    "Month": monthVal||"",
+    "Room": RoomDisp,
+    "Order Type": OrderTypeDisp,
+    "Order": OrderClean || "Tidak Ada",
+    "Description": Description,
+    "Created On": CreatedOn,
+    "User Status": UserStatusDisp,
+    "MAT": MAT || "Tidak Ada",
+    "CPH": CPH,
+    "Section": Section,
+    "Status Part": StatusPart,
+    "Aging": Aging,
+    "Month": monthVal || "",
     "Cost": Cost,
-    "Reman": remanVal||"",
+    "Reman": remanVal || "",
     "Include": Include,
     "Exclude": Exclude,
-    "Planning": Planning||"",
-    "Status AMT": StatusAMT||"",
-    "Action": "" // untuk tombol edit/delete nanti
+    "Planning": Planning,
+    "Status AMT": StatusAMT
   };
 }
 
