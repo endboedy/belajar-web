@@ -6,7 +6,8 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Lembar Kerja - ndarboe</title>
   <link rel="stylesheet" href="style.css" />
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx</head>
+  https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js
+</head>
 <body>
   <header>
     <div class="brand">ndarboe</div>
@@ -58,9 +59,7 @@
 
         <label>Reman
           <input type="text" id="remanInput" placeholder="Tulis Reman jika ada (mis: Reman)">
-        </label>
-
-        <button id="btnProcess" class="primary">Proses Data</button>
+        id="btnProcess" class="primary">Proses Data</button>
       </div>
 
       <div id="uploadMessage" class="hint"></div>
@@ -70,7 +69,16 @@
     <!-- MENU 3: SUMMARY -->
     <section id="pageSummary" class="page" style="display:none;">
       <h2>Summary Cost RM</h2>
-      <div id="summaryContainer" class="summary"></div>
+      <div id="summaryContainer" class="summary">
+        <p>Setelah klik <strong>Proses Data</strong>, hasil summary akan muncul di sini.</p>
+      </div>
+    </section>
+
+    <!-- MENU 4: DOWNLOAD -->
+    <section id="pageDownload" class="page" style="display:none;">
+      <h2>Download Excel</h2>
+      <p>Setelah data diproses, kamu bisa klik tombol di bawah untuk mendownload hasilnya.</p>
+      <button id="btnDownloadExcel" class="primary">Download Hasil Excel</button>
     </section>
   </main>
 
@@ -80,4 +88,4 @@
 
   <script src="script.js"></script>
 </body>
-</.js` agar tombol menu aktif berubah warna dan konten tampil sesuai menu, tinggal bilang aja bro. Mau lanjut ke isi konten menu 3 dan 4 juga?
+</html>
