@@ -1,7 +1,7 @@
 // script.js
 // Handles: reading excel files, lookup logic, add multi orders, save/load localStorage, edit/delete, download
 
-// Data stores
+// Global data stores
 let iwData = [];      // IW39 rows (array of objects)
 let data1 = [];       // Data1 rows
 let data2 = [];       // Data2 rows
@@ -50,14 +50,14 @@ function readExcelFile(file){
   });
 }
 
- // Fungsi ganti halaman
+// Show page helper
 function showPage(pageId) {
   document.querySelectorAll('.page').forEach(p => p.style.display = 'none');
   const page = document.getElementById(pageId);
   if (page) page.style.display = 'block';
 }
 
-// Pasang event click di menu utama
+// Pasang event click di menu utama (sekali saja)
 document.getElementById('navUpload').addEventListener('click', () => showPage('pageUpload'));
 document.getElementById('navLembar').addEventListener('click', () => showPage('pageLembar'));
 document.getElementById('navSummary').addEventListener('click', () => showPage('pageSummary'));
@@ -68,6 +68,7 @@ document.getElementById('btnLoad').addEventListener('click', async () => {
   const loadMsg = document.getElementById('loadMsg');
   if (loadMsg) loadMsg.textContent = "Loading files...";
 
+  // Ambil file dari input
   const fIW = document.getElementById('fileIW39').files[0];
   const fSUM = document.getElementById('fileSUM57').files[0];
   const fPlan = document.getElementById('filePlanning').files[0];
@@ -75,48 +76,44 @@ document.getElementById('btnLoad').addEventListener('click', async () => {
   const fD1 = document.getElementById('fileData1').files[0];
   const fD2 = document.getElementById('fileData2').files[0];
 
-  const iwData = fIW ? await readExcelFile(fIW) : null;
-  const sum57 = fSUM ? await readExcelFile(fSUM) : null;
-  const planning = fPlan ? await readExcelFile(fPlan) : null;
-  const budget = fBud ? await readExcelFile(fBud) : null;
-  const data1 = fD1 ? await readExcelFile(fD1) : null;
-  const data2 = fD2 ? await readExcelFile(fD2) : null;
+  // Load file excel ke json (array of objects)
+  iwData = fIW ? await readExcelFile(fIW) : [];
+  sum57 = fSUM ? await readExcelFile(fSUM) : [];
+  planning = fPlan ? await readExcelFile(fPlan) : [];
+  budget = fBud ? await readExcelFile(fBud) : [];
+  data1 = fD1 ? await readExcelFile(fD1) : [];
+  data2 = fD2 ? await readExcelFile(fD2) : [];
 
-  const iwNorm = iwData ? normalizeRows(iwData) : null;
-  const d1Norm = data1 ? normalizeRows(data1) : null;
-  const d2Norm = data2 ? normalizeRows(data2) : null;
-  const sumNorm = sum57 ? normalizeRows(sum57) : null;
-  const planNorm = planning ? normalizeRows(planning) : null;
+  // Normalize data untuk lookup lebih mudah
+  const iwNorm = normalizeRows(iwData);
+  const d1Norm = normalizeRows(data1);
+  const d2Norm = normalizeRows(data2);
+  const sumNorm = normalizeRows(sum57);
+  const planNorm = normalizeRows(planning);
 
-  if (loadMsg) loadMsg.textContent = "Files loaded.";
-});
-
-  // normalize sets for easier lookup
-  iwNorm = normalizeRows(iwData);
-  d1Norm = normalizeRows(data1);
-  d2Norm = normalizeRows(data2);
-  sumNorm = normalizeRows(sum57);
-  planNorm = normalizeRows(planning);
-
-  // keep normalized copies globally (for debugging)
+  // Simpan di global window (debug)
   window.__nd = {iw:iwNorm,d1:d1Norm,d2:d2Norm,sum:sumNorm,plan:planNorm};
 
-  document.getElementById('loadMsg').textContent = `Selesai load. IW39 baris: ${iwData.length}`;
+  if (loadMsg) loadMsg.textContent = `Selesai load. IW39 baris: ${iwData.length}`;
 });
 
-// Add orders button
+// Tombol Add Orders
 document.getElementById('btnAddOrders').addEventListener('click', ()=>{
   const raw = document.getElementById('inputOrders').value || "";
-  if(raw.trim()===""){ document.getElementById('lmMsg').textContent = "Tidak ada order yang dimasukkan."; return; }
-  if(!iwData || iwData.length===0){ document.getElementById('lmMsg').textContent = "Belum load IW39. Silakan upload & Load Files terlebih dahulu."; return; }
+  if(raw.trim()===""){
+    document.getElementById('lmMsg').textContent = "Tidak ada order yang dimasukkan.";
+    return;
+  }
+  if(!iwData || iwData.length===0){
+    document.getElementById('lmMsg').textContent = "Belum load IW39. Silakan upload & Load Files terlebih dahulu.";
+    return;
+  }
 
-  // parse orders: split by newline or comma
   const arr = raw.split(/\r?\n|,/).map(s=>s.trim()).filter(s=>s!=="");
   const month = document.getElementById('inputMonth').value || "";
   const remanVal = document.getElementById('inputReman').value || "";
 
-  // build for each order: lookup in iwData (match any field equals order)
-  // We'll use normalized maps to find row in iwNorm
+  // Normalisasi data untuk lookup
   const iwNorm = normalizeRows(iwData);
   const d1Norm = normalizeRows(data1);
   const d2Norm = normalizeRows(data2);
@@ -124,17 +121,17 @@ document.getElementById('btnAddOrders').addEventListener('click', ()=>{
   const planNorm = normalizeRows(planning);
 
   arr.forEach(orderKey=>{
-    // find row in iwNorm: search any field equals orderKey (string compare)
+    // cari baris di iwNorm: cocokkan di salah satu field
     const iwRow = iwNorm.find(r => Object.values(r).some(v => String(v).trim() === String(orderKey).trim()));
     if(!iwRow){
-      // no found -> push a minimal row with Order = orderKey and empty lookups
+      // kalau gak ketemu, buat baris minimal
       merged.push(buildMergedRow({}, orderKey, month, remanVal, d1Norm, d2Norm, sumNorm, planNorm));
     } else {
       merged.push(buildMergedRow(iwRow, iwRow['order'] || orderKey, month, remanVal, d1Norm, d2Norm, sumNorm, planNorm));
     }
   });
 
-  // clear input area
+  // Kosongkan input
   document.getElementById('inputOrders').value = "";
   document.getElementById('lmMsg').textContent = `Berhasil menambahkan ${arr.length} order.`;
   renderTable(merged);
@@ -142,8 +139,6 @@ document.getElementById('btnAddOrders').addEventListener('click', ()=>{
 
 // Build merged row from normalized iw row (origNormalized), orderKey, month, reman
 function buildMergedRow(origNorm, orderKey, monthVal, remanVal, d1Norm, d2Norm, sumNorm, planNorm){
-  // origNorm has normalized keys (lowercase, no spaces)
-  // helper to get original-like fields
   const get = (o, names) => {
     for(const n of names){
       if(!o) continue;
@@ -152,7 +147,6 @@ function buildMergedRow(origNorm, orderKey, monthVal, remanVal, d1Norm, d2Norm, 
     return "";
   };
 
-  // Read IW fields
   const Room = get(origNorm, ['room','location','area']);
   const OrderType = get(origNorm, ['ordertype','type']);
   const Order = orderKey || get(origNorm, ['order','orderno','no','noorder']);
@@ -161,19 +155,15 @@ function buildMergedRow(origNorm, orderKey, monthVal, remanVal, d1Norm, d2Norm, 
   const UserStatus = get(origNorm, ['userstatus','status']);
   const MAT = get(origNorm, ['mat','material','materialcode']);
 
-  // lookups: Data1 (section), Data2 (cph), SUM57 (status part & aging), Planning (planning,status amt)
-  // find by matching MAT for data1/data2; find by Order for sum and plan
   const d1row = (d1Norm || []).find(r => Object.values(r).some(v => String(v).trim() === String(MAT).trim())) || {};
   const d2row = (d2Norm || []).find(r => Object.values(r).some(v => String(v).trim() === String(MAT).trim())) || {};
   const sumrow = (sumNorm || []).find(r => Object.values(r).some(v => String(v).trim() === String(Order).trim())) || {};
   const planrow = (planNorm || []).find(r => Object.values(r).some(v => String(v).trim() === String(Order).trim())) || {};
 
-  // Description rule (if IW39 desc starts with JR -> Description = JR)
   let Description = "";
   if(String(DescriptionRaw).toUpperCase().startsWith("JR")) Description = "JR";
   else Description = get(d1row, ['description','desc','keterangan','shortdesc']) || "";
 
-  // CPH rule: if Description starts with JR => CPH = "JR"; else lookup in data2 by MAT, fallback data1
   let CPH = "";
   if(String(DescriptionRaw).toUpperCase().startsWith("JR")) CPH = "JR";
   else CPH = get(d2row, ['cph','costperhour','cphvalue']) || get(d1row, ['cph','costperhour','cphvalue']) || "";
@@ -184,7 +174,6 @@ function buildMergedRow(origNorm, orderKey, monthVal, remanVal, d1Norm, d2Norm, 
   const Planning = get(planrow, ['planning','eventstart','description']) || "";
   const StatusAMT = get(planrow, ['statusamt','status']) || "";
 
-  // Cost calculation: from origNorm find keys containing 'plan' and 'actual'
   const planKey = Object.keys(origNorm||{}).find(k => k.includes('plan')) || null;
   const actualKey = Object.keys(origNorm||{}).find(k => k.includes('actual')) || null;
   const planVal = planKey ? asNumber(origNorm[planKey]) : 0;
@@ -193,7 +182,6 @@ function buildMergedRow(origNorm, orderKey, monthVal, remanVal, d1Norm, d2Norm, 
   const rawCost = (planVal - actualVal) / 16500;
   if(!isNaN(rawCost) && isFinite(rawCost) && rawCost >= 0) Cost = Number(rawCost.toFixed(2));
 
-  // Include & Exclude
   let Include = "-";
   if(typeof Cost === "number") Include = (String(remanVal).toLowerCase().includes("reman") ? Number((Cost * 0.25).toFixed(2)) : Number(Cost.toFixed(2)));
   let Exclude = (String(OrderType).toUpperCase() === "PM38") ? "-" : Include;
@@ -220,7 +208,7 @@ function buildMergedRow(origNorm, orderKey, monthVal, remanVal, d1Norm, d2Norm, 
   };
 }
 
-// Render table with action column (edit/delete)
+// Display columns with Edit/Delete
 const DISPLAY = ["Room","Order Type","Order","Description","Created On","User Status","MAT","CPH","Section","Status Part","Aging","Month","Cost","Reman","Include","Exclude","Planning","Status AMT","Action"];
 
 function renderTable(data){
@@ -238,16 +226,13 @@ function renderTable(data){
 
   data.forEach((row, idx) => {
     html += "<tr>";
-    // all columns except Action
     const cols = DISPLAY.filter(c=>c!=="Action");
     cols.forEach(col => {
       let cls = (col==="Description") ? "col-desc" : "";
       let v = row[col];
       if(typeof v === "number") v = v.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
-      // Month and Reman should be editable inline via Edit action, but show as text here
       html += `<td class="${cls}">${v !== undefined && v !== null ? v : ""}</td>`;
     });
-    // Action buttons
     html += `<td>
       <button class="action-btn small" onclick="editRow(${idx})">Edit</button>
       <button class="action-btn small" onclick="deleteRow(${idx})">Delete</button>
@@ -259,12 +244,12 @@ function renderTable(data){
   container.innerHTML = html;
 }
 
-// Edit row: convert row to inline editable (Month & Reman editable)
+// Edit mode for row (Month & Reman editable inline)
 function editRow(idx){
   const row = merged[idx];
   if(!row) return;
   const container = document.getElementById('tableContainer');
-  // build table but replace the edited row with inputs
+
   let html = "<table><thead><tr>";
   DISPLAY.forEach(col => html += `<th>${col}</th>`);
   html += "</tr></thead><tbody>";
@@ -299,7 +284,6 @@ function editRow(idx){
       }
     });
 
-    // action column
     if(i === idx){
       html += `<td>
         <button class="action-btn small" onclick="saveEdit(${i})">Save</button>
@@ -318,7 +302,7 @@ function editRow(idx){
   html += "</tbody></table>";
   container.innerHTML = html;
 
-  // set current values into selects/inputs
+  // Set current values
   const sel = document.getElementById('edit_month');
   if(sel) sel.value = row.Month || "";
   const rin = document.getElementById('edit_reman');
@@ -331,7 +315,7 @@ function saveEdit(idx){
   if(merged[idx]){
     merged[idx].Month = month;
     merged[idx].Reman = reman;
-    // recompute Include & Exclude if needed
+    // recalc Include & Exclude
     const cost = merged[idx].Cost;
     if(typeof cost === "number"){
       merged[idx].Include = String(reman).toLowerCase().includes("reman") ? Number((cost * 0.25).toFixed(2)) : Number(cost.toFixed(2));
@@ -348,7 +332,6 @@ function cancelEdit(){
   renderTable(merged);
 }
 
-// delete row
 function deleteRow(idx){
   if(!confirm("Hapus baris ini?")) return;
   merged.splice(idx,1);
@@ -356,13 +339,13 @@ function deleteRow(idx){
   document.getElementById('lmMsg').textContent = "Baris dihapus (sementara). Klik Save Lembar Kerja untuk persist.";
 }
 
-// Save / Load Lembar Kerja to localStorage
+// Save / Load Lembar Kerja ke localStorage
 document.getElementById('btnSave').addEventListener('click', ()=>{
   localStorage.setItem('ndarboe_merged', JSON.stringify(merged));
   document.getElementById('lmMsg').textContent = "Lembar Kerja tersimpan di localStorage.";
 });
 
-// load on start
+// Load saved on start
 function loadSaved(){
   const raw = localStorage.getItem('ndarboe_merged');
   if(raw){
@@ -376,16 +359,19 @@ function loadSaved(){
 }
 loadSaved();
 
-// Summary page logic
+// Summary page: filter by month & show totals
 document.getElementById('summaryMonth').addEventListener('change', ()=>{
   const month = document.getElementById('summaryMonth').value;
-  if(!month){ document.getElementById('summaryResult').innerHTML = "Pilih bulan untuk melihat ringkasan."; return; }
+  if(!month){
+    document.getElementById('summaryResult').innerHTML = "Pilih bulan untuk melihat ringkasan.";
+    return;
+  }
   const rows = (merged||[]).filter(r => String(r.Month||"").toLowerCase() === String(month).toLowerCase());
   if(!rows || rows.length===0){
     document.getElementById('summaryResult').innerHTML = `<div class="hint">Tidak ada data untuk bulan ${month}.</div>`;
     return;
   }
-  // compute totals
+  // Hitung total
   const totalCost = rows.reduce((s,r)=> s + (typeof r.Cost === 'number' ? r.Cost : 0), 0);
   const totalInclude = rows.reduce((s,r)=> s + (typeof r.Include === 'number' ? r.Include : 0), 0);
   const totalExclude = rows.reduce((s,r)=> s + (typeof r.Exclude === 'number' ? r.Exclude : 0), 0);
@@ -398,9 +384,12 @@ document.getElementById('summaryMonth').addEventListener('change', ()=>{
   document.getElementById('summaryResult').innerHTML = html;
 });
 
-// Download excel
+// Download Excel hasil merged
 document.getElementById('btnDownloadExcel').addEventListener('click', ()=>{
-  if(!merged || merged.length===0){ alert("Tidak ada data untuk di-download."); return; }
+  if(!merged || merged.length===0){
+    alert("Tidak ada data untuk di-download.");
+    return;
+  }
   const header = ["Room","Order Type","Order","Description","Created On","User Status","MAT","CPH","Section","Status Part","Aging","Month","Cost","Reman","Include","Exclude","Planning","Status AMT"];
   const ws = XLSX.utils.json_to_sheet(merged, {header: header});
   XLSX.utils.sheet_add_aoa(ws, [header], {origin:"A1"});
@@ -409,17 +398,5 @@ document.getElementById('btnDownloadExcel').addEventListener('click', ()=>{
   XLSX.writeFile(wb, "Hasil_Merge.xlsx");
 });
 
-// Show Page helper
-function showPage(id){
-  document.querySelectorAll('.page').forEach(p=> p.style.display = 'none');
-  document.getElementById(id).style.display = 'block';
-}
-
-// also nav buttons outside
-document.getElementById('navUpload').addEventListener('click', ()=> showPage('pageUpload'));
-document.getElementById('navLembar').addEventListener('click', ()=> showPage('pageLembar'));
-document.getElementById('navSummary').addEventListener('click', ()=> showPage('pageSummary'));
-document.getElementById('navDownload').addEventListener('click', ()=> showPage('pageDownload'));
-
-// initial page
+// Initial page
 showPage('pageUpload');
