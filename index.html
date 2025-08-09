@@ -1,51 +1,93 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Lembar Kerja</title>
-  <style>
-    body { font-family: Arial, sans-serif; margin:20px; }
-    #tableContainer { margin-top: 20px; overflow-x: auto; max-width: 100vw; }
-    table { border-collapse: collapse; min-width: 1200px; width: 100%; }
-    th, td { border: 1px solid #ccc; padding: 6px 8px; text-align: left; }
-    .action-btn { margin-right: 4px; }
-    textarea { width: 300px; height: 60px; }
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Lembar Kerja dengan Menu</title>
+<style>
+  body { font-family: Arial, sans-serif; margin: 20px; }
+  nav { margin-bottom: 15px; }
+  nav button { margin-right: 8px; padding: 6px 12px; }
+  #content { border: 1px solid #ccc; padding: 10px; min-height: 400px; overflow-x:auto; }
+  table { border-collapse: collapse; width: 100%; min-width: 1200px; }
+  th, td { border: 1px solid #ddd; padding: 6px 8px; text-align: left; }
+</style>
 </head>
 <body>
 
-  <h2>Lembar Kerja</h2>
+<nav>
+  <button id="menuHome">Home</button>
+  <button id="menuOrders">Orders</button>
+  <button id="menuLoadFiles">Load Files</button>
+</nav>
 
-  <div>
-    <label for="inputOrders">Input Orders (pisah baris):</label><br/>
-    <textarea id="inputOrders" placeholder="Masukkan order, satu per baris"></textarea><br/>
-    <button id="btnAddOrders">Add Orders</button>
-    <button id="btnSave">Save Lembar Kerja</button>
-    <button id="btnClear">Clear Lembar Kerja</button>
-    <button id="btnDownload">Download Excel</button>
-    <div id="lmMsg" style="margin-top:8px; color: green;"></div>
-  </div>
+<div id="content">
+  <h3>Selamat datang di aplikasi Lembar Kerja</h3>
+  <p>Pilih menu di atas untuk mulai.</p>
+</div>
 
-  <hr/>
+<script>
+const content = document.getElementById('content');
 
-  <div>
-    <label>Load Files:</label><br/>
-    IW39: <input type="file" id="fileIW39" accept=".xlsx,.xls" /><br/>
-    SUM57: <input type="file" id="fileSUM57" accept=".xlsx,.xls" /><br/>
-    Planning: <input type="file" id="filePlanning" accept=".xlsx,.xls" /><br/>
-    Budget: <input type="file" id="fileBudget" accept=".xlsx,.xls" /><br/>
-    Data1: <input type="file" id="fileData1" accept=".xlsx,.xls" /><br/>
-    Data2: <input type="file" id="fileData2" accept=".xlsx,.xls" /><br/>
-    <button id="btnLoad">Load Files</button>
-    <div id="loadMsg" style="margin-top:8px;"></div>
-  </div>
+const dummyData = [
+  {Room:"CO4407", "Order Type":"PM37", Order:"4700737897", Description:"BL_Hydraulic_Replace Hose Cooler To T/C_", "Created On":"1-Jan-70", "User Status":"PROG", MAT:"C22", CPH:"", Section:"", "Status Part":"", Aging:"", Month:"Sep", Cost:292.55, Reman:"Reman", Include:73.14, Exclude:73.14, Planning:"1-Jan-70", "Status AMT":"YTS" }
+];
 
-  <div id="tableContainer"></div>
+// Fungsi untuk render tabel dari data array objek
+function renderTable(data){
+  if(!data || data.length === 0){
+    content.innerHTML = "<p>Tidak ada data untuk ditampilkan.</p>";
+    return;
+  }
+  let html = '<table><thead><tr>';
+  const keys = Object.keys(data[0]);
+  keys.forEach(k=>{
+    html += `<th>${k}</th>`;
+  });
+  html += '</tr></thead><tbody>';
+  data.forEach(row=>{
+    html += '<tr>';
+    keys.forEach(k=>{
+      let val = row[k];
+      if(typeof val === "number") val = val.toFixed(2);
+      html += `<td>${val !== undefined && val !== null ? val : ""}</td>`;
+    });
+    html += '</tr>';
+  });
+  html += '</tbody></table>';
+  content.innerHTML = html;
+}
 
-  <!-- SheetJS -->
-  <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
-  <script src="script.js"></script>
+document.getElementById('menuHome').addEventListener('click', () => {
+  content.innerHTML = '<h3>Selamat datang di aplikasi Lembar Kerja</h3><p>Pilih menu di atas untuk mulai.</p>';
+});
+
+document.getElementById('menuOrders').addEventListener('click', () => {
+  // Contoh render tabel dummyData (seharusnya dari merged data)
+  renderTable(dummyData);
+});
+
+document.getElementById('menuLoadFiles').addEventListener('click', () => {
+  // Tampilkan form input file dan tombol load
+  content.innerHTML = `
+    <h3>Load Files Excel</h3>
+    <p>Upload file IW39, SUM57, Data1, Data2, Planning, Budget:</p>
+    IW39: <input type="file" id="fileIW39" accept=".xls,.xlsx" /><br/>
+    SUM57: <input type="file" id="fileSUM57" accept=".xls,.xlsx" /><br/>
+    Data1: <input type="file" id="fileData1" accept=".xls,.xlsx" /><br/>
+    Data2: <input type="file" id="fileData2" accept=".xls,.xlsx" /><br/>
+    Planning: <input type="file" id="filePlanning" accept=".xls,.xlsx" /><br/>
+    Budget: <input type="file" id="fileBudget" accept=".xls,.xlsx" /><br/>
+    <button id="btnLoad">Load</button>
+    <div id="loadMsg"></div>
+  `;
+
+  document.getElementById('btnLoad').addEventListener('click', async () => {
+    const loadMsg = document.getElementById('loadMsg');
+    loadMsg.textContent = "Fitur loading file belum diimplementasikan di demo ini.";
+  });
+});
+</script>
 
 </body>
 </html>
