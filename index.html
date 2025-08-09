@@ -1,93 +1,349 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Lembar Kerja dengan Menu</title>
+<title>Lembar Kerja App</title>
 <style>
   body { font-family: Arial, sans-serif; margin: 20px; }
   nav { margin-bottom: 15px; }
-  nav button { margin-right: 8px; padding: 6px 12px; }
-  #content { border: 1px solid #ccc; padding: 10px; min-height: 400px; overflow-x:auto; }
+  nav button {
+    margin-right: 8px; padding: 8px 16px; cursor: pointer;
+    border: none; background-color: #007bff; color: white;
+    border-radius: 4px; font-weight: bold;
+  }
+  nav button.active {
+    background-color: #0056b3;
+  }
+  #content { border: 1px solid #ccc; padding: 15px; min-height: 450px; overflow-x:auto; }
   table { border-collapse: collapse; width: 100%; min-width: 1200px; }
-  th, td { border: 1px solid #ddd; padding: 6px 8px; text-align: left; }
+  th, td { border: 1px solid #ddd; padding: 6px 10px; text-align: left; }
+  th { background: #f0f0f0; }
+  .hint { padding: 15px; font-style: italic; color: #555; }
+  .small-btn {
+    padding: 4px 8px; margin: 0 2px;
+    background-color: #28a745; border: none; color: white;
+    border-radius: 3px; cursor: pointer;
+  }
 </style>
+<script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
 </head>
 <body>
 
 <nav>
-  <button id="menuHome">Home</button>
-  <button id="menuOrders">Orders</button>
-  <button id="menuLoadFiles">Load Files</button>
+  <button id="menuUpload" class="active">1. Upload File</button>
+  <button id="menuLembar">2. Lembar Kerja</button>
+  <button id="menuSummary">3. Summary Cost RM</button>
+  <button id="menuDownload">4. Download Excel</button>
 </nav>
 
 <div id="content">
   <h3>Selamat datang di aplikasi Lembar Kerja</h3>
-  <p>Pilih menu di atas untuk mulai.</p>
+  <p>Silakan pilih menu di atas untuk mulai.</p>
 </div>
 
 <script>
+// GLOBAL data arrays
+let iwData = [], data1 = [], data2 = [], sum57 = [], planning = [];
+let merged = [];
+
+// Helpers: normalize key to lowercase no spaces, no special chars
+function normalizeKey(k){
+  return String(k||"").toLowerCase().replace(/\s+/g,'').replace(/[^a-z0-9]/g,'');
+}
+function normalizeRows(rows){
+  return (rows||[]).map(r=>{
+    const o = {};
+    Object.keys(r||{}).forEach(k=>{
+      o[normalizeKey(k)] = r[k];
+    });
+    return o;
+  });
+}
+function asNumber(v){
+  if(v===undefined||v===null||v==="") return 0;
+  const num = Number(String(v).replace(/[^0-9.\-]/g,''));
+  return isNaN(num)?0:num;
+}
+function formatDate(d){
+  if(!d) return "";
+  let dt;
+  if(d instanceof Date) dt = d;
+  else dt = new Date(d);
+  if(isNaN(dt)) return "";
+  const months = ["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Agu","Sep","Okt","Nov","Des"];
+  return dt.getDate() + "-" + months[dt.getMonth()] + "-" + dt.getFullYear();
+}
+
+// Read excel file as JSON rows (first sheet)
+function readExcelFile(file){
+  return new Promise((resolve)=>{
+    if(!file) return resolve([]);
+    const reader = new FileReader();
+    reader.onload = e=>{
+      try{
+        const data = new Uint8Array(e.target.result);
+        const wb = XLSX.read(data,{type:'array'});
+        const sheet = wb.Sheets[wb.SheetNames[0]];
+        const json = XLSX.utils.sheet_to_json(sheet,{defval:""});
+        resolve(json);
+      }catch(err){
+        console.error("Read Excel error:", err);
+        resolve([]);
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+// MENU handlers
 const content = document.getElementById('content');
+const menuButtons = {
+  menuUpload: document.getElementById('menuUpload'),
+  menuLembar: document.getElementById('menuLembar'),
+  menuSummary: document.getElementById('menuSummary'),
+  menuDownload: document.getElementById('menuDownload')
+};
+function setActiveMenu(id){
+  Object.values(menuButtons).forEach(b => b.classList.remove('active'));
+  menuButtons[id].classList.add('active');
+}
 
-const dummyData = [
-  {Room:"CO4407", "Order Type":"PM37", Order:"4700737897", Description:"BL_Hydraulic_Replace Hose Cooler To T/C_", "Created On":"1-Jan-70", "User Status":"PROG", MAT:"C22", CPH:"", Section:"", "Status Part":"", Aging:"", Month:"Sep", Cost:292.55, Reman:"Reman", Include:73.14, Exclude:73.14, Planning:"1-Jan-70", "Status AMT":"YTS" }
-];
+// ==== MENU 1: Upload File ====
+async function showUpload(){
+  setActiveMenu('menuUpload');
+  content.innerHTML = `
+    <h3>Upload File Excel</h3>
+    <p>Silakan upload file Excel berikut (format .xls/.xlsx):</p>
+    <label>IW39: <input type="file" id="fileIW39" accept=".xls,.xlsx" /></label><br/><br/>
+    <label>SUM57: <input type="file" id="fileSUM57" accept=".xls,.xlsx" /></label><br/><br/>
+    <label>Data1: <input type="file" id="fileData1" accept=".xls,.xlsx" /></label><br/><br/>
+    <label>Data2: <input type="file" id="fileData2" accept=".xls,.xlsx" /></label><br/><br/>
+    <label>Planning: <input type="file" id="filePlanning" accept=".xls,.xlsx" /></label><br/><br/>
+    <label>Budget: <input type="file" id="fileBudget" accept=".xls,.xlsx" /></label><br/><br/>
+    <button id="btnLoad">Load Files</button>
+    <div id="loadMsg" style="margin-top:10px; font-weight:bold;"></div>
+  `;
+  document.getElementById('btnLoad').addEventListener('click', async ()=>{
+    const loadMsg = document.getElementById('loadMsg');
+    loadMsg.textContent = "Loading files...";
+    try {
+      const fIW = document.getElementById('fileIW39').files[0];
+      const fSUM = document.getElementById('fileSUM57').files[0];
+      const fD1 = document.getElementById('fileData1').files[0];
+      const fD2 = document.getElementById('fileData2').files[0];
+      const fPlan = document.getElementById('filePlanning').files[0];
+      const fBud = document.getElementById('fileBudget').files[0];
 
-// Fungsi untuk render tabel dari data array objek
-function renderTable(data){
-  if(!data || data.length === 0){
-    content.innerHTML = "<p>Tidak ada data untuk ditampilkan.</p>";
+      iwData = fIW ? await readExcelFile(fIW) : [];
+      sum57 = fSUM ? await readExcelFile(fSUM) : [];
+      data1 = fD1 ? await readExcelFile(fD1) : [];
+      data2 = fD2 ? await readExcelFile(fD2) : [];
+      planning = fPlan ? await readExcelFile(fPlan) : [];
+      budget = fBud ? await readExcelFile(fBud) : [];
+
+      loadMsg.textContent = `File selesai dimuat: IW39(${iwData.length}), SUM57(${sum57.length}), Data1(${data1.length}), Data2(${data2.length}), Planning(${planning.length}), Budget(${budget.length})`;
+
+      // Segera proses merge ke merged array
+      processMerge();
+
+    } catch(e){
+      console.error(e);
+      loadMsg.textContent = "Gagal load file, cek console.";
+    }
+  });
+}
+
+// Normalize all source arrays
+function normData(){
+  return {
+    iwNorm: normalizeRows(iwData),
+    sumNorm: normalizeRows(sum57),
+    d1Norm: normalizeRows(data1),
+    d2Norm: normalizeRows(data2),
+    planNorm: normalizeRows(planning)
+  };
+}
+
+// Proses merge data sesuai rules
+function processMerge(){
+  merged = [];
+  const { iwNorm, sumNorm, d1Norm, d2Norm, planNorm } = normData();
+
+  iwNorm.forEach(iwRow=>{
+    // Ambil keys utama
+    const orderKey = iwRow['order'] || iwRow['orderno'] || iwRow['noorder'] || "";
+    const matKey = iwRow['mat'] || iwRow['material'] || iwRow['materialcode'] || "";
+
+    // Cari lookup data1, data2, sum57, planning berdasarkan orderKey dan matKey
+    const d1row = d1Norm.find(r => Object.values(r).some(v=>String(v).trim() === String(matKey).trim())) || {};
+    const d2row = d2Norm.find(r => Object.values(r).some(v=>String(v).trim() === String(matKey).trim())) || {};
+    const sumrow = sumNorm.find(r => Object.values(r).some(v=>String(v).trim() === String(orderKey).trim())) || {};
+    const planrow = planNorm.find(r => Object.values(r).some(v=>String(v).trim() === String(orderKey).trim())) || {};
+
+    // Ambil kolom sesuai kebutuhan dan normalisasi format
+    // Room
+    const Room = iwRow['room'] || iwRow['location'] || iwRow['area'] || "";
+
+    // Order Type
+    const OrderType = iwRow['ordertype'] || iwRow['type'] || "";
+
+    // Description, jika IW39 desc mulai "JR" maka deskripsi JR, kalau tidak dari d1row desc
+    const descRaw = iwRow['description'] || iwRow['desc'] || iwRow['keterangan'] || "";
+    let Description = "";
+    if(String(descRaw).toUpperCase().startsWith("JR")) Description = "JR";
+    else Description = d1row['description'] || d1row['desc'] || d1row['keterangan'] || "";
+
+    // Created On, format "dd-mmm-yyyy"
+    let CreatedOn = iwRow['createdon'] || iwRow['created'] || iwRow['date'] || "";
+    CreatedOn = formatDate(CreatedOn);
+
+    // User Status
+    const UserStatus = iwRow['userstatus'] || iwRow['status'] || "";
+
+    // MAT
+    const MAT = matKey;
+
+    // CPH
+    let CPH = "";
+    if(String(descRaw).toUpperCase().startsWith("JR")) CPH = "JR";
+    else CPH = d2row['cph'] || d2row['costperhour'] || d2row['cphvalue'] || d1row['cph'] || d1row['costperhour'] || d1row['cphvalue'] || "";
+
+    // Section dari data1
+    const Section = d1row['section'] || d1row['dept'] || d1row['deptcode'] || d1row['department'] || "";
+
+    // Status Part dari sum57
+    const StatusPart = sumrow['statuspart'] || sumrow['status'] || sumrow['status_part'] || "";
+
+    // Aging dari sum57 (hilangkan angka di belakang koma)
+    let AgingRaw = sumrow['aging'] || sumrow['age'] || "";
+    let Aging = "";
+    if(AgingRaw !== "") Aging = Math.floor(asNumber(AgingRaw));
+
+    // Month (ambil bulan dari Planning jika ada, atau kosong)
+    let Month = "";
+    if(planrow['planning']) Month = planrow['planning'];
+    else if(planrow['eventstart']) Month = planrow['eventstart'];
+    Month = Month ? formatDate(Month).slice(3,6) : "";
+
+    // Cost hitung dari IW row, plan - actual dibagi 16500
+    let planVal = 0, actualVal = 0;
+    Object.keys(iwRow).forEach(k=>{
+      if(k.toLowerCase().includes('plan')) planVal = asNumber(iwRow[k]);
+      if(k.toLowerCase().includes('actual')) actualVal = asNumber(iwRow[k]);
+    });
+    let Cost = "-";
+    let rawCost = (planVal - actualVal)/16500;
+    if(!isNaN(rawCost) && isFinite(rawCost) && rawCost >= 0) Cost = Number(rawCost.toFixed(2));
+
+    // Reman (kosong default)
+    let Reman = iwRow['reman'] || "";
+
+    // Include
+    let Include = "-";
+    if(typeof Cost === "number"){
+      Include = String(Reman).toLowerCase().includes("reman") ? Number((Cost*0.25).toFixed(2)) : Number(Cost.toFixed(2));
+    }
+
+    // Exclude
+    let Exclude = (String(OrderType).toUpperCase() === "PM38") ? "-" : Include;
+
+    // Planning tanggal format "dd-mmm-yyyy"
+    let Planning = "";
+    if(planrow['planning']) Planning = formatDate(planrow['planning']);
+    else if(planrow['eventstart']) Planning = formatDate(planrow['eventstart']);
+
+    // Status AMT dari planning
+    let StatusAMT = planrow['statusamt'] || planrow['status'] || "";
+
+    // Push ke merged
+    merged.push({
+      Room, OrderType, Order:orderKey, Description, CreatedOn, UserStatus, MAT, CPH, Section,
+      "Status Part": StatusPart, Aging, Month, Cost, Reman, Include, Exclude, Planning, "Status AMT": StatusAMT
+    });
+  });
+
+  // Render tabel otomatis saat selesai merge
+  if(currentMenu === 'menuLembar') renderLembar();
+  if(currentMenu === 'menuSummary') renderSummary();
+}
+
+// ==== MENU 2: Lembar Kerja (Tabel Data) ====
+function renderLembar(){
+  setActiveMenu('menuLembar');
+  if(!merged.length){
+    content.innerHTML = `<div class="hint">Data kosong. Silakan upload file di menu Upload File dulu.</div>`;
     return;
   }
-  let html = '<table><thead><tr>';
-  const keys = Object.keys(data[0]);
-  keys.forEach(k=>{
-    html += `<th>${k}</th>`;
-  });
-  html += '</tr></thead><tbody>';
-  data.forEach(row=>{
-    html += '<tr>';
-    keys.forEach(k=>{
-      let val = row[k];
-      if(typeof val === "number") val = val.toFixed(2);
+  let html = `<h3>Lembar Kerja</h3><table><thead><tr>`;
+  const cols = ["Room","Order Type","Order","Description","Created On","User Status","MAT","CPH","Section","Status Part","Aging","Month","Cost","Reman","Include","Exclude","Planning","Status AMT"];
+  cols.forEach(c => html += `<th>${c}</th>`);
+  html += `</tr></thead><tbody>`;
+  merged.forEach(r=>{
+    html += "<tr>";
+    cols.forEach(c=>{
+      let val = r[c];
+      if(typeof val === "number"){
+        if(c === "Order") val = val.toString(); // no decimal
+        else if(c === "Aging") val = Math.floor(val);
+        else val = val.toFixed(2);
+      }
       html += `<td>${val !== undefined && val !== null ? val : ""}</td>`;
     });
-    html += '</tr>';
+    html += "</tr>";
   });
-  html += '</tbody></table>';
+  html += "</tbody></table>";
   content.innerHTML = html;
 }
 
-document.getElementById('menuHome').addEventListener('click', () => {
-  content.innerHTML = '<h3>Selamat datang di aplikasi Lembar Kerja</h3><p>Pilih menu di atas untuk mulai.</p>';
-});
-
-document.getElementById('menuOrders').addEventListener('click', () => {
-  // Contoh render tabel dummyData (seharusnya dari merged data)
-  renderTable(dummyData);
-});
-
-document.getElementById('menuLoadFiles').addEventListener('click', () => {
-  // Tampilkan form input file dan tombol load
-  content.innerHTML = `
-    <h3>Load Files Excel</h3>
-    <p>Upload file IW39, SUM57, Data1, Data2, Planning, Budget:</p>
-    IW39: <input type="file" id="fileIW39" accept=".xls,.xlsx" /><br/>
-    SUM57: <input type="file" id="fileSUM57" accept=".xls,.xlsx" /><br/>
-    Data1: <input type="file" id="fileData1" accept=".xls,.xlsx" /><br/>
-    Data2: <input type="file" id="fileData2" accept=".xls,.xlsx" /><br/>
-    Planning: <input type="file" id="filePlanning" accept=".xls,.xlsx" /><br/>
-    Budget: <input type="file" id="fileBudget" accept=".xls,.xlsx" /><br/>
-    <button id="btnLoad">Load</button>
-    <div id="loadMsg"></div>
-  `;
-
-  document.getElementById('btnLoad').addEventListener('click', async () => {
-    const loadMsg = document.getElementById('loadMsg');
-    loadMsg.textContent = "Fitur loading file belum diimplementasikan di demo ini.";
+// ==== MENU 3: Summary Cost RM ====
+function renderSummary(){
+  setActiveMenu('menuSummary');
+  if(!merged.length){
+    content.innerHTML = `<div class="hint">Data kosong. Silakan upload file di menu Upload File dulu.</div>`;
+    return;
+  }
+  // Hitung total Include per Month
+  const summary = {};
+  merged.forEach(r=>{
+    const m = r.Month || "Unknown";
+    const inc = typeof r.Include === "number" ? r.Include : 0;
+    summary[m] = (summary[m] || 0) + inc;
   });
-});
-</script>
 
+  let html = `<h3>Summary Cost RM per Bulan</h3><table><thead><tr><th>Bulan</th><th>Total Cost RM</th></tr></thead><tbody>`;
+  Object.keys(summary).forEach(m=>{
+    html += `<tr><td>${m}</td><td>${summary[m].toFixed(2)}</td></tr>`;
+  });
+  html += `</tbody></table>`;
+  content.innerHTML = html;
+}
+
+// ==== MENU 4: Download Excel ====
+function downloadExcel(){
+  if(!merged.length){
+    alert("Data kosong, silakan upload file dulu.");
+    return;
+  }
+  const header = ["Room","Order Type","Order","Description","Created On","User Status","MAT","CPH","Section","Status Part","Aging","Month","Cost","Reman","Include","Exclude","Planning","Status AMT"];
+  const ws = XLSX.utils.json_to_sheet(merged, {header});
+  XLSX.utils.sheet_add_aoa(ws, [header], {origin:"A1"});
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Lembar_Kerja");
+  XLSX.writeFile(wb, "Lembar_Kerja.xlsx");
+}
+
+// Event listeners menu
+let currentMenu = "menuUpload";
+
+menuButtons.menuUpload.addEventListener('click', ()=>{ currentMenu = "menuUpload"; showUpload(); });
+menuButtons.menuLembar.addEventListener('click', ()=>{ currentMenu = "menuLembar"; renderLembar(); });
+menuButtons.menuSummary.addEventListener('click', ()=>{ currentMenu = "menuSummary"; renderSummary(); });
+menuButtons.menuDownload.addEventListener('click', ()=>{ downloadExcel(); });
+
+// Start default menu
+showUpload();
+
+</script>
 </body>
 </html>
