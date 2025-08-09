@@ -1,85 +1,124 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Lembar Kerja - ndarboe</title>
-  <link rel="stylesheet" href="style.css" />
-  <!-- SheetJS untuk baca/write Excel di browser -->
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Excel Upload Dashboard</title>
+
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com"></script>
+
+<!-- SheetJS -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+
+<style>
+  table {
+    border-collapse: collapse;
+    width: 100%;
+  }
+  th {
+    font-weight: 400; /* font tipis */
+    background-color: #f3f4f6;
+    padding: 6px;
+  }
+  td {
+    padding: 6px;
+    border-bottom: 1px solid #ddd;
+  }
+</style>
 </head>
-<body>
-  <header>
-    <div class="brand">ndarboe</div>
-    <nav>
-      <button id="btnUpload" class="nav-btn">Upload File</button>
-      <button id="btnLembar" class="nav-btn">Lembar Kerja</button>
-      <button id="btnSummary" class="nav-btn">Summary Cost RM</button>
-      <button id="btnDownload" class="nav-btn">Download Excel</button>
-    </nav>
-  </header>
+<body class="bg-gray-100 min-h-screen p-4">
 
-  <main>
-    <!-- UPLOAD PAGE -->
-    <section id="pageUpload" class="page">
-      <h2>Upload File Excel</h2>
-      <p>Upload file Excel (IW39, Data1, Data2, SUM57, Planning). Bila tidak ada, biarkan kosong.</p>
+<h1 class="text-2xl font-bold mb-4">📂 Upload File Excel</h1>
 
-      <div class="upload-grid">
-        <label>IW39.xlsx<br><input type="file" id="fileIW39" accept=".xlsx,.xls"></label>
-        <label>Data1.xlsx<br><input type="file" id="fileData1" accept=".xlsx,.xls"></label>
-        <label>Data2.xlsx<br><input type="file" id="fileData2" accept=".xlsx,.xls"></label>
-        <label>SUM57.xlsx<br><input type="file" id="fileSUM57" accept=".xlsx,.xls"></label>
-        <label>Planning.xlsx<br><input type="file" id="filePlanning" accept=".xlsx,.xls"></label>
-      </div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+  <div>
+    <label class="block font-medium mb-1">IW39</label>
+    <input type="file" id="fileIW39" class="block w-full border border-gray-300 rounded p-2" />
+  </div>
+  <div>
+    <label class="block font-medium mb-1">SUM57</label>
+    <input type="file" id="fileSUM57" class="block w-full border border-gray-300 rounded p-2" />
+  </div>
+  <div>
+    <label class="block font-medium mb-1">Planning</label>
+    <input type="file" id="filePlanning" class="block w-full border border-gray-300 rounded p-2" />
+  </div>
+  <div>
+    <label class="block font-medium mb-1">Budget</label>
+    <input type="file" id="fileBudget" class="block w-full border border-gray-300 rounded p-2" />
+  </div>
+  <div>
+    <label class="block font-medium mb-1">Data1</label>
+    <input type="file" id="fileData1" class="block w-full border border-gray-300 rounded p-2" />
+  </div>
+  <div>
+    <label class="block font-medium mb-1">Data2</label>
+    <input type="file" id="fileData2" class="block w-full border border-gray-300 rounded p-2" />
+  </div>
+</div>
 
-      <div class="form-row">
-        <label>Month
-          <select id="monthInput">
-            <option value="">--Pilih--</option>
-            <option>Jan</option><option>Feb</option><option>Mar</option>
-            <option>Apr</option><option>Mei</option><option>Jun</option>
-            <option>Jul</option><option>Agu</option><option>Sep</option>
-            <option>Okt</option><option>Nov</option><option>Des</option>
-          </select>
-        </label>
+<h2 class="text-xl font-semibold mb-2">📑 Lembar Kerja</h2>
+<div id="output" class="overflow-x-auto bg-white shadow rounded p-4"></div>
 
-        <label>Reman
-          <input type="text" id="remanInput" placeholder="Tulis Reman jika ada (mis: Reman)">
-        </label>
+<script>
+function handleFile(file) {
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const data = new Uint8Array(e.target.result);
+    const workbook = XLSX.read(data, { type: 'array' });
 
-        <button id="btnProcess" class="primary">Proses Data</button>
-      </div>
+    let htmlOutput = '';
+    workbook.SheetNames.forEach((sheetName) => {
+      // Skip sheet Month & Reman
+      if (sheetName.toLowerCase() === 'month' || sheetName.toLowerCase() === 'reman') {
+        return;
+      }
 
-      <div id="uploadMessage" class="hint"></div>
-    </section>
+      const worksheet = workbook.Sheets[sheetName];
+      const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
 
-    <!-- LEMBAR KERJA -->
-    <section id="pageLembar" class="page" style="display:none;">
-      <h2>Lembar Kerja</h2>
+      if (jsonData.length === 0) return;
 
-      <div class="filter-container">
-        <label>Room: <input type="text" id="filterRoom" oninput="filterTable()"></label>
-        <label>Order: <input type="text" id="filterOrder" oninput="filterTable()"></label>
-        <label>MAT: <input type="text" id="filterMAT" oninput="filterTable()"></label>
-        <label>Section: <input type="text" id="filterSection" oninput="filterTable()"></label>
-        <label>CPH: <input type="text" id="filterCPH" oninput="filterTable()"></label>
-      </div>
+      htmlOutput += `<h3 class="text-lg font-bold mt-4 mb-2">${sheetName}</h3>`;
+      htmlOutput += '<table>';
+      
+      jsonData.forEach((row, rowIndex) => {
+        htmlOutput += '<tr>';
+        row.forEach((cell, colIndex) => {
+          let style = '';
+          // Kolom Description diperlebar
+          if (String(jsonData[0][colIndex]).toLowerCase().includes('description')) {
+            style = 'style="min-width:300px;"';
+          } else {
+            style = 'style="min-width:120px;"';
+          }
+          if (rowIndex === 0) {
+            htmlOutput += `<th ${style}>${cell !== undefined ? cell : ''}</th>`;
+          } else {
+            htmlOutput += `<td ${style}>${cell !== undefined ? cell : ''}</td>`;
+          }
+        });
+        htmlOutput += '</tr>';
+      });
 
-      <div id="tableContainer" class="table-wrap"></div>
-    </section>
+      htmlOutput += '</table>';
+    });
 
-    <!-- SUMMARY -->
-    <section id="pageSummary" class="page" style="display:none;">
-      <h2>Summary Cost RM</h2>
-      <div id="summaryContainer" class="summary"></div>
-    </section>
-  </main>
+    document.getElementById('output').innerHTML = htmlOutput || '<p class="text-gray-500">Tidak ada data untuk ditampilkan.</p>';
+  };
+  reader.readAsArrayBuffer(file);
+}
 
-  <footer>
-    <p>© 2025 ndarboe - GitHub Pages</p>
-  </footer>
+// Event listener untuk semua input file
+['fileIW39', 'fileSUM57', 'filePlanning', 'fileBudget', 'fileData1', 'fileData2'].forEach(id => {
+  document.getElementById(id).addEventListener('change', function(e) {
+    if (e.target.files.length > 0) {
+      handleFile(e.target.files[0]);
+    }
+  });
+});
+</script>
 
-  <script src="script.js"></script>
 </body>
 </html>
