@@ -64,7 +64,7 @@ document.getElementById('btnLoad').addEventListener('click', async ()=>{
   const fD1 = document.getElementById('fileData1').files[0];
   const fD2 = document.getElementById('fileData2').files[0];
 
-  document.addEventListener('DOMContentLoaded', function() {
+  document.addEventListener('DOMContentLoaded', async function() {
   document.getElementById('loadMsg').textContent = "Loading files...";
   iwData = await readExcelFile(fIW);
   sum57 = await readExcelFile(fSUM);
