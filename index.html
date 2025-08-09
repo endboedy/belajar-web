@@ -4,73 +4,98 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>MPC Dashboard</title>
-
-  <!-- Tailwind CSS Production Build -->
-  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.4/dist/tailwind.min.css" rel="stylesheet">
-
-  <!-- Optional: Icons -->
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
-
   <style>
     body {
-      font-family: 'Inter', sans-serif;
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f4f6f8;
+    }
+
+    header {
+      background-color: #2c3e50;
+      color: white;
+      padding: 15px;
+      font-size: 1.5em;
+      text-align: center;
+    }
+
+    nav {
+      background-color: #34495e;
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      padding: 10px 0;
+    }
+
+    nav button {
+      background: none;
+      border: none;
+      color: white;
+      font-size: 1em;
+      cursor: pointer;
+      padding: 8px 15px;
+      border-radius: 5px;
+      transition: background 0.3s;
+    }
+
+    nav button:hover {
+      background-color: #1abc9c;
+    }
+
+    main {
+      padding: 20px;
+      min-height: 300px;
+      background-color: white;
+      margin: 20px auto;
+      width: 90%;
+      max-width: 900px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      border-radius: 8px;
+    }
+
+    footer {
+      text-align: center;
+      padding: 15px;
+      background-color: #2c3e50;
+      color: white;
+      font-size: 0.9em;
     }
   </style>
 </head>
-<body class="bg-gray-100 min-h-screen flex flex-col">
+<body>
 
-  <!-- Header -->
-  <header class="bg-blue-600 text-white p-4 shadow-lg">
-    <h1 class="text-2xl font-bold">📊 MPC Dashboard</h1>
-  </header>
+  <header>📊 MPC Dashboard</header>
 
-  <!-- Navigation Menu -->
-  <nav class="bg-white shadow p-4 flex flex-wrap gap-4">
-    <button class="menu-btn bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded" data-content="home">🏠 Home</button>
-    <button class="menu-btn bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded" data-content="report">📑 Report</button>
-    <button class="menu-btn bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded" data-content="analytics">📈 Analytics</button>
-    <button class="menu-btn bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded" data-content="settings">⚙️ Settings</button>
+  <nav>
+    <button onclick="loadContent('home')">🏠 Home</button>
+    <button onclick="loadContent('report')">📑 Report</button>
+    <button onclick="loadContent('analytics')">📈 Analytics</button>
+    <button onclick="loadContent('settings')">⚙️ Settings</button>
   </nav>
 
-  <!-- Main Content -->
-  <main class="flex-1 p-6" id="main-content">
-    <div id="home" class="content-section">
-      <h2 class="text-xl font-semibold mb-4">Welcome to MPC Dashboard</h2>
-      <p class="text-gray-700">Pilih menu di atas untuk melihat konten.</p>
-    </div>
-
-    <div id="report" class="content-section hidden">
-      <h2 class="text-xl font-semibold mb-4">📑 Report</h2>
-      <p class="text-gray-700">Konten laporan akan ditampilkan di sini.</p>
-    </div>
-
-    <div id="analytics" class="content-section hidden">
-      <h2 class="text-xl font-semibold mb-4">📈 Analytics</h2>
-      <p class="text-gray-700">Grafik dan data analitik akan muncul di sini.</p>
-    </div>
-
-    <div id="settings" class="content-section hidden">
-      <h2 class="text-xl font-semibold mb-4">⚙️ Settings</h2>
-      <p class="text-gray-700">Pengaturan sistem ada di sini.</p>
-    </div>
+  <main id="content">
+    <h2>Welcome to MPC Dashboard</h2>
+    <p>Pilih menu di atas untuk melihat konten.</p>
   </main>
 
-  <!-- Footer -->
-  <footer class="bg-gray-800 text-white p-4 text-center">
-    &copy; 2025 MPC Dashboard. All rights reserved.
+  <footer>
+    © 2025 MPC Dashboard. All rights reserved.
   </footer>
 
-  <!-- JavaScript Menu Switch -->
   <script>
-    const buttons = document.querySelectorAll(".menu-btn");
-    const sections = document.querySelectorAll(".content-section");
-
-    buttons.forEach(btn => {
-      btn.addEventListener("click", () => {
-        sections.forEach(sec => sec.classList.add("hidden"));
-        document.getElementById(btn.dataset.content).classList.remove("hidden");
-      });
-    });
+    function loadContent(menu) {
+      let content = document.getElementById("content");
+      if (menu === "home") {
+        content.innerHTML = "<h2>Welcome to MPC Dashboard</h2><p>Pilih menu di atas untuk melihat konten.</p>";
+      } else if (menu === "report") {
+        content.innerHTML = "<h2>📑 Report</h2><p>Konten laporan akan ditampilkan di sini.</p>";
+      } else if (menu === "analytics") {
+        content.innerHTML = "<h2>📈 Analytics</h2><p>Grafik dan data analitik akan muncul di sini.</p>";
+      } else if (menu === "settings") {
+        content.innerHTML = "<h2>⚙️ Settings</h2><p>Pengaturan sistem ada di sini.</p>";
+      }
+    }
   </script>
 
 </body>
