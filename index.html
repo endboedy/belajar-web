@@ -1,44 +1,57 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Belajar Web</title>
-  <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sticky Footer Example</title>
+  <style>
+    /* Reset margin/padding */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    /* Body full tinggi layar */
+    body {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      font-family: Arial, sans-serif;
+    }
+
+    /* Konten utama */
+    main {
+      flex: 1;
+      padding: 20px;
+      background: #f4f4f4;
+    }
+
+    /* Footer nempel bawah */
+    footer {
+      background: #333;
+      color: white;
+      text-align: center;
+      padding: 10px;
+      position: sticky;
+      bottom: 0;
+      width: 100%;
+    }
+  </style>
 </head>
 <body>
-  <header>
-    <h1>📊 Belajar Web</h1>
-    <nav>
-      <ul>
-        <li><a href="#" data-page="home">🏠 Home</a></li>
-        <li>
-          <a href="#">📂 Menu 1</a>
-          <ul>
-            <li><a href="#" data-page="submenu1">Submenu 1</a></li>
-            <li>
-              <a href="#">Submenu 2</a>
-              <ul>
-                <li><a href="#" data-page="subsubmenu1">Sub Submenu 1</a></li>
-                <li><a href="#" data-page="subsubmenu2">Sub Submenu 2</a></li>
-              </ul>
-            </li>
-          </ul>
-        </li>
-        <li><a href="#" data-page="menu2">📂 Menu 2</a></li>
-      </ul>
-    </nav>
-  </header>
 
-  <main id="content">
-    <h2>Selamat datang!</h2>
-    <p>Pilih menu untuk menampilkan konten.</p>
+  <main>
+    <h1>Halaman Web</h1>
+    <p>Ini contoh konten yang panjang. Scroll ke bawah untuk lihat footernya tetap di bawah.</p>
+    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Duis aliquet, nunc vel malesuada varius, sapien nisi hendrerit turpis, vel blandit quam magna nec augue.</p>
+    <p>Tambah konten supaya bisa di-scroll...</p>
+    <p style="margin-bottom: 1000px;">Konten tambahan yang bikin halaman panjang.</p>
   </main>
 
   <footer>
-    <p>© 2025 ndarboe - GitHub Pages</p>
+    &copy; 2025 - Website Saya
   </footer>
 
-  <script src="script.js"></script>
 </body>
 </html>
