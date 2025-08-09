@@ -1,71 +1,51 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Excel Upload & Download</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Excel File Storage</title>
   <style>
     body { font-family: Arial, sans-serif; padding: 20px; }
-    button { margin: 5px; padding: 8px 15px; }
+    h1 { color: #333; }
     ul { list-style: none; padding: 0; }
-    li { margin: 5px 0; }
+    li { margin: 8px 0; }
     a { color: blue; text-decoration: none; }
+    a:hover { text-decoration: underline; }
   </style>
-  <script type="module">
-    // 🔹 Import Firebase Modules
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
-    import { getStorage, ref, uploadBytes, listAll, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-storage.js";
+</head>
+<body>
+  <h1>📂 Excel Files</h1>
+  <p>File berikut disimpan di GitHub dan bisa langsung diunduh.</p>
+  <ul id="fileList">Loading...</ul>
 
-    // 🔹 Firebase Config
-    const firebaseConfig = {
-      apiKey: "AIzaSyA9OAiNLQd8jcSJAhQTbVAEWus1nevatfc",
-      authDomain: "monthly-plan-2baf5.firebaseapp.com",
-      projectId: "monthly-plan-2baf5",
-      storageBucket: "monthly-plan-2baf5.appspot.com",
-      messagingSenderId: "42911040784",
-      appId: "1:42911040784:web:5b54401d854b933b84d195",
-      measurementId: "G-LVY6V58JS0"
-    };
+  <script>
+    const username = "endboedy";      // Ganti dengan username GitHub kamu
+    const repo = "excel-storage";     // Ganti dengan nama repo kamu
+    const folder = "excel";           // Folder tempat simpan file Excel
 
-    // 🔹 Init Firebase
-    const app = initializeApp(firebaseConfig);
-    const storage = getStorage(app);
-
-    // 🔹 Upload File
-    document.getElementById("uploadBtn").addEventListener("click", async () => {
-      const file = document.getElementById("fileInput").files[0];
-      if (!file) return alert("Pilih file dulu!");
-
-      const storageRef = ref(storage, "excel/" + file.name);
-      await uploadBytes(storageRef, file);
-      alert("✅ File berhasil diupload!");
-      loadFiles(); // refresh list
-    });
-
-    // 🔹 Load File List
     async function loadFiles() {
-      const listRef = ref(storage, "excel");
-      const res = await listAll(listRef);
-      const fileList = document.getElementById("fileList");
-      fileList.innerHTML = "";
+      try {
+        const url = `https://api.github.com/repos/${username}/${repo}/contents/${folder}`;
+        const res = await fetch(url);
+        if (!res.ok) throw new Error("Gagal mengambil data dari GitHub API");
+        
+        const files = await res.json();
+        const fileList = document.getElementById("fileList");
+        fileList.innerHTML = "";
 
-      for (let item of res.items) {
-        const url = await getDownloadURL(item);
-        const li = document.createElement("li");
-        li.innerHTML = `<a href="${url}" target="_blank">${item.name}</a>`;
-        fileList.appendChild(li);
+        files.forEach(file => {
+          if (file.name.endsWith(".xlsx") || file.name.endsWith(".xls")) {
+            const li = document.createElement("li");
+            li.innerHTML = `<a href="${file.download_url}" target="_blank">${file.name}</a>`;
+            fileList.appendChild(li);
+          }
+        });
+      } catch (err) {
+        document.getElementById("fileList").innerHTML = "❌ Error: " + err.message;
       }
     }
 
     loadFiles();
   </script>
-</head>
-<body>
-  <h2>📤 Upload Excel</h2>
-  <input type="file" id="fileInput" accept=".xlsx, .xls"/>
-  <button id="uploadBtn">Upload</button>
-
-  <h2>📂 File List</h2>
-  <ul id="fileList"></ul>
 </body>
 </html>
