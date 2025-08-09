@@ -1,133 +1,51 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Monthly Plan - ndarboe</title>
-
-  <!-- SheetJS -->
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-
-  <link rel="stylesheet" href="style.css" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Lembar Kerja</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin:20px; }
+    #tableContainer { margin-top: 20px; overflow-x: auto; max-width: 100vw; }
+    table { border-collapse: collapse; min-width: 1200px; width: 100%; }
+    th, td { border: 1px solid #ccc; padding: 6px 8px; text-align: left; }
+    .action-btn { margin-right: 4px; }
+    textarea { width: 300px; height: 60px; }
+  </style>
 </head>
 <body>
-  <header>
-    <div class="brand">ndarboe — Monthly Plan</div>
-    <nav>
-      <button class="btn" id="navUpload">Upload File</button>
-      <button class="btn" id="navLembar">Lembar Kerja</button>
-      <button class="btn" id="navSummary">Summary Cost RM</button>
-      <button class="btn" id="navDownload">Download</button>
-    </nav>
-  </header>
 
-  <main>
-    <!-- UPLOAD -->
-    <section id="pageUpload" class="page active">
-      <h2>Upload File Excel</h2>
-      <p class="hint">Upload file Excel: IW39, SUM57, Planning, Budget (opsional), Data1, Data2. Setelah upload klik "Load Files".</p>
+  <h2>Lembar Kerja</h2>
 
-      <div class="grid">
-        <label class="card">
-          <span>IW39</span>
-          <input id="fileIW39" type="file" accept=".xlsx,.xls" />
-        </label>
-        <label class="card">
-          <span>SUM57</span>
-          <input id="fileSUM57" type="file" accept=".xlsx,.xls" />
-        </label>
-        <label class="card">
-          <span>Planning</span>
-          <input id="filePlanning" type="file" accept=".xlsx,.xls" />
-        </label>
-        <label class="card">
-          <span>Budget (opsional)</span>
-          <input id="fileBudget" type="file" accept=".xlsx,.xls" />
-        </label>
-        <label class="card">
-          <span>Data1</span>
-          <input id="fileData1" type="file" accept=".xlsx,.xls" />
-        </label>
-        <label class="card">
-          <span>Data2</span>
-          <input id="fileData2" type="file" accept=".xlsx,.xls" />
-        </label>
-      </div>
+  <div>
+    <label for="inputOrders">Input Orders (pisah baris):</label><br/>
+    <textarea id="inputOrders" placeholder="Masukkan order, satu per baris"></textarea><br/>
+    <button id="btnAddOrders">Add Orders</button>
+    <button id="btnSave">Save Lembar Kerja</button>
+    <button id="btnClear">Clear Lembar Kerja</button>
+    <button id="btnDownload">Download Excel</button>
+    <div id="lmMsg" style="margin-top:8px; color: green;"></div>
+  </div>
 
-      <div class="row" style="gap:12px;align-items:center">
-        <button id="btnLoad" class="btn primary">Load Files</button>
-        <span id="loadMsg" class="hint"></span>
-      </div>
-    </section>
+  <hr/>
 
-    <!-- LEMBAR KERJA -->
-    <section id="pageLembar" class="page" style="display:none">
-      <h2>Lembar Kerja</h2>
+  <div>
+    <label>Load Files:</label><br/>
+    IW39: <input type="file" id="fileIW39" accept=".xlsx,.xls" /><br/>
+    SUM57: <input type="file" id="fileSUM57" accept=".xlsx,.xls" /><br/>
+    Planning: <input type="file" id="filePlanning" accept=".xlsx,.xls" /><br/>
+    Budget: <input type="file" id="fileBudget" accept=".xlsx,.xls" /><br/>
+    Data1: <input type="file" id="fileData1" accept=".xlsx,.xls" /><br/>
+    Data2: <input type="file" id="fileData2" accept=".xlsx,.xls" /><br/>
+    <button id="btnLoad">Load Files</button>
+    <div id="loadMsg" style="margin-top:8px;"></div>
+  </div>
 
-      <div class="card" style="margin-bottom:12px">
-        <label>Masukkan Order (multi):</label>
-        <textarea id="inputOrders" placeholder="Masukkan satu order per baris, atau pisahkan dengan koma" rows="4"></textarea>
+  <div id="tableContainer"></div>
 
-        <div class="row" style="margin-top:8px">
-          <label>
-            Month:
-            <select id="inputMonth">
-              <option value="">--Pilih Bulan--</option>
-              <option>Jan</option><option>Feb</option><option>Mar</option>
-              <option>Apr</option><option>Mei</option><option>Jun</option>
-              <option>Jul</option><option>Agu</option><option>Sep</option>
-              <option>Okt</option><option>Nov</option><option>Des</option>
-            </select>
-          </label>
-
-          <label>
-            Reman:
-            <input id="inputReman" placeholder="Kosong atau 'Reman'"/>
-          </label>
-
-          <button id="btnAddOrders" class="btn">Add Orders</button>
-
-          <button id="btnSave" class="btn primary" style="margin-left:12px">Save Lembar Kerja</button>
-        </div>
-        <div id="lmMsg" class="hint"></div>
-      </div>
-
-      <div class="card">
-        <div id="tableContainer" class="table-wrap">
-          <div class="hint" style="padding:18px;text-align:center">Tidak ada data. Tambahkan order atau load files dulu.</div>
-        </div>
-      </div>
-    </section>
-
-    <!-- SUMMARY -->
-    <section id="pageSummary" class="page" style="display:none">
-      <h2>Summary Cost RM</h2>
-      <div class="card">
-        <label>Pilih Bulan:</label>
-        <select id="summaryMonth">
-          <option value="">--Pilih Bulan--</option>
-          <option>Jan</option><option>Feb</option><option>Mar</option>
-          <option>Apr</option><option>Mei</option><option>Jun</option>
-          <option>Jul</option><option>Agu</option><option>Sep</option>
-          <option>Okt</option><option>Nov</option><option>Des</option>
-        </select>
-        <div id="summaryResult" style="margin-top:12px" class="table-wrap hint">Pilih bulan untuk melihat ringkasan.</div>
-      </div>
-    </section>
-
-    <!-- DOWNLOAD -->
-    <section id="pageDownload" class="page" style="display:none">
-      <h2>Download</h2>
-      <div class="card">
-        <p>Download data Lembar Kerja yang tersimpan:</p>
-        <button id="btnDownloadExcel" class="btn primary">Download Hasil_Merge.xlsx</button>
-      </div>
-    </section>
-  </main>
-
-  <footer>© 2025 ndarboe</footer>
-
-  <!-- script di-load setelah DOM siap -->
+  <!-- SheetJS -->
+  <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
   <script src="script.js"></script>
+
 </body>
 </html>
