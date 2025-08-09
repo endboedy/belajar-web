@@ -50,13 +50,24 @@ function readExcelFile(file){
   });
 }
 
-// UI wiring
-document.getElementById('navUpload').addEventListener('click', ()=> showPage('pageUpload'));
-document.getElementById('navLembar').addEventListener('click', ()=> showPage('pageLembar'));
-document.getElementById('navSummary').addEventListener('click', ()=> showPage('pageSummary'));
-document.getElementById('navDownload').addEventListener('click', ()=> showPage('pageDownload'));
+ // Fungsi ganti halaman
+function showPage(pageId) {
+  document.querySelectorAll('.page').forEach(p => p.style.display = 'none');
+  const page = document.getElementById(pageId);
+  if (page) page.style.display = 'block';
+}
 
-document.getElementById('btnLoad').addEventListener('click', async ()=>{
+// Pasang event click di menu utama
+document.getElementById('navUpload').addEventListener('click', () => showPage('pageUpload'));
+document.getElementById('navLembar').addEventListener('click', () => showPage('pageLembar'));
+document.getElementById('navSummary').addEventListener('click', () => showPage('pageSummary'));
+document.getElementById('navDownload').addEventListener('click', () => showPage('pageDownload'));
+
+// Event click tombol Load Files
+document.getElementById('btnLoad').addEventListener('click', async () => {
+  const loadMsg = document.getElementById('loadMsg');
+  if (loadMsg) loadMsg.textContent = "Loading files...";
+
   const fIW = document.getElementById('fileIW39').files[0];
   const fSUM = document.getElementById('fileSUM57').files[0];
   const fPlan = document.getElementById('filePlanning').files[0];
@@ -64,14 +75,21 @@ document.getElementById('btnLoad').addEventListener('click', async ()=>{
   const fD1 = document.getElementById('fileData1').files[0];
   const fD2 = document.getElementById('fileData2').files[0];
 
-  document.addEventListener('DOMContentLoaded', async function() {
-  document.getElementById('loadMsg').textContent = "Loading files...";
-  iwData = await readExcelFile(fIW);
-  sum57 = await readExcelFile(fSUM);
-  planning = await readExcelFile(fPlan);
-  budget = await readExcelFile(fBud);
-  data1 = await readExcelFile(fD1);
-  data2 = await readExcelFile(fD2);
+  const iwData = fIW ? await readExcelFile(fIW) : null;
+  const sum57 = fSUM ? await readExcelFile(fSUM) : null;
+  const planning = fPlan ? await readExcelFile(fPlan) : null;
+  const budget = fBud ? await readExcelFile(fBud) : null;
+  const data1 = fD1 ? await readExcelFile(fD1) : null;
+  const data2 = fD2 ? await readExcelFile(fD2) : null;
+
+  const iwNorm = iwData ? normalizeRows(iwData) : null;
+  const d1Norm = data1 ? normalizeRows(data1) : null;
+  const d2Norm = data2 ? normalizeRows(data2) : null;
+  const sumNorm = sum57 ? normalizeRows(sum57) : null;
+  const planNorm = planning ? normalizeRows(planning) : null;
+
+  if (loadMsg) loadMsg.textContent = "Files loaded.";
+});
 
   // normalize sets for easier lookup
   iwNorm = normalizeRows(iwData);
