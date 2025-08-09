@@ -131,3 +131,19 @@ function downloadExcel() {
     XLSX.utils.book_append_sheet(wb, ws, "Data");
     XLSX.writeFile(wb, "Hasil_Merge.xlsx");
 }
+function filterTable() {
+    const roomVal = document.getElementById('filterRoom').value.toLowerCase();
+    const orderVal = document.getElementById('filterOrder').value.toLowerCase();
+    const matVal = document.getElementById('filterMAT').value.toLowerCase();
+    const sectionVal = document.getElementById('filterSection').value.toLowerCase();
+    const cphVal = document.getElementById('filterCPH').value.toLowerCase();
+
+    const filtered = mergedData.filter(row => 
+        String(row.Room || "").toLowerCase().includes(roomVal) &&
+        String(row.Order || "").toLowerCase().includes(orderVal) &&
+        String(row.MAT || "").toLowerCase().includes(matVal) &&
+        String(row.Section || "").toLowerCase().includes(sectionVal) &&
+        String(row.CPH || "").toLowerCase().includes(cphVal)
+    );
+
+    renderTable(filtered, "tableContainer");
