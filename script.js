@@ -1,6 +1,3 @@
-// script.js
-// Handles: reading excel files, lookup logic, add multi orders, save/load localStorage, edit/delete, download
-
 // Data stores
 let iwData = [];      // IW39 rows (array of objects)
 let data1 = [];       // Data1 rows
@@ -27,6 +24,23 @@ function asNumber(v){
   if(v===undefined || v===null || v==="" ) return 0;
   const num = Number(String(v).toString().replace(/[^0-9.\-]/g,''));
   return isNaN(num) ? 0 : num;
+}
+
+// Format tanggal ke dd-mmm-yyyy (contoh: 12-Aug-2025)
+function formatDateString(input){
+  if(!input) return "";
+  let d;
+  if(input instanceof Date){
+    d = input;
+  } else {
+    d = new Date(input);
+    if(isNaN(d)) return input; // kalau bukan tanggal valid, return apa adanya
+  }
+  const day = d.getDate().toString().padStart(2,'0');
+  const monthNames = ["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Agu","Sep","Okt","Nov","Des"];
+  const month = monthNames[d.getMonth()] || "???";
+  const year = d.getFullYear();
+  return `${day}-${month}-${year}`;
 }
 
 // Read file as json rows (sheet 0)
@@ -82,11 +96,18 @@ document.getElementById('btnLoad').addEventListener('click', async () => {
   data1 = fD1 ? await readExcelFile(fD1) : [];
   data2 = fD2 ? await readExcelFile(fD2) : [];
 
-  if (loadMsg) loadMsg.textContent = `Files loaded. IW39 baris: ${iwData.length}`;
+  if (loadMsg) loadMsg.textContent = "Files loaded.";
+
+  // Clear previous merged data on load new files
+  merged = [];
+  localStorage.removeItem('ndarboe_merged');
+  renderTable(merged);
+
+  document.getElementById('lmMsg').textContent = "Silakan input order dan Add Orders.";
 });
 
 // Tombol Add Orders
-document.getElementById('btnAddOrders').addEventListener('click', ()=>{
+document.getElementById('btnAddOrders').addEventListener('click', () => {
   const raw = document.getElementById('inputOrders').value || "";
   if(raw.trim()===""){
     document.getElementById('lmMsg').textContent = "Tidak ada order yang dimasukkan.";
@@ -97,10 +118,10 @@ document.getElementById('btnAddOrders').addEventListener('click', ()=>{
     return;
   }
 
-  // parse orders: split by newline or comma
   const arr = raw.split(/\r?\n|,/).map(s=>s.trim()).filter(s=>s!=="");
+  const remanVal = ""; // Karena dihilangkan input Month & Reman atas tabel
 
-  // Build normalized rows for lookup
+  // normalize source data
   const iwNorm = normalizeRows(iwData);
   const d1Norm = normalizeRows(data1);
   const d2Norm = normalizeRows(data2);
@@ -111,16 +132,18 @@ document.getElementById('btnAddOrders').addEventListener('click', ()=>{
     // find row in iwNorm: search any field equals orderKey (string compare)
     const iwRow = iwNorm.find(r => Object.values(r).some(v => String(v).trim() === String(orderKey).trim()));
     if(!iwRow){
-      // no found -> push a minimal row with Order = orderKey and empty lookups
-      merged.push(buildMergedRow({}, orderKey, "", "", d1Norm, d2Norm, sumNorm, planNorm));
+      merged.push(buildMergedRow({}, orderKey, "", remanVal, d1Norm, d2Norm, sumNorm, planNorm));
     } else {
-      merged.push(buildMergedRow(iwRow, iwRow['order'] || orderKey, "", "", d1Norm, d2Norm, sumNorm, planNorm));
+      merged.push(buildMergedRow(iwRow, iwRow['order'] || orderKey, "", remanVal, d1Norm, d2Norm, sumNorm, planNorm));
     }
   });
 
-  // clear input area
   document.getElementById('inputOrders').value = "";
   document.getElementById('lmMsg').textContent = `Berhasil menambahkan ${arr.length} order.`;
+
+  // Simpan hasil merged ke localStorage
+  localStorage.setItem('ndarboe_merged', JSON.stringify(merged));
+
   renderTable(merged);
 });
 
@@ -134,54 +157,42 @@ function buildMergedRow(origNorm, orderKey, monthVal, remanVal, d1Norm, d2Norm, 
     return "";
   };
 
-  // Dari IW39
+  // IW fields
   const Room = get(origNorm, ['room','location','area']);
   const OrderType = get(origNorm, ['ordertype','type']);
   const Order = orderKey || get(origNorm, ['order','orderno','no','noorder']);
-  const DescriptionRaw = get(origNorm, ['description','desc','keterangan']);
+  let DescriptionRaw = get(origNorm, ['description','desc','keterangan']);
   const CreatedOnRaw = get(origNorm, ['createdon','created','date']);
   const UserStatus = get(origNorm, ['userstatus','status']);
   const MAT = get(origNorm, ['mat','material','materialcode']);
 
-  // Lookup Section dari Data1 by MAT
+  // lookups
   const d1row = (d1Norm || []).find(r => Object.values(r).some(v => String(v).trim() === String(MAT).trim())) || {};
-  // Lookup Status Part dari SUM57 by Order
+  const d2row = (d2Norm || []).find(r => Object.values(r).some(v => String(v).trim() === String(MAT).trim())) || {};
   const sumrow = (sumNorm || []).find(r => Object.values(r).some(v => String(v).trim() === String(Order).trim())) || {};
-  // Lookup Planning by Order
   const planrow = (planNorm || []).find(r => Object.values(r).some(v => String(v).trim() === String(Order).trim())) || {};
 
-  // Description dari IW39 langsung
-  const Description = DescriptionRaw || "";
+  // Description rule
+  let Description = "";
+  if(String(DescriptionRaw).toUpperCase().startsWith("JR")) Description = "JR";
+  else Description = get(d1row, ['description','desc','keterangan','shortdesc']) || "";
 
-  // Section dari Data1
-  const Section = get(d1row, ['section','dept','deptcode','department']) || "";
+  // CPH rule
+  let CPH = "";
+  if(String(DescriptionRaw).toUpperCase().startsWith("JR")) CPH = "JR";
+  else CPH = get(d2row, ['cph','costperhour','cphvalue']) || get(d1row, ['cph','costperhour','cphvalue']) || "";
 
-  // Status Part dari SUM57
+  const Section = get(d1row, ['section','dept','deptcode','department']);
   const StatusPart = get(sumrow, ['statuspart','status','status_part']) || "";
-
-  // Aging dari SUM57, hapus angka di belakang koma
   let Aging = get(sumrow, ['aging','age']) || "";
-  if(typeof Aging === "number") Aging = Math.floor(Aging);
-  else if(!isNaN(Number(Aging))) Aging = Math.floor(Number(Aging));
+  const PlanningRaw = get(planrow, ['planning','eventstart','description']);
+  const StatusAMT = get(planrow, ['statusamt','status']) || "";
 
-  // Format Created On jadi "dd-mmm-yyyy"
-  let CreatedOn = "";
-  if(CreatedOnRaw){
-    const d = new Date(CreatedOnRaw);
-    if(!isNaN(d)) CreatedOn = d.toLocaleDateString('en-GB', {day:'2-digit', month:'short', year:'numeric'}).replace(/ /g, '-');
-    else CreatedOn = CreatedOnRaw;
-  }
+  // Format tanggal Created On & Planning
+  const CreatedOn = formatDateString(CreatedOnRaw);
+  const Planning = formatDateString(PlanningRaw);
 
-  // Format Planning jadi "dd-mmm-yyyy" jika berupa tanggal
-  let Planning = "";
-  const planDateRaw = get(planrow, ['planning','eventstart','description']);
-  if(planDateRaw){
-    const dp = new Date(planDateRaw);
-    if(!isNaN(dp)) Planning = dp.toLocaleDateString('en-GB', {day:'2-digit', month:'short', year:'numeric'}).replace(/ /g, '-');
-    else Planning = planDateRaw;
-  }
-
-  // Cost dan Reman sama seperti sebelumnya
+  // Cost calculation
   const planKey = Object.keys(origNorm||{}).find(k => k.includes('plan')) || null;
   const actualKey = Object.keys(origNorm||{}).find(k => k.includes('actual')) || null;
   const planVal = planKey ? asNumber(origNorm[planKey]) : 0;
@@ -190,33 +201,42 @@ function buildMergedRow(origNorm, orderKey, monthVal, remanVal, d1Norm, d2Norm, 
   const rawCost = (planVal - actualVal) / 16500;
   if(!isNaN(rawCost) && isFinite(rawCost) && rawCost >= 0) Cost = Number(rawCost.toFixed(2));
 
+  // Include & Exclude
   let Include = "-";
   if(typeof Cost === "number") Include = (String(remanVal).toLowerCase().includes("reman") ? Number((Cost * 0.25).toFixed(2)) : Number(Cost.toFixed(2)));
   let Exclude = (String(OrderType).toUpperCase() === "PM38") ? "-" : Include;
 
+  // Buat Aging bulatkan tanpa desimal
+  if(typeof Aging === "number") Aging = Math.floor(Aging);
+  else if(!isNaN(Number(Aging))) Aging = Math.floor(Number(Aging));
+
+  // Hilangkan koma/desimal di Order (ubah ke string agar tampil bersih)
+  const OrderClean = String(Order);
+
   return {
     "Room": Room||"",
     "Order Type": OrderType||"",
-    "Order": Order ? String(Order) : "",
+    "Order": OrderClean||"",
     "Description": Description||"",
     "Created On": CreatedOn||"",
     "User Status": UserStatus||"",
     "MAT": MAT||"",
-    "CPH": get(d1row, ['cph','costperhour','cphvalue']) || "",
+    "CPH": CPH||"",
     "Section": Section||"",
     "Status Part": StatusPart||"",
     "Aging": Aging||"",
+    "Month": monthVal||"",
     "Cost": Cost,
+    "Reman": remanVal||"",
     "Include": Include,
     "Exclude": Exclude,
     "Planning": Planning||"",
-    "Status AMT": get(planrow, ['statusamt','status']) || ""
+    "Status AMT": StatusAMT||"",
+    "Action": "" // untuk tombol edit/delete nanti
   };
 }
 
-// Render table with action column (edit/delete)
-const DISPLAY = ["Room","Order Type","Order","Description","Created On","User Status","MAT","CPH","Section","Status Part","Aging","Cost","Include","Exclude","Planning","Status AMT","Action"];
-
+// Render tabel dinamis dengan semua kolom lengkap
 function renderTable(data){
   const container = document.getElementById('tableContainer');
   if(!data || data.length===0){
@@ -224,39 +244,46 @@ function renderTable(data){
     return;
   }
 
+  // Ambil semua kolom unik dari data
+  const allColsSet = new Set();
+  data.forEach(row => {
+    Object.keys(row).forEach(k => allColsSet.add(k));
+  });
+  const allCols = Array.from(allColsSet);
+
+  // Pastikan kolom Action selalu terakhir
+  if(!allCols.includes("Action")) allCols.push("Action");
+
   let html = `<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;"><thead><tr>`;
-  DISPLAY.forEach(col => {
-    html += `<th style="border:1px solid #ccc;padding:8px;white-space:nowrap;">${col}</th>`;
+  allCols.forEach(col => {
+    html += `<th style="border:1px solid #ccc;padding:8px;white-space:nowrap;background:#eee;">${col}</th>`;
   });
   html += "</tr></thead><tbody>";
 
   data.forEach((row, idx) => {
     html += "<tr>";
-    const cols = DISPLAY.filter(c => c !== "Action");
-    cols.forEach(col => {
-      let cls = (col === "Description") ? "col-desc" : "";
-      let v = row[col];
+    allCols.forEach(col => {
+      if(col === "Action"){
+        html += `<td style="border:1px solid #ccc;padding:8px;white-space:nowrap;">
+          <button class="action-btn small" onclick="editRow(${idx})">Edit</button>
+          <button class="action-btn small" onclick="deleteRow(${idx})">Delete</button>
+        </td>`;
+      } else {
+        let v = row[col];
 
-      // Formatting khusus
-      if(col === "Order"){
-        v = String(v); // tampil utuh tanpa desimal
-      } else if(col === "Aging"){
-        if(typeof v === "number") v = Math.floor(v);
-        else if(!isNaN(Number(v))) v = Math.floor(Number(v));
-      } else if(typeof v === "number"){
-        // angka lain tampil 2 desimal
-        v = v.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
+        // Format khusus
+        if(col === "Order"){
+          v = String(v);
+        } else if(col === "Aging"){
+          if(typeof v === "number") v = Math.floor(v);
+          else if(!isNaN(Number(v))) v = Math.floor(Number(v));
+        } else if(typeof v === "number"){
+          v = v.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
+        }
+        const cls = (col === "Description") ? "col-desc" : "";
+        html += `<td class="${cls}" style="border:1px solid #ccc;padding:8px;white-space:nowrap;">${v !== undefined && v !== null ? v : ""}</td>`;
       }
-
-      html += `<td class="${cls}" style="border:1px solid #ccc;padding:8px;white-space:nowrap;">${v !== undefined && v !== null ? v : ""}</td>`;
     });
-
-    // Action buttons
-    html += `<td style="border:1px solid #ccc;padding:8px;white-space:nowrap;">
-      <button class="action-btn small" onclick="editRow(${idx})">Edit</button>
-      <button class="action-btn small" onclick="deleteRow(${idx})">Delete</button>
-    </td>`;
-
     html += "</tr>";
   });
 
@@ -264,160 +291,139 @@ function renderTable(data){
   container.innerHTML = html;
 }
 
-// Edit row: convert row to inline editable (Month & Reman editable) - kita hapus edit Month & Reman sesuai request
+// Edit row (inline editable Month & Reman)
 function editRow(idx){
   const row = merged[idx];
   if(!row) return;
   const container = document.getElementById('tableContainer');
-  // build table but replace the edited row with inputs
-  let html = "<table style='width:100%;border-collapse:collapse;'><thead><tr>";
-  DISPLAY.forEach(col => html += `<th style="border:1px solid #ccc;padding:8px;white-space:nowrap;">${col}</th>`);
+  // ambil semua kolom
+  const allColsSet = new Set();
+  merged.forEach(r => Object.keys(r).forEach(k => allColsSet.add(k)));
+  const allCols = Array.from(allColsSet);
+  if(!allCols.includes("Action")) allCols.push("Action");
+
+  // bangun tabel baru dengan baris edit
+  let html = `<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;"><thead><tr>`;
+  allCols.forEach(col => {
+    html += `<th style="border:1px solid #ccc;padding:8px;white-space:nowrap;background:#eee;">${col}</th>`;
+  });
   html += "</tr></thead><tbody>";
 
   merged.forEach((r,i)=>{
     html += "<tr>";
-    const cols = DISPLAY.filter(c=>c!=="Action");
-    cols.forEach(col=>{
-      let cls = (col==="Description") ? "col-desc" : "";
+    allCols.forEach(col => {
+      if(col === "Action"){
+        if(i === idx){
+          html += `<td style="border:1px solid #ccc;padding:8px;white-space:nowrap;">
+            <button class="action-btn small" onclick="saveEdit(${i})">Save</button>
+            <button class="action-btn small" onclick="cancelEdit()">Cancel</button>
+          </td>`;
+        } else {
+          html += `<td style="border:1px solid #ccc;padding:8px;white-space:nowrap;">
+            <button class="action-btn small" onclick="editRow(${i})">Edit</button>
+            <button class="action-btn small" onclick="deleteRow(${i})">Delete</button>
+          </td>`;
+        }
+        return;
+      }
+      let cls = (col === "Description") ? "col-desc" : "";
+
       if(i === idx){
-        // Karena Month dan Reman sudah dihilangkan, tampil semua read-only kecuali Reman dan Month tidak ada
-        let v = r[col];
-        if(typeof v === "number") v = v.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
-        html += `<td class="${cls}" style="border:1px solid #ccc;padding:8px;white-space:nowrap;">${v !== undefined && v !== null ? v : ""}</td>`;
+        // field editable hanya Month dan Reman
+        if(col === "Month"){
+          html += `<td class="${cls}" style="border:1px solid #ccc;padding:4px;">
+            <select id="edit_month" >
+              <option value="">--Pilih--</option>
+              <option>Jan</option><option>Feb</option><option>Mar</option>
+              <option>Apr</option><option>Mei</option><option>Jun</option>
+              <option>Jul</option><option>Agu</option><option>Sep</option>
+              <option>Okt</option><option>Nov</option><option>Des</option>
+            </select>
+          </td>`;
+        } else if(col === "Reman"){
+          html += `<td class="${cls}" style="border:1px solid #ccc;padding:4px;">
+            <input id="edit_reman" type="text" value="${r.Reman||""}" />
+          </td>`;
+        } else {
+          let v = r[col];
+          if(typeof v === "number") v = v.toLocaleString();
+          html += `<td class="${cls}" style="border:1px solid #ccc;padding:8px;">${v !== undefined && v !== null ? v : ""}</td>`;
+        }
       } else {
         let v = r[col];
         if(typeof v === "number") v = v.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
-        html += `<td class="${cls}" style="border:1px solid #ccc;padding:8px;white-space:nowrap;">${v !== undefined && v !== null ? v : ""}</td>`;
+        html += `<td class="${cls}" style="border:1px solid #ccc;padding:8px;">${v !== undefined && v !== null ? v : ""}</td>`;
       }
     });
-
-    // action column
-    if(i === idx){
-      html += `<td style="border:1px solid #ccc;padding:8px;white-space:nowrap;">
-        <button class="action-btn small" onclick="cancelEdit()">Cancel</button>
-      </td>`;
-    } else {
-      html += `<td style="border:1px solid #ccc;padding:8px;white-space:nowrap;">
-        <button class="action-btn small" onclick="editRow(${i})">Edit</button>
-        <button class="action-btn small" onclick="deleteRow(${i})">Delete</button>
-      </td>`;
-    }
-
     html += "</tr>";
   });
 
   html += "</tbody></table></div>";
   container.innerHTML = html;
+
+  // set current values
+  const sel = document.getElementById('edit_month');
+  if(sel) sel.value = row.Month || "";
+  const rin = document.getElementById('edit_reman');
+  if(rin) rin.value = row.Reman || "";
 }
 
 function saveEdit(idx){
-  // Karena tidak ada field yg bisa diedit, saveEdit hanya batal saja
-  cancelEdit();
+  const month = document.getElementById('edit_month').value || "";
+  const reman = document.getElementById('edit_reman').value || "";
+  if(idx<0 || idx>=merged.length) return;
+
+  merged[idx].Month = month;
+  merged[idx].Reman = reman;
+
+  // simpan ke localStorage
+  localStorage.setItem('ndarboe_merged', JSON.stringify(merged));
+
+  renderTable(merged);
+  document.getElementById('lmMsg').textContent = `Row ke-${idx+1} disimpan.`;
 }
 
 function cancelEdit(){
   renderTable(merged);
 }
 
-// delete row
+// Delete row
 function deleteRow(idx){
-  if(!confirm("Hapus baris ini?")) return;
+  if(idx<0 || idx>=merged.length) return;
+  if(!confirm(`Hapus baris ke-${idx+1}?`)) return;
   merged.splice(idx,1);
+  localStorage.setItem('ndarboe_merged', JSON.stringify(merged));
   renderTable(merged);
-  document.getElementById('lmMsg').textContent = "Baris dihapus (sementara). Klik Save Lembar Kerja untuk persist.";
+  document.getElementById('lmMsg').textContent = `Baris ke-${idx+1} dihapus.`;
 }
 
-// Save / Load Lembar Kerja to localStorage
-document.getElementById('btnSave').addEventListener('click', ()=>{
-  localStorage.setItem('ndarboe_merged', JSON.stringify(merged));
-  document.getElementById('lmMsg').textContent = "Lembar Kerja tersimpan di localStorage.";
-});
-
-// load on start
-function loadSaved(){
-  const raw = localStorage.getItem('ndarboe_merged');
-  if(raw){
+// Load merged data dari localStorage saat mulai
+function loadMergedData(){
+  const s = localStorage.getItem('ndarboe_merged');
+  if(s){
     try{
-      merged = JSON.parse(raw);
-      renderTable(merged);
+      merged = JSON.parse(s);
+      if(!Array.isArray(merged)) merged = [];
     }catch(e){
-      console.error("parse saved",e);
+      merged = [];
     }
   }
 }
-loadSaved();
+loadMergedData();
+renderTable(merged);
 
-// Summary page logic
-document.getElementById('summaryMonth').addEventListener('change', ()=>{
-  const month = document.getElementById('summaryMonth').value;
-  if(!month){ document.getElementById('summaryResult').innerHTML = "Pilih bulan untuk melihat ringkasan."; return; }
-  const rows = (merged||[]).filter(r => String(r.Month||"").toLowerCase() === String(month).toLowerCase());
-  if(!rows || rows.length===0){
-    document.getElementById('summaryResult').innerHTML = `<div class="hint">Tidak ada data untuk bulan ${month}.</div>`;
-    return;
-  }
-  // compute totals
-  const totalCost = rows.reduce((s,r)=> s + (typeof r.Cost === 'number' ? r.Cost : 0), 0);
-  const totalInclude = rows.reduce((s,r)=> s + (typeof r.Include === 'number' ? r.Include : 0), 0);
-  const totalExclude = rows.reduce((s,r)=> s + (typeof r.Exclude === 'number' ? r.Exclude : 0), 0);
-
-  let html = `<div><p><strong>Baris:</strong> ${rows.length}</p>
-    <p><strong>Total Cost:</strong> ${totalCost.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</p>
-    <p><strong>Total Include:</strong> ${totalInclude.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</p>
-    <p><strong>Total Exclude:</strong> ${totalExclude.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</p></div>`;
-
-  document.getElementById('summaryResult').innerHTML = html;
-});
-
-// Download excel
-document.getElementById('btnDownloadExcel').addEventListener('click', ()=>{
-  if(!merged || merged.length === 0){
-    alert("Tidak ada data untuk diunduh.");
-    return;
-  }
-  const wb = XLSX.utils.book_new();
-  const ws_data = [];
-  const cols = DISPLAY.filter(c => c !== "Action");
-  ws_data.push(cols);
-  merged.forEach(r=>{
-    ws_data.push(cols.map(c=>r[c]));
-  });
-  const ws = XLSX.utils.aoa_to_sheet(ws_data);
-  XLSX.utils.book_append_sheet(wb, ws, "Lembar Kerja");
-  XLSX.writeFile(wb, "LembarKerja_Export.xlsx");
-});
-
-// CSS styles
-const style = document.createElement('style');
-style.textContent = `
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    font-family: Arial, sans-serif;
-    font-size: 14px;
-  }
-  th, td {
-    border: 1px solid #ccc;
-    padding: 6px 10px;
-    white-space: nowrap;
-  }
-  .col-desc {
-    max-width: 300px;
-    white-space: normal;
-    word-wrap: break-word;
-  }
-  .action-btn.small {
-    font-size: 12px;
-    padding: 4px 8px;
-    margin: 0 2px;
-    cursor: pointer;
-  }
-  .hint {
-    font-style: italic;
-    color: #555;
-  }
-`;
-document.head.appendChild(style);
-
-// Init page awal: tampil halaman upload
+// Inisialisasi halaman awal: tampilkan pageUpload
 showPage('pageUpload');
+document.getElementById('lmMsg').textContent = "Silakan upload file dan input order lalu Add Orders.";
+
+// Styles tambahan (bisa juga di CSS)
+const styleEl = document.createElement('style');
+styleEl.textContent = `
+  .col-desc { max-width:300px; white-space:normal; }
+  button.action-btn.small { margin:2px; padding:4px 8px; font-size:0.8em; }
+  table { font-family: Arial, sans-serif; font-size: 13px; }
+  th, td { text-align: left; }
+  /* Scroll horizontal pada container */
+  #tableContainer > div { overflow-x:auto; }
+`;
+document.head.appendChild(styleEl);
