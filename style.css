@@ -1,62 +1,44 @@
-body {
-  height: 100%;
+/* Reset bawaan browser */
+* {
   margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* Atur tinggi minimum halaman agar footer bisa di bawah */
+html, body {
+  height: 100%;
+}
+
+/* Flexbox untuk dorong footer ke bawah */
+body {
   display: flex;
   flex-direction: column;
+  min-height: 100vh;
+  font-family: Arial, sans-serif;
 }
 
+/* Header */
 header {
-  background: #2c3e50;
+  background-color: #2d3e50;
   color: white;
   padding: 15px;
+  text-align: center;
 }
 
-header h1 {
-  margin: 0 0 10px;
-}
-
-nav ul {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-nav ul li {
-  display: inline-block;
-  position: relative;
-}
-
-nav ul li a {
-  color: white;
-  padding: 10px 15px;
-  display: block;
-  text-decoration: none;
-}
-
-nav ul li ul {
-  display: none;
-  position: absolute;
-  background: #34495e;
-  top: 100%;
-  left: 0;
-  min-width: 150px;
-}
-
-nav ul li:hover ul {
-  display: block;
-}
-
-nav ul li ul li {
-  display: block;
-}
-
+/* Konten */
 main {
+  flex: 1; /* Isi ruang kosong agar footer terdorong ke bawah */
   padding: 20px;
+  background-color: #f4f4f4;
 }
 
+/* Footer */
 footer {
-   background-color: #003366; /* biru tua */
+  background-color: #2d3e50;
   color: white;
   text-align: center;
-  padding: 10px 0;
+  padding: 10px;
+  position: sticky;
+  bottom: 0;
 }
