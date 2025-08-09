@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -6,13 +5,14 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Lembar Kerja - ndarboe</title>
   <link rel="stylesheet" href="style.css" />
-  https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js
+  <!-- SheetJS untuk baca/write Excel di browser -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
 <body>
   <header>
     <div class="brand">ndarboe</div>
     <nav>
-      <button id="btnUpload" class="nav-btn active">Upload File</button>
+      <button id="btnUpload" class="nav-btn">Upload File</button>
       <button id="btnLembar" class="nav-btn">Lembar Kerja</button>
       <button id="btnSummary" class="nav-btn">Summary Cost RM</button>
       <button id="btnDownload" class="nav-btn">Download Excel</button>
@@ -20,10 +20,10 @@
   </header>
 
   <main>
-    <!-- MENU 1: UPLOAD FILE -->
+    <!-- UPLOAD PAGE -->
     <section id="pageUpload" class="page">
       <h2>Upload File Excel</h2>
-      <p>Upload file Excel dari komputer. Jika tidak ada file, biarkan kosong.</p>
+      <p>Upload file Excel (IW39, Data1, Data2, SUM57, Planning). Bila tidak ada, biarkan kosong.</p>
 
       <div class="upload-grid">
         <label>IW39.xlsx<br><input type="file" id="fileIW39" accept=".xlsx,.xls"></label>
@@ -31,19 +31,6 @@
         <label>Data2.xlsx<br><input type="file" id="fileData2" accept=".xlsx,.xls"></label>
         <label>SUM57.xlsx<br><input type="file" id="fileSUM57" accept=".xlsx,.xls"></label>
         <label>Planning.xlsx<br><input type="file" id="filePlanning" accept=".xlsx,.xls"></label>
-      </div>
-    </section>
-
-    <!-- MENU 2: LEMBAR KERJA -->
-    <section id="pageLembar" class="page" style="display:none;">
-      <h2>Lembar Kerja</h2>
-
-      <div class="filter-container">
-        <label>Room: <input type="text" id="filterRoom" oninput="filterTable()"></label>
-        <label>Order: <input type="text" id="filterOrder" oninput="filterTable()"></label>
-        <label>MAT: <input type="text" id="filterMAT" oninput="filterTable()"></label>
-        <label>Section: <input type="text" id="filterSection" oninput="filterTable()"></label>
-        <label>CPH: <input type="text" id="filterCPH" oninput="filterTable()"></label>
       </div>
 
       <div class="form-row">
@@ -59,26 +46,33 @@
 
         <label>Reman
           <input type="text" id="remanInput" placeholder="Tulis Reman jika ada (mis: Reman)">
-        id="btnProcess" class="primary">Proses Data</button>
+        </label>
+
+        <button id="btnProcess" class="primary">Proses Data</button>
       </div>
 
       <div id="uploadMessage" class="hint"></div>
+    </section>
+
+    <!-- LEMBAR KERJA -->
+    <section id="pageLembar" class="page" style="display:none;">
+      <h2>Lembar Kerja</h2>
+
+      <div class="filter-container">
+        <label>Room: <input type="text" id="filterRoom" oninput="filterTable()"></label>
+        <label>Order: <input type="text" id="filterOrder" oninput="filterTable()"></label>
+        <label>MAT: <input type="text" id="filterMAT" oninput="filterTable()"></label>
+        <label>Section: <input type="text" id="filterSection" oninput="filterTable()"></label>
+        <label>CPH: <input type="text" id="filterCPH" oninput="filterTable()"></label>
+      </div>
+
       <div id="tableContainer" class="table-wrap"></div>
     </section>
 
-    <!-- MENU 3: SUMMARY -->
+    <!-- SUMMARY -->
     <section id="pageSummary" class="page" style="display:none;">
       <h2>Summary Cost RM</h2>
-      <div id="summaryContainer" class="summary">
-        <p>Setelah klik <strong>Proses Data</strong>, hasil summary akan muncul di sini.</p>
-      </div>
-    </section>
-
-    <!-- MENU 4: DOWNLOAD -->
-    <section id="pageDownload" class="page" style="display:none;">
-      <h2>Download Excel</h2>
-      <p>Setelah data diproses, kamu bisa klik tombol di bawah untuk mendownload hasilnya.</p>
-      <button id="btnDownloadExcel" class="primary">Download Hasil Excel</button>
+      <div id="summaryContainer" class="summary"></div>
     </section>
   </main>
 
