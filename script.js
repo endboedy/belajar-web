@@ -98,9 +98,9 @@ document.getElementById('btnLoad').addEventListener('click', async () => {
 });
 
 // Tombol Add Orders
-document.getElementById('btnAddOrders').addEventListener('click', ()=>{
+document.getElementById('btnAddOrders').addEventListener('click', () => {
   const raw = document.getElementById('inputOrders').value || "";
-  if(raw.trim()===""){
+  if(raw.trim() === ""){
     document.getElementById('lmMsg').textContent = "Tidak ada order yang dimasukkan.";
     return;
   }
