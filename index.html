@@ -1,51 +1,44 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Excel File Storage</title>
-  <style>
-    body { font-family: Arial, sans-serif; padding: 20px; }
-    h1 { color: #333; }
-    ul { list-style: none; padding: 0; }
-    li { margin: 8px 0; }
-    a { color: blue; text-decoration: none; }
-    a:hover { text-decoration: underline; }
-  </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Belajar Web</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h1>📂 Excel Files</h1>
-  <p>File berikut disimpan di GitHub dan bisa langsung diunduh.</p>
-  <ul id="fileList">Loading...</ul>
+  <header>
+    <h1>📊 Belajar Web</h1>
+    <nav>
+      <ul>
+        <li><a href="#" data-page="home">🏠 Home</a></li>
+        <li>
+          <a href="#">📂 Menu 1</a>
+          <ul>
+            <li><a href="#" data-page="submenu1">Submenu 1</a></li>
+            <li>
+              <a href="#">Submenu 2</a>
+              <ul>
+                <li><a href="#" data-page="subsubmenu1">Sub Submenu 1</a></li>
+                <li><a href="#" data-page="subsubmenu2">Sub Submenu 2</a></li>
+              </ul>
+            </li>
+          </ul>
+        </li>
+        <li><a href="#" data-page="menu2">📂 Menu 2</a></li>
+      </ul>
+    </nav>
+  </header>
 
-  <script>
-    const username = "endboedy";      // Ganti dengan username GitHub kamu
-    const repo = "excel-storage";     // Ganti dengan nama repo kamu
-    const folder = "excel";           // Folder tempat simpan file Excel
+  <main id="content">
+    <h2>Selamat datang!</h2>
+    <p>Pilih menu untuk menampilkan konten.</p>
+  </main>
 
-    async function loadFiles() {
-      try {
-        const url = `https://api.github.com/repos/${username}/${repo}/contents/${folder}`;
-        const res = await fetch(url);
-        if (!res.ok) throw new Error("Gagal mengambil data dari GitHub API");
-        
-        const files = await res.json();
-        const fileList = document.getElementById("fileList");
-        fileList.innerHTML = "";
+  <footer>
+    <p>© 2025 Belajar Web - GitHub Pages</p>
+  </footer>
 
-        files.forEach(file => {
-          if (file.name.endsWith(".xlsx") || file.name.endsWith(".xls")) {
-            const li = document.createElement("li");
-            li.innerHTML = `<a href="${file.download_url}" target="_blank">${file.name}</a>`;
-            fileList.appendChild(li);
-          }
-        });
-      } catch (err) {
-        document.getElementById("fileList").innerHTML = "❌ Error: " + err.message;
-      }
-    }
-
-    loadFiles();
-  </script>
+  <script src="script.js"></script>
 </body>
 </html>
