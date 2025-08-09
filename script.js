@@ -230,6 +230,16 @@ function filteredData(){
   });
 }
 
+// Mendeteksi duplikat Order untuk pewarnaan
+function findDuplicateOrders(data){
+  const counts = {};
+  data.forEach(r=>{
+    const key = (r.Order || "").toString().toLowerCase();
+    counts[key] = (counts[key] || 0) + 1;
+  });
+  return counts;
+}
+
 // Render tabel Lembar Kerja dengan filter dan action edit/delete
 function renderTable(data){
   const container = document.getElementById('tableContainer');
@@ -246,14 +256,22 @@ function renderTable(data){
   filterDiv.style.marginBottom = "10px";
   filterDiv.style.display = "flex";
   filterDiv.style.gap = "10px";
+  filterDiv.style.position = "sticky";
+  filterDiv.style.top = "41px"; // header tinggi kurang lebih
+  filterDiv.style.backgroundColor = "#cce5ff"; // biru muda
+  filterDiv.style.padding = "5px 10px";
+  filterDiv.style.zIndex = "1000";
+  filterDiv.style.borderBottom = "1px solid #aaa";
 
   function createFilterInput(placeholder, key){
     const inp = document.createElement('input');
     inp.type = 'text';
     inp.placeholder = placeholder;
     inp.value = filters[key] || '';
-    inp.style.padding = "5px";
+    inp.style.padding = "5px 8px";
     inp.style.flex = "1";
+    inp.style.border = "1px solid #ccc";
+    inp.style.borderRadius = "3px";
     inp.addEventListener('input', (e)=>{
       filters[key] = e.target.value.toLowerCase();
       renderTable(filteredData());
@@ -268,46 +286,78 @@ function renderTable(data){
 
   container.appendChild(filterDiv);
 
-  const filtered = filteredData();
-
+  // Membuat tabel utama
   const table = document.createElement('table');
   table.style.borderCollapse = "collapse";
   table.style.width = "100%";
+  table.style.tableLayout = "fixed"; // agar kolom fixed width
+  table.style.fontSize = "14px";
 
-  // Header
+  // Header dengan sticky + warna biru muda
   const thead = document.createElement('thead');
   const trh = document.createElement('tr');
+  trh.style.backgroundColor = "#cce5ff"; // biru muda
+  trh.style.position = "sticky";
+  trh.style.top = "0";
+  trh.style.zIndex = "1001";
+
   columns.forEach(c=>{
     const th = document.createElement('th');
     th.textContent = c;
     th.style.border = "1px solid #ddd";
     th.style.padding = "8px";
-    th.style.backgroundColor = "#f2f2f2";
-
+    th.style.backgroundColor = "#cce5ff";
+    th.style.whiteSpace = "nowrap";
+    th.style.overflow = "hidden";
+    th.style.textOverflow = "ellipsis";
     if(c === "Section"){
       th.style.width = "15%";
     }
-
+    if(c === "Order"){
+      th.style.width = "8%";
+    }
+    if(c === "Month" || c === "Reman" || c === "Cost"){
+      th.style.width = "8%";
+    }
+    if(c === "Planning" || c === "Status AMT"){
+      th.style.width = "12%";
+    }
     trh.appendChild(th);
   });
 
+  // Kolom Action header
   const thAction = document.createElement('th');
   thAction.textContent = "Action";
   thAction.style.border = "1px solid #ddd";
   thAction.style.padding = "8px";
-  thAction.style.backgroundColor = "#f2f2f2";
+  thAction.style.backgroundColor = "#cce5ff";
+  thAction.style.whiteSpace = "nowrap";
   trh.appendChild(thAction);
   thead.appendChild(trh);
   table.appendChild(thead);
 
-  // Body
   const tbody = document.createElement('tbody');
-  filtered.forEach((row, idx)=>{
+
+  // Deteksi duplikat order untuk pewarnaan
+  const orderCounts = findDuplicateOrders(data);
+
+  data.forEach((row, idx)=>{
     const tr = document.createElement('tr');
+
+    // Jika duplikat order, beri warna merah dan font putih
+    const orderKey = (row.Order || "").toString().toLowerCase();
+    if(orderCounts[orderKey] > 1){
+      tr.style.backgroundColor = "#d9534f"; // merah bootstrap
+      tr.style.color = "white";
+    }
+
     columns.forEach(col=>{
       const td = document.createElement('td');
       td.style.border = "1px solid #ddd";
       td.style.padding = "8px";
+      td.style.whiteSpace = "nowrap";
+      td.style.overflow = "hidden";
+      td.style.textOverflow = "ellipsis";
 
       let val = row[col];
       if(col === "Created On" || col === "Planning"){
@@ -333,11 +383,14 @@ function renderTable(data){
     const tdAction = document.createElement('td');
     tdAction.style.border = "1px solid #ddd";
     tdAction.style.padding = "8px";
+    tdAction.style.whiteSpace = "nowrap";
 
     const btnEdit = document.createElement('button');
     btnEdit.textContent = "Edit";
     btnEdit.style.marginRight = "5px";
     btnEdit.style.cursor = "pointer";
+    btnEdit.style.padding = "3px 8px";
+    btnEdit.style.fontSize = "12px";
     btnEdit.addEventListener('click', () => openEditModal(idx));
 
     const btnDelete = document.createElement('button');
@@ -345,6 +398,9 @@ function renderTable(data){
     btnDelete.style.cursor = "pointer";
     btnDelete.style.color = "white";
     btnDelete.style.backgroundColor = "red";
+    btnDelete.style.border = "none";
+    btnDelete.style.padding = "3px 8px";
+    btnDelete.style.fontSize = "12px";
     btnDelete.addEventListener('click', () => {
       if(confirm(`Hapus order ${row["Order"]}?`)){
         merged.splice(idx, 1);
@@ -361,6 +417,10 @@ function renderTable(data){
   table.appendChild(tbody);
   container.appendChild(table);
 }
+
+// Add multiple orders dari textarea inputOrders
+document.getElementById('btnAddOrders').
+
 
 // Add multiple orders dari textarea inputOrders
 document.getElementById('btnAddOrders').addEventListener('click', ()=>{
