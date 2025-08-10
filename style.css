@@ -1,82 +1,58 @@
 body {
-  font-family: Arial, sans-serif;
-  background: #f5f7fa;
-  margin: 0;
-  padding: 0;
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
 }
 
-header {
-  background: #2c3e50;
-  color: white;
-  padding: 15px;
+.navbar {
+    background-color: #333;
+    overflow: hidden;
 }
 
-header h1 {
-  margin: 0 0 10px;
+.menu-btn {
+    background-color: #333;
+    border: none;
+    color: white;
+    padding: 14px 20px;
+    cursor: pointer;
 }
 
-nav button {
-  background: #34495e;
-  color: white;
-  border: none;
-  padding: 8px 15px;
-  margin: 0 5px;
-  cursor: pointer;
-  border-radius: 5px;
+.menu-btn:hover {
+    background-color: #555;
 }
 
-nav button:hover {
-  background: #1abc9c;
-}
-
-.menu-section {
-  padding: 20px;
-}
-
-.hidden {
-  display: none;
+.content {
+    padding: 20px;
 }
 
 .table-container {
-  overflow-x: auto;
-  max-height: 500px;
-  overflow-y: auto;
-  border: 1px solid #ccc;
+    max-height: 400px;
+    overflow-y: auto;
 }
 
 table {
-  border-collapse: collapse;
-  width: 100%;
+    width: 100%;
+    border-collapse: collapse;
 }
 
-thead th, thead td {
-  position: sticky;
-  top: 0;
-  background: #2980b9;
-  color: white;
-  padding: 8px;
-  border: 1px solid #ccc;
-  z-index: 2;
+thead th {
+    position: sticky;
+    top: 0;
+    background-color: #444;
+    color: white;
+    padding: 8px;
 }
 
-thead tr:nth-child(2) td {
-  top: 38px; /* posisi filter row */
-  background: #3498db;
+td, th {
+    border: 1px solid #ddd;
+    padding: 8px;
 }
 
-tbody td {
-  padding: 6px;
-  border: 1px solid #ccc;
+tr:nth-child(even) {
+    background-color: #f2f2f2;
 }
 
-.duplicate {
-  background: red !important;
-  color: white !important;
-}
-
-input.table-filter {
-  width: 100%;
-  box-sizing: border-box;
-  padding: 4px;
-  border: none;
+tr.highlight {
+    background-color: red;
+    color: white;
 }
