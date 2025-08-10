@@ -2,58 +2,60 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>IW39 Monitoring</title>
+<title>Data Lookup Tool</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<header>
-  <h1>📊 IW39 Monitoring System</h1>
-  <nav>
-    <button onclick="showMenu(1)">📂 Menu 1 - Upload File</button>
-    <button onclick="showMenu(2)">📑 Menu 2 - Data Order</button>
-    <button onclick="showMenu(3)">📈 Menu 3</button>
-    <button onclick="showMenu(4)">⚙️ Menu 4</button>
-  </nav>
-</header>
+<div class="navbar">
+    <button class="menu-btn" onclick="showMenu(1)">Menu 1</button>
+    <button class="menu-btn" onclick="showMenu(2)">Menu 2</button>
+    <button class="menu-btn" onclick="showMenu(3)">Menu 3</button>
+</div>
 
-<main>
-  <!-- Menu 1 -->
-  <section id="menu1" class="menu-section">
-    <h2>📂 Upload Data</h2>
-    <input type="file" id="fileInput" accept=".xlsx">
-    <p>Upload file Excel (.xlsx) untuk memuat data.</p>
-  </section>
+<div class="content" id="menu1">
+    <h2>Menu 1</h2>
+    <p>Konten menu 1...</p>
+</div>
 
-  <!-- Menu 2 -->
-  <section id="menu2" class="menu-section hidden">
-    <h2>📑 Data Order</h2>
+<div class="content" id="menu2" style="display:none;">
+    <h2>Menu 2 - Cari Order</h2>
+    <input type="text" id="orderInput" placeholder="Masukkan No Order">
+    <button onclick="searchOrder()">Cari</button>
     <div class="table-container">
-      <table id="dataTable">
-        <thead>
-          <tr id="headerRow"></tr>
-          <tr id="filterRow"></tr>
-        </thead>
-        <tbody></tbody>
-      </table>
+        <table id="outputTable">
+            <thead>
+                <tr>
+                    <th>Room</th>
+                    <th>Order Type</th>
+                    <th>Order</th>
+                    <th>Description</th>
+                    <th>Created On</th>
+                    <th>User Status</th>
+                    <th>MAT</th>
+                    <th>CPH</th>
+                    <th>Section</th>
+                    <th>Status Part</th>
+                    <th>Aging</th>
+                    <th>Month</th>
+                    <th>Cost</th>
+                    <th>Reman</th>
+                    <th>Include</th>
+                    <th>Exclude</th>
+                    <th>Planning</th>
+                    <th>Status AMT</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
     </div>
-  </section>
+</div>
 
-  <!-- Menu 3 -->
-  <section id="menu3" class="menu-section hidden">
-    <h2>📈 Menu 3</h2>
-    <p>Konten Menu 3 masih kosong.</p>
-  </section>
+<div class="content" id="menu3" style="display:none;">
+    <h2>Menu 3</h2>
+    <p>Konten menu 3...</p>
+</div>
 
-  <!-- Menu 4 -->
-  <section id="menu4" class="menu-section hidden">
-    <h2>⚙️ Menu 4</h2>
-    <p>Konten Menu 4 masih kosong.</p>
-  </section>
-</main>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="script.js"></script>
 </body>
 </html>
