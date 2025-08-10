@@ -39,7 +39,7 @@ function handleUpload(fileKey) {
 
   if (!file) {
     status.textContent = `${fileKey}: file belum dipilih`;
-    status.style.color = 'red';
+    status.className = 'error';
     return;
   }
 
@@ -57,10 +57,10 @@ function handleUpload(fileKey) {
       previewDiv.appendChild(section);
 
       status.textContent = `${fileKey}: sukses upload`;
-      status.style.color = fileKey === 'Budget' ? '#004080' : 'green';
+      status.className = fileKey === 'Budget' ? 'highlight' : 'success';
     } catch (err) {
       status.textContent = `${fileKey}: gagal upload`;
-      status.style.color = 'red';
+      status.className = 'error';
     }
   };
   reader.readAsArrayBuffer(file);
@@ -68,5 +68,15 @@ function handleUpload(fileKey) {
 
 function uploadAll() {
   const fileKeys = ['IW39', 'SUM57', 'Planning', 'Budget', 'Data1', 'Data2'];
-  fileKeys.forEach(key => handleUpload(key));
+  let progress = 0;
+  const progressBar = document.getElementById('progress-bar');
+  progressBar.style.width = '0%';
+
+  fileKeys.forEach((key, index) => {
+    setTimeout(() => {
+      handleUpload(key);
+      progress += 100 / fileKeys.length;
+      progressBar.style.width = `${progress}%`;
+    }, index * 500); // delay per file
+  });
 }
