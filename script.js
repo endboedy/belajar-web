@@ -1,8 +1,14 @@
+
 function showTab(tabId) {
   const tabs = document.querySelectorAll('.tab-content');
   tabs.forEach(tab => tab.style.display = 'none');
   document.getElementById(tabId).style.display = 'block';
 }
+
+// Tampilkan tab Upload File saat pertama kali halaman dibuka
+document.addEventListener("DOMContentLoaded", function() {
+  showTab('upload');
+});
 
 async function loadExcelFiles() {
   const files = ['IW39.xlsx', 'SUM57.xlsx', 'Planning.xlsx', 'Budget.xlsx', 'Data1.xlsx', 'Data2.xlsx'];
@@ -14,6 +20,7 @@ async function loadExcelFiles() {
     const url = baseURL + file;
     try {
       const response = await fetch(url);
+      if (!response.ok) throw new Error(`Status ${response.status}`);
       const arrayBuffer = await response.arrayBuffer();
       const workbook = XLSX.read(arrayBuffer, { type: 'array' });
       const sheetName = workbook.SheetNames[0];
