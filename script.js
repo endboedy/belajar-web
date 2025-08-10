@@ -1,7 +1,7 @@
-// ----- Pastikan kamu sudah load XLSX.js di HTML -----
+// Pastikan kamu sudah load xlsx.js di HTML
 // <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
-//// GLOBAL DATA ////
+// ---------- GLOBAL VAR ----------
 let IW39 = [];
 let Data1 = {};
 let Data2 = {};
@@ -10,89 +10,80 @@ let Planning = {};
 
 let dataLembarKerja = [];
 
-// ----- Format angka 1 decimal ----- 
+// ---------- UTIL ----------
 function formatNumber(num) {
-  return Number(num).toFixed(1);
+  if (typeof num !== "number") return num;
+  return num.toFixed(1);
 }
 
-// ----- Parse multi file Excel sekaligus ----- 
-async function parseMultipleExcelFiles(files) {
-  // Reset semua data dulu
-  IW39 = [];
-  Data1 = {};
-  Data2 = {};
-  SUM57 = {};
-  Planning = {};
-
-  for (const file of files) {
-    await parseExcelFile(file);
-  }
+function isValidOrder(order) {
+  return !/[.,]/.test(order);
 }
 
-// ----- Parse 1 file Excel ----- 
+// ---------- PARSE FILE EXCEL ----------
 function parseExcelFile(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
-    reader.onload = function(event) {
+    reader.onload = e => {
       try {
-        const data = new Uint8Array(event.target.result);
-        const workbook = XLSX.read(data, { type: 'array' });
+        const data = new Uint8Array(e.target.result);
+        const wb = XLSX.read(data, { type: "array" });
 
-        if (workbook.SheetNames.includes('IW39')) {
-          IW39 = XLSX.utils.sheet_to_json(workbook.Sheets['IW39']);
+        // Parse sheet IW39
+        if (wb.SheetNames.includes("IW39")) {
+          IW39 = XLSX.utils.sheet_to_json(wb.Sheets["IW39"]);
         }
 
-        if (workbook.SheetNames.includes('Data1')) {
-          const data1Arr = XLSX.utils.sheet_to_json(workbook.Sheets['Data1']);
-          data1Arr.forEach(row => {
-            if(row.Order && row.Section) Data1[row.Order] = row.Section;
+        // Parse Data1 sheet
+        if (wb.SheetNames.includes("Data1")) {
+          const arr = XLSX.utils.sheet_to_json(wb.Sheets["Data1"]);
+          Data1 = {};
+          arr.forEach(r => { if(r.Order && r.Section) Data1[r.Order] = r.Section; });
+        }
+
+        // Parse Data2 sheet
+        if (wb.SheetNames.includes("Data2")) {
+          const arr = XLSX.utils.sheet_to_json(wb.Sheets["Data2"]);
+          Data2 = {};
+          arr.forEach(r => { if(r.MAT && r.CPH) Data2[r.MAT] = r.CPH; });
+        }
+
+        // Parse SUM57 sheet
+        if (wb.SheetNames.includes("SUM57")) {
+          const arr = XLSX.utils.sheet_to_json(wb.Sheets["SUM57"]);
+          SUM57 = {};
+          arr.forEach(r => {
+            if (r.Order) SUM57[r.Order] = { StatusPart: r.StatusPart || "", Aging: r.Aging || "" };
           });
         }
 
-        if (workbook.SheetNames.includes('Data2')) {
-          const data2Arr = XLSX.utils.sheet_to_json(workbook.Sheets['Data2']);
-          data2Arr.forEach(row => {
-            if(row.MAT && row.CPH) Data2[row.MAT] = row.CPH;
-          });
-        }
-
-        if (workbook.SheetNames.includes('SUM57')) {
-          const sumArr = XLSX.utils.sheet_to_json(workbook.Sheets['SUM57']);
-          sumArr.forEach(row => {
-            if(row.Order) {
-              SUM57[row.Order] = { StatusPart: row.StatusPart || '', Aging: row.Aging || '' };
-            }
-          });
-        }
-
-        if (workbook.SheetNames.includes('Planning')) {
-          const planArr = XLSX.utils.sheet_to_json(workbook.Sheets['Planning']);
-          planArr.forEach(row => {
-            if(row.Order) {
-              Planning[row.Order] = { Planning: row.Planning || '', StatusAMT: row.StatusAMT || '' };
-            }
+        // Parse Planning sheet
+        if (wb.SheetNames.includes("Planning")) {
+          const arr = XLSX.utils.sheet_to_json(wb.Sheets["Planning"]);
+          Planning = {};
+          arr.forEach(r => {
+            if(r.Order) Planning[r.Order] = { Planning: r.Planning || "", StatusAMT: r.StatusAMT || "" };
           });
         }
 
         resolve();
-      } catch (error) {
-        reject(error);
+      } catch (err) {
+        reject(err);
       }
     };
-    reader.onerror = reject;
+    reader.onerror = () => reject(new Error("Failed to read file"));
     reader.readAsArrayBuffer(file);
   });
 }
 
-// ----- Build dataLembarKerja dari orders input dan lookup ----- 
+// ---------- BUILD DATA LEMBAR KERJA (lookup) ----------
 function buildDataLembarKerja() {
   dataLembarKerja = dataLembarKerja.map(row => {
     const orderKey = (row.Order || "").toLowerCase();
 
-    // Lookup IW39 by Order (case-insensitive)
+    // Lookup IW39 by order
     const iw = IW39.find(i => i.Order && i.Order.toLowerCase() === orderKey) || {};
 
-    // Isi data dari IW39 dan lain-lain
     row.Room = iw.Room || row.Room || "";
     row.OrderType = iw.OrderType || row.OrderType || "";
     row.Description = iw.Description || row.Description || "";
@@ -101,16 +92,14 @@ function buildDataLembarKerja() {
     row.MAT = iw.MAT || row.MAT || "";
 
     // CPH logic
-    if ((row.Description || "").substring(0,2).toUpperCase() === "JR") {
+    if ((row.Description || "").toUpperCase().startsWith("JR")) {
       row.CPH = "JR";
     } else {
       row.CPH = Data2[row.MAT] || "";
     }
 
-    // Section from Data1 by Order
     row.Section = Data1[row.Order] || "";
 
-    // StatusPart & Aging from SUM57 by Order
     if (SUM57[row.Order]) {
       row.StatusPart = SUM57[row.Order].StatusPart || "";
       row.Aging = SUM57[row.Order].Aging || "";
@@ -119,29 +108,24 @@ function buildDataLembarKerja() {
       row.Aging = "";
     }
 
-    // Cost calculation
-    if (iw.TotalPlan !== undefined && iw.TotalActual !== undefined) {
-      const costCalc = (iw.TotalPlan - iw.TotalActual) / 16500;
-      row.Cost = costCalc < 0 ? "-" : costCalc;
+    // Cost
+    if(iw.TotalPlan !== undefined && iw.TotalActual !== undefined) {
+      const val = (iw.TotalPlan - iw.TotalActual) / 16500;
+      row.Cost = val < 0 ? "-" : val;
     } else {
       row.Cost = "-";
     }
 
-    // Include calculation
+    // Include
     if ((row.Reman || "").toLowerCase() === "reman") {
       row.Include = typeof row.Cost === "number" ? row.Cost * 0.25 : "-";
     } else {
       row.Include = row.Cost;
     }
 
-    // Exclude calculation
-    if ((row.OrderType || "").toUpperCase() === "PM38") {
-      row.Exclude = "-";
-    } else {
-      row.Exclude = row.Include;
-    }
+    // Exclude
+    row.Exclude = (row.OrderType || "").toUpperCase() === "PM38" ? "-" : row.Include;
 
-    // Planning & StatusAMT lookup
     if (Planning[row.Order]) {
       row.Planning = Planning[row.Order].Planning || "";
       row.StatusAMT = Planning[row.Order].StatusAMT || "";
@@ -154,20 +138,19 @@ function buildDataLembarKerja() {
   });
 }
 
-// ----- Render tabel ----- 
-const outputTableBody = document.querySelector("#output-table tbody");
+// ---------- RENDER TABEL ----------
+const tbody = document.querySelector("#output-table tbody");
 
 function renderTable(data) {
-  outputTableBody.innerHTML = "";
-
-  if (data.length === 0) {
-    outputTableBody.innerHTML = `<tr><td colspan="19" style="text-align:center; font-style:italic; color:#888;">Tidak ada data sesuai filter.</td></tr>`;
+  tbody.innerHTML = "";
+  if (!data.length) {
+    tbody.innerHTML = `<tr><td colspan="19" style="text-align:center; font-style:italic; color:#888;">Tidak ada data sesuai filter.</td></tr>`;
     return;
   }
 
-  // Cari duplikat Order (case-insensitive)
-  const ordersLower = data.map(d => d.Order.toLowerCase());
-  const duplicates = ordersLower.filter((item, idx) => ordersLower.indexOf(item) !== idx);
+  // Cari duplikat order
+  const lowerOrders = data.map(d => d.Order.toLowerCase());
+  const duplicates = lowerOrders.filter((v, i) => lowerOrders.indexOf(v) !== i);
 
   data.forEach(row => {
     const tr = document.createElement("tr");
@@ -175,7 +158,7 @@ function renderTable(data) {
 
     function createTD(text, className) {
       const td = document.createElement("td");
-      if(className) td.classList.add(className);
+      if (className) td.classList.add(className);
       td.textContent = text;
       return td;
     }
@@ -196,11 +179,10 @@ function renderTable(data) {
     const tdMonth = document.createElement("td");
     tdMonth.classList.add("editable");
     tdMonth.textContent = row.Month || "";
-    tdMonth.title = "Klik untuk edit bulan";
+    tdMonth.title = "Klik untuk edit Month";
     tdMonth.addEventListener("click", () => editMonth(tdMonth, row));
     tr.appendChild(tdMonth);
 
-    // Cost number right aligned
     tr.appendChild(createTD(typeof row.Cost === "number" ? formatNumber(row.Cost) : row.Cost, "cost"));
 
     // Reman editable
@@ -211,16 +193,12 @@ function renderTable(data) {
     tdReman.addEventListener("click", () => editReman(tdReman, row));
     tr.appendChild(tdReman);
 
-    // Include number right aligned
     tr.appendChild(createTD(typeof row.Include === "number" ? formatNumber(row.Include) : row.Include, "include"));
-
-    // Exclude number right aligned
     tr.appendChild(createTD(typeof row.Exclude === "number" ? formatNumber(row.Exclude) : row.Exclude, "exclude"));
-
     tr.appendChild(createTD(row.Planning));
     tr.appendChild(createTD(row.StatusAMT));
 
-    // Action buttons: Edit (focus Month & Reman) & Delete
+    // Action buttons
     const tdAction = document.createElement("td");
 
     const btnEdit = document.createElement("button");
@@ -236,7 +214,7 @@ function renderTable(data) {
     btnDelete.textContent = "Delete";
     btnDelete.classList.add("btn-action", "btn-delete");
     btnDelete.addEventListener("click", () => {
-      if(confirm(`Hapus order ${row.Order}?`)) {
+      if (confirm(`Hapus order ${row.Order}?`)) {
         dataLembarKerja = dataLembarKerja.filter(d => d.Order.toLowerCase() !== row.Order.toLowerCase());
         buildDataLembarKerja();
         renderTable(dataLembarKerja);
@@ -247,20 +225,20 @@ function renderTable(data) {
 
     tr.appendChild(tdAction);
 
-    outputTableBody.appendChild(tr);
+    tbody.appendChild(tr);
   });
 }
 
-// ----- Edit Month & Reman inline ----- 
+// ---------- EDIT Month & Reman Inline ----------
 function editMonth(td, row) {
   const select = document.createElement("select");
   const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
   months.forEach(m => {
-    const option = document.createElement("option");
-    option.value = m;
-    option.textContent = m;
-    if (m === row.Month) option.selected = true;
-    select.appendChild(option);
+    const opt = document.createElement("option");
+    opt.value = m;
+    opt.textContent = m;
+    if (m === row.Month) opt.selected = true;
+    select.appendChild(opt);
   });
 
   select.addEventListener("change", () => {
@@ -269,7 +247,6 @@ function editMonth(td, row) {
     renderTable(dataLembarKerja);
     saveDataToStorage();
   });
-
   select.addEventListener("blur", () => renderTable(dataLembarKerja));
 
   td.textContent = "";
@@ -292,7 +269,6 @@ function editReman(td, row) {
       renderTable(dataLembarKerja);
     }
   });
-
   input.addEventListener("blur", () => {
     row.Reman = input.value.trim();
     buildDataLembarKerja();
@@ -306,15 +282,16 @@ function editReman(td, row) {
 }
 
 function editMonthAction(row) {
-  const trs = outputTableBody.querySelectorAll("tr");
+  const trs = tbody.querySelectorAll("tr");
   trs.forEach(tr => {
     if(tr.children[2].textContent.toLowerCase() === row.Order.toLowerCase()) {
       editMonth(tr.children[11], row);
     }
   });
 }
+
 function editRemanAction(row) {
-  const trs = outputTableBody.querySelectorAll("tr");
+  const trs = tbody.querySelectorAll("tr");
   trs.forEach(tr => {
     if(tr.children[2].textContent.toLowerCase() === row.Order.toLowerCase()) {
       editReman(tr.children[13], row);
@@ -322,111 +299,82 @@ function editRemanAction(row) {
   });
 }
 
-// ----- Validasi order input ----- 
-function isValidOrder(order) {
-  return !/[.,]/.test(order);
-}
-
-// ----- Add order multi input ----- 
+// ---------- ADD ORDER ----------
 const addOrderBtn = document.getElementById("add-order-btn");
 const addOrderInput = document.getElementById("add-order-input");
 const addOrderStatus = document.getElementById("add-order-status");
 
 addOrderBtn.addEventListener("click", () => {
-  let rawInput = addOrderInput.value.trim();
-  if (!rawInput) {
+  const raw = addOrderInput.value.trim();
+  if (!raw) {
     alert("Masukkan minimal satu Order bro!");
     return;
   }
+  let orders = raw.split(/[\s,]+/).map(o => o.trim()).filter(o => o.length);
+  let added = 0;
+  let invalid = [];
+  let skipped = [];
 
-  let orders = rawInput.split(/[\s,\n]+/).map(s => s.trim()).filter(s => s.length > 0);
-
-  let addedCount = 0;
-  let skippedOrders = [];
-  let invalidOrders = [];
-
-  orders.forEach(order => {
-    if (!isValidOrder(order)) {
-      invalidOrders.push(order);
+  orders.forEach(o => {
+    if(!isValidOrder(o)) {
+      invalid.push(o);
       return;
     }
-    const exists = dataLembarKerja.some(d => d.Order.toLowerCase() === order.toLowerCase());
-    if (!exists) {
-      dataLembarKerja.push({
-        Room: "",
-        OrderType: "",
-        Order: order,
-        Description: "",
-        CreatedOn: "",
-        UserStatus: "",
-        MAT: "",
-        CPH: "",
-        Section: "",
-        StatusPart: "",
-        Aging: "",
-        Month: "",
-        Cost: "-",
-        Reman: "",
-        Include: "-",
-        Exclude: "-",
-        Planning: "",
-        StatusAMT: ""
-      });
-      addedCount++;
-    } else {
-      skippedOrders.push(order);
+    if (dataLembarKerja.find(d => d.Order.toLowerCase() === o.toLowerCase())) {
+      skipped.push(o);
+      return;
     }
+    dataLembarKerja.push({
+      Room: "", OrderType: "", Order: o, Description: "", CreatedOn: "", UserStatus: "",
+      MAT: "", CPH: "", Section: "", StatusPart: "", Aging: "", Month: "", Cost: "-",
+      Reman: "", Include: "-", Exclude: "-", Planning: "", StatusAMT: ""
+    });
+    added++;
   });
 
   buildDataLembarKerja();
   renderTable(dataLembarKerja);
   addOrderInput.value = "";
 
-  let msg = `${addedCount} Order berhasil ditambahkan.`;
-  if (invalidOrders.length) {
-    msg += ` Order tidak valid (ada titik atau koma): ${invalidOrders.join(", ")}.`;
-  }
-  if (skippedOrders.length) {
-    msg += ` Order sudah ada dan tidak dimasukkan ulang: ${skippedOrders.join(", ")}.`;
-  }
+  let msg = `${added} order berhasil ditambahkan.`;
+  if (invalid.length) msg += ` Order tidak valid: ${invalid.join(", ")}.`;
+  if (skipped.length) msg += ` Order sudah ada: ${skipped.join(", ")}.`;
   addOrderStatus.textContent = msg;
   saveDataToStorage();
 });
 
-// ----- Filter input fields ----- 
+// ---------- FILTER ----------
 const filterRoom = document.getElementById("filter-room");
 const filterOrder = document.getElementById("filter-order");
 const filterCPH = document.getElementById("filter-cph");
 const filterMAT = document.getElementById("filter-mat");
 const filterSection = document.getElementById("filter-section");
 
-const filterInputs = [filterRoom, filterOrder, filterCPH, filterMAT, filterSection];
+const filters = [filterRoom, filterOrder, filterCPH, filterMAT, filterSection];
 
-filterInputs.forEach(input => {
-  input.addEventListener("input", () => {
-    const filtered = dataLembarKerja.filter(row => {
-      const roomMatch = row.Room.toLowerCase().includes(filterRoom.value.toLowerCase());
-      const orderMatch = row.Order.toLowerCase().includes(filterOrder.value.toLowerCase());
-      const cphMatch = row.CPH.toLowerCase().includes(filterCPH.value.toLowerCase());
-      const matMatch = row.MAT.toLowerCase().includes(filterMAT.value.toLowerCase());
-      const sectionMatch = row.Section.toLowerCase().includes(filterSection.value.toLowerCase());
-      return roomMatch && orderMatch && cphMatch && matMatch && sectionMatch;
-    });
-    renderTable(filtered);
+filters.forEach(f => f.addEventListener("input", () => {
+  const filtered = dataLembarKerja.filter(r => {
+    return r.Room.toLowerCase().includes(filterRoom.value.toLowerCase())
+      && r.Order.toLowerCase().includes(filterOrder.value.toLowerCase())
+      && r.CPH.toLowerCase().includes(filterCPH.value.toLowerCase())
+      && r.MAT.toLowerCase().includes(filterMAT.value.toLowerCase())
+      && r.Section.toLowerCase().includes(filterSection.value.toLowerCase());
   });
-});
+  renderTable(filtered);
+}));
 
-// ----- Save & Load dari localStorage ----- 
+// ---------- SAVE & LOAD LOCALSTORAGE ----------
 const saveBtn = document.getElementById("save-btn");
 const loadBtn = document.getElementById("load-btn");
 
 function saveDataToStorage() {
   localStorage.setItem("dataLembarKerja", JSON.stringify(dataLembarKerja));
 }
+
 function loadDataFromStorage() {
-  const stored = localStorage.getItem("dataLembarKerja");
-  if(stored) {
-    dataLembarKerja = JSON.parse(stored);
+  const data = localStorage.getItem("dataLembarKerja");
+  if(data) {
+    dataLembarKerja = JSON.parse(data);
     buildDataLembarKerja();
     renderTable(dataLembarKerja);
   }
@@ -434,14 +382,14 @@ function loadDataFromStorage() {
 
 saveBtn.addEventListener("click", () => {
   saveDataToStorage();
-  alert("Data berhasil disimpan ke browser localStorage!");
+  alert("Data berhasil disimpan di browser.");
 });
 
 loadBtn.addEventListener("click", () => {
   loadDataFromStorage();
 });
 
-// ----- Upload multi file & progress ----- 
+// ---------- UPLOAD FILE ----------
 const fileInput = document.getElementById("file-input");
 const uploadBtn = document.getElementById("upload-btn");
 const progressContainer = document.getElementById("progress-container");
@@ -453,8 +401,8 @@ fileInput.setAttribute("multiple", true);
 
 uploadBtn.addEventListener("click", async () => {
   const files = fileInput.files;
-  if (!files || files.length === 0) {
-    alert("Pilih minimal 1 file Excel untuk diupload bro!");
+  if (!files.length) {
+    alert("Pilih minimal 1 file Excel untuk upload bro!");
     return;
   }
 
@@ -464,38 +412,47 @@ uploadBtn.addEventListener("click", async () => {
   uploadStatus.textContent = "";
 
   try {
-    // Karena FileReader async dan per file, kita buat progress manual
-    for(let i = 0; i < files.length; i++) {
+    // Reset all global data before parse
+    IW39 = [];
+    Data1 = {};
+    Data2 = {};
+    SUM57 = {};
+    Planning = {};
+
+    for(let i=0; i < files.length; i++) {
       await parseExcelFile(files[i]);
-      let percent = Math.round(((i + 1) / files.length) * 100);
-      progressBar.value = percent;
-      progressText.textContent = `${percent}%`;
+      let perc = Math.round(((i+1)/files.length)*100);
+      progressBar.value = perc;
+      progressText.textContent = `${perc}%`;
     }
+
     buildDataLembarKerja();
     renderTable(dataLembarKerja);
-    uploadStatus.textContent = `Upload selesai, total ${files.length} file berhasil di-load.`;
+
+    uploadStatus.textContent = `Upload selesai: ${files.length} file berhasil diproses.`;
   } catch (err) {
-    alert("Error saat membaca file Excel: " + err.message);
-    uploadStatus.textContent = `Upload gagal: ${err.message}`;
+    uploadStatus.textContent = "Upload gagal: " + err.message;
   }
   progressContainer.classList.add("hidden");
 });
 
-// ----- Menu sidebar ----- 
+// ---------- SIDEBAR MENU ----------
 const menuItems = document.querySelectorAll(".menu-item");
-const contentSections = document.querySelectorAll(".content-section");
+const sections = document.querySelectorAll(".content-section");
 
 menuItems.forEach(item => {
   item.addEventListener("click", () => {
     menuItems.forEach(i => i.classList.remove("active"));
-    contentSections.forEach(section => section.classList.remove("active"));
-
     item.classList.add("active");
-    const menuName = item.getAttribute("data-menu");
-    const activeSection = document.getElementById(menuName);
-    if(activeSection) activeSection.classList.add("active");
+    const target = item.dataset.menu;
+    sections.forEach(s => {
+      s.classList.toggle("active", s.id === target);
+    });
   });
 });
 
-// ----- Init load data kalau ada -----
-loadDataFromStorage();
+// ---------- INIT ----------
+window.addEventListener("DOMContentLoaded", () => {
+  loadDataFromStorage();
+  renderTable(dataLembarKerja);
+});
