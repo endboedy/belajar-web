@@ -473,9 +473,11 @@ function openEditModal(index){
 
 // Jalankan setelah DOM siap
 document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('btnAddOrders').addEventListener('click', addOrdersFromInput);
   // Navigasi menu
   document.getElementById('navUpload').addEventListener('click', () => showPage('pageUpload'));
   document.getElementById('navLembar').addEventListener('click', () => showPage('pageLembar'));
+    renderTable(merged);
   document.getElementById('navSummary').addEventListener('click', () => showPage('pageSummary'));
   document.getElementById('navDownload').addEventListener('click', () => showPage('pageDownload'));
 
