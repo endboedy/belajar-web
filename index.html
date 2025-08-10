@@ -21,8 +21,26 @@
       </ul>
     </aside>
     <main class="main-content">
-      <section id="upload" class="tab-content">
-        <h2>Upload File</h2>
+      
+<h2>Upload File</h2>
+<form id="upload-form">
+  <label>IW39: <input type="file" name="IW39" onchange="handleUpload('IW39')"></label><br />
+  <label>SUM57: <input type="file" name="SUM57" onchange="handleUpload('SUM57')"></label><br />
+  <label>Planning: <input type="file" name="Planning" onchange="handleUpload('Planning')"></label><br />
+  <label>Budget: <input type="file" name="Budget" onchange="handleUpload('Budget')"></label><br />
+  <label>Data1: <input type="file" name="Data1" onchange="handleUpload('Data1')"></label><br />
+  <label>Data2: <input type="file" name="Data2" onchange="handleUpload('Data2')"></label><br />
+</form>
+
+<div id="upload-status">
+  <p id="status-IW39">IW39: belum upload</p>
+  <p id="status-SUM57">SUM57: belum upload</p>
+  <p id="status-Planning">Planning: belum upload</p>
+  <p id="status-Budget">Budget: belum upload</p>
+  <p id="status-Data1">Data1: belum upload</p>
+  <p id="status-Data2">Data2: belum upload</p>
+</div>
+
         <p>File Excel tersedia di folder <code>excel/</code> GitHub:</p>
         <ul id="file-list">
           <li>IW39.xlsx</li>
