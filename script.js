@@ -37,3 +37,8 @@ function handleUpload(fileKey) {
   status.textContent = `${fileKey}: sukses`;
   status.style.color = fileKey === 'Budget' ? '#004080' : 'green'; // Highlight Budget
 }
+
+#upload-status p {
+  margin: 5px 0;
+  font-weight: bold;
+}
