@@ -450,21 +450,21 @@ addOrderBtn.addEventListener("click", () => {
 
 // ----- Filter buttons -----
 const filterRoom = document.getElementById("filter-room");
-const filterOrderType = document.getElementById("filter-ordertype");
+const filterOrderType = document.getElementById("filter-order");
 const filterSection = document.getElementById("filter-section");
 const filterMonth = document.getElementById("filter-month");
 const filterReman = document.getElementById("filter-reman");
 
-const filterInputs = [filterRoom, filterOrderType, filterSection, filterMonth, filterReman];
+const filterInputs = [filterRoom, filterOrderType, filterSection, filterMonth, filterReman].filter(el => el !== null);
 
 filterInputs.forEach(input => {
   input.addEventListener("input", () => {
     const filtered = dataLembarKerja.filter(row => {
-      const roomMatch = row.Room.toLowerCase().includes(filterRoom.value.toLowerCase());
-      const orderTypeMatch = row.OrderType.toLowerCase().includes(filterOrderType.value.toLowerCase());
-      const sectionMatch = row.Section.toLowerCase().includes(filterSection.value.toLowerCase());
-      const monthMatch = row.Month.toLowerCase().includes(filterMonth.value.toLowerCase());
-      const remanMatch = row.Reman.toLowerCase().includes(filterReman.value.toLowerCase());
+      const roomMatch = filterRoom ? row.Room.toLowerCase().includes(filterRoom.value.toLowerCase()) : true;
+      const orderTypeMatch = filterOrderType ? row.OrderType.toLowerCase().includes(filterOrderType.value.toLowerCase()) : true;
+      const sectionMatch = filterSection ? row.Section.toLowerCase().includes(filterSection.value.toLowerCase()) : true;
+      const monthMatch = filterMonth ? row.Month.toLowerCase().includes(filterMonth.value.toLowerCase()) : true;
+      const remanMatch = filterReman ? row.Reman.toLowerCase().includes(filterReman.value.toLowerCase()) : true;
       return roomMatch && orderTypeMatch && sectionMatch && monthMatch && remanMatch;
     });
     renderTable(filtered);
@@ -483,7 +483,7 @@ fileInput.addEventListener("change", async (e) => {
     await parseExcelFile(file);
     buildDataLembarKerja();
     renderTable(dataLembarKerja);
-    fileStatus.textContent = `File ${file.name} berhasil diupload dan data siap.`;
+    if(fileStatus) fileStatus.textContent = `File ${file.name} berhasil diupload dan data siap.`;
   } catch (err) {
     alert("Error saat membaca file Excel: " + err.message);
   }
