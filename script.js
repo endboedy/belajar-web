@@ -506,62 +506,68 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Fungsi untuk tambah orders dari textarea inputOrders
   function addOrdersFromInput() {
-  const raw = document.getElementById('inputOrders').value || "";
-  if (raw.trim() === "") {
-    document.getElementById('lmMsg').textContent = "Tidak ada order yang dimasukkan.";
-    return;
-  }
-  document.getElementById('lmMsg').textContent = "";
-  const lines = raw.split(/[
-,]+/).map(l => l.trim()).filter(l => l !== "");
-  let addedCount = 0;
-  let notFoundOrders = [];
-
-  const normIW = normalizeRows(iwData);
-
-  lines.forEach(ord => {
-    const foundIW = normIW.find(r => String(r['order']).split('.')[0] === ord.split('.')[0]);
-    if (foundIW) {
-      const mergedRow = buildMergedRow(foundIW, ord);
-      merged.push(mergedRow);
-      addedCount++;
-      console.log("Order ditemukan:", ord);
-    } else {
-      notFoundOrders.push(ord);
-      console.log("Order tidak ditemukan:", ord);
-      merged.push({
-        "Room": "-",
-        "Order Type": "-",
-        "Order": ord.split('.')[0],
-        "Description": "-",
-        "Created On": "",
-        "User Status": "",
-        "MAT": "",
-        "CPH": "",
-        "Section": "",
-        "Status Part": "",
-        "Aging": "",
-        "Month": "",
-        "Cost": "",
-        "Reman": "",
-        "Include": "",
-        "Exclude": "",
-        "Planning": "",
-        "Status AMT": ""
-      });
+    const raw = document.getElementById('inputOrders').value || "";
+    if (raw.trim() === "") {
+      document.getElementById('lmMsg').textContent = "Tidak ada order yang dimasukkan.";
+      return;
     }
+    document.getElementById('lmMsg').textContent = "";
+const lines = raw.split(/[\n,]+/).map(l => l.trim()).filter(l => l !== "");
+    lines.forEach(ord => {
+      const normIW = normalizeRows(iwData);
+      const foundIW = normIW.find(r => String(r['order']).split('.')[0] === ord.split('.')[0]);
+      if (foundIW) {
+        const mergedRow = buildMergedRow(foundIW, ord);
+        merged.push(mergedRow);
+      } else {
+        merged.push({
+          "Room": "-",
+          "Order Type": "-",
+          "Order": ord.split('.')[0],
+          "Description": "-",
+          "Created On": "",
+          "User Status": "",
+          "MAT": "",
+          "CPH": "",
+          "Section": "",
+          "Status Part": "",
+          "Aging": "",
+          "Month": "",
+          "Cost": "",
+          "Reman": "",
+          "Include": "",
+          "Exclude": "",
+          "Planning": "",
+          "Status AMT": ""
+        });
+      }
+    });
+    renderTable(merged);
+    document.getElementById('inputOrders').value = "";
+  }
+
+  // Simpan lembar kerja ke localStorage
+  function saveLembarKerja() {
+    localStorage.setItem('ndarboe_merged', JSON.stringify(merged));
+    document.getElementById('lmMsg').textContent = "Lembar Kerja tersimpan di localStorage.";
+  }
+
+  // Clear lembar kerja dan localStorage
+  function clearLembarKerja() {
+    if (!confirm("Yakin ingin hapus semua Lembar Kerja?")) return;
+    merged = [];
+    renderTable(merged);
+    localStorage.removeItem('ndarboe_merged');
+    document.getElementById('lmMsg').textContent = "Lembar Kerja dihapus.";
+  }
+
+  // Clear pesan saat inputOrders diubah
+  document.getElementById('inputOrders').addEventListener('input', () => {
+    document.getElementById('lmMsg').textContent = "";
   });
 
-  renderTable(merged);
-  document.getElementById('inputOrders').value = "";
-
-  let msg = `${addedCount} order berhasil ditambahkan.`;
-  if (notFoundOrders.length > 0) {
-    msg += ` ${notFoundOrders.length} order tidak ditemukan: ${notFoundOrders.join(", ")}`;
-  }
-  document.getElementById('lmMsg').textContent = msg;
-
-  if (merged.length === 0) {
-    alert("Tabel masih kosong setelah menambahkan orders.");
-  }
+  // Tampilkan halaman default
+  showPage('pageUpload');
+  // Load data dari localStorage jika ada
+  loadSaved();
 });
