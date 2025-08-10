@@ -5,11 +5,6 @@ function showTab(tabId) {
   document.getElementById(tabId).style.display = 'block';
 }
 
-// Tampilkan tab Upload File saat pertama kali halaman dibuka
-document.addEventListener("DOMContentLoaded", function() {
-  showTab('upload');
-});
-
 async function loadExcelFiles() {
   const files = ['IW39.xlsx', 'SUM57.xlsx', 'Planning.xlsx', 'Budget.xlsx', 'Data1.xlsx', 'Data2.xlsx'];
   const baseURL = 'https://raw.githubusercontent.com/endboedy/belajar-web/main/excel/';
