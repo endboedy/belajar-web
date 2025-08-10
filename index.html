@@ -48,6 +48,19 @@
       <!-- Lembar Kerja -->
       <section id="lembar" class="content-section">
         <h2>Lembar Kerja</h2>
+
+        <!-- Add Order Section -->
+        <div class="add-order-section">
+          <label for="add-order-input">Masukkan Order (pisah dengan koma atau enter):</label><br />
+          <textarea id="add-order-input" rows="3" placeholder="Contoh: ORD004 ORD005 ORD006"></textarea>
+          <br/>
+          <button id="add-order-btn">Add Orders</button>
+          <div id="add-order-status" class="status-message"></div>
+        </div>
+
+        <br/>
+
+        <!-- Filter Group -->
         <div class="filter-group">
           <label>Room: <input type="text" id="filter-room" placeholder="Filter Room" /></label>
           <label>Order: <input type="text" id="filter-order" placeholder="Filter Order" /></label>
@@ -55,8 +68,13 @@
           <label>MAT: <input type="text" id="filter-mat" placeholder="Filter MAT" /></label>
           <label>Section: <input type="text" id="filter-section" placeholder="Filter Section" /></label>
           <button id="filter-btn">Filter</button>
+          <button id="reset-btn" title="Reset Filter">Reset</button>
+          <button id="save-btn" title="Simpan Data">Save</button>
+          <button id="load-btn" title="Load Data">Load</button>
         </div>
+
         <br />
+
         <table id="output-table">
           <thead>
             <tr>
@@ -78,6 +96,7 @@
               <th>Exclude</th>
               <th>Planning</th>
               <th>Status AMT</th>
+              <th>Action</th>
             </tr>
           </thead>
           <tbody>
