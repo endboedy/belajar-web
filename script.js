@@ -80,7 +80,7 @@ function readExcelFile(file){
   });
 }
 
-// Show page menu helper
+// Show page menu helper & styling for pageLembar full width
 function showPage(pageId){
   document.querySelectorAll('.page').forEach(p=> p.classList.remove('active'));
   const page = document.getElementById(pageId);
@@ -89,6 +89,15 @@ function showPage(pageId){
   document.querySelectorAll('nav button.nav-btn').forEach(b=> b.classList.remove('active'));
   const navBtn = document.querySelector(`nav button#nav${pageId.charAt(0).toUpperCase() + pageId.slice(1)}`);
   if(navBtn) navBtn.classList.add('active');
+
+  // Lebarkan pageLembar full layar (selain pageUpload dan pageSummary dan pageDownload)
+  if(pageId === "pageLembar"){
+    page.style.width = "100%";
+    page.style.padding = "10px 20px";
+  } else {
+    page.style.width = "";
+    page.style.padding = "";
+  }
 
   if(pageId==="pageLembar"){
     document.getElementById('lmMsg').textContent = "";
@@ -448,126 +457,114 @@ function loadSaved(){
   }
 }
 
-// Clear Lembar Kerja
-function clearLembarKerja(){
-  if(!confirm("Yakin ingin hapus semua Lembar Kerja?")) return;
+// Modal edit baris Lembar Kerja
+function openEditModal(idx){
+  const modal = document.getElementById('editModal');
+  const row = merged[idx];
+  if(!row) return;
+  modal.style.display = "block";
+
+  // Isi form dengan data row
+  document.getElementById('editIdx').value = idx;
+  document.getElementById('editRoom').value = row["Room"] || "";
+  document.getElementById('editOrderType').value = row["Order Type"] || "";
+  document.getElementById('editOrder').value = row["Order"] || "";
+  document.getElementById('editDescription').value = row["Description"] || "";
+  document.getElementById('editCreatedOn').value = row["Created On"] || "";
+  document.getElementById('editUserStatus').value = row["User Status"] || "";
+  document.getElementById('editMAT').value = row["MAT"] || "";
+  document.getElementById('editCPH').value = row["CPH"] || "";
+  document.getElementById('editSection').value = row["Section"] || "";
+  document.getElementById('editStatusPart').value = row["Status Part"] || "";
+  document.getElementById('editAging').value = row["Aging"] || "";
+  document.getElementById('editMonth').value = row["Month"] || "";
+  document.getElementById('editCost').value = row["Cost"] || "";
+  document.getElementById('editReman').value = row["Reman"] || "";
+  document.getElementById('editInclude').value = row["Include"] || "";
+  document.getElementById('editExclude').value = row["Exclude"] || "";
+  document.getElementById('editPlanning').value = row["Planning"] || "";
+  document.getElementById('editStatusAMT').value = row["Status AMT"] || "";
+}
+function closeEditModal(){
+  const modal = document.getElementById('editModal');
+  modal.style.display = "none";
+}
+function saveEditModal(){
+  const idx = Number(document.getElementById('editIdx').value);
+  if(isNaN(idx) || !merged[idx]) return;
+  merged[idx]["Room"] = document.getElementById('editRoom').value;
+  merged[idx]["Order Type"] = document.getElementById('editOrderType').value;
+  merged[idx]["Order"] = document.getElementById('editOrder').value;
+  merged[idx]["Description"] = document.getElementById('editDescription').value;
+  merged[idx]["Created On"] = document.getElementById('editCreatedOn').value;
+  merged[idx]["User Status"] = document.getElementById('editUserStatus').value;
+  merged[idx]["MAT"] = document.getElementById('editMAT').value;
+  merged[idx]["CPH"] = document.getElementById('editCPH').value;
+  merged[idx]["Section"] = document.getElementById('editSection').value;
+  merged[idx]["Status Part"] = document.getElementById('editStatusPart').value;
+  merged[idx]["Aging"] = document.getElementById('editAging').value;
+  merged[idx]["Month"] = document.getElementById('editMonth').value;
+  merged[idx]["Cost"] = document.getElementById('editCost').value;
+  merged[idx]["Reman"] = document.getElementById('editReman').value;
+  merged[idx]["Include"] = document.getElementById('editInclude').value;
+  merged[idx]["Exclude"] = document.getElementById('editExclude').value;
+  merged[idx]["Planning"] = document.getElementById('editPlanning').value;
+  merged[idx]["Status AMT"] = document.getElementById('editStatusAMT').value;
+
+  renderTable(merged);
+  closeEditModal();
+}
+
+// Handle file upload Excel dan baca sheet pertama sebagai iwData
+document.getElementById('fileInput').addEventListener('change', async function(e){
+  const file = e.target.files[0];
+  if(!file){
+    document.getElementById('loadMsg').textContent = "Tidak ada file dipilih.";
+    return;
+  }
+  document.getElementById('loadMsg').textContent = "Memuat file, mohon tunggu...";
+  const json = await readExcelFile(file);
+  iwData = json || [];
   merged = [];
   renderTable(merged);
-  localStorage.removeItem('ndarboe_merged');
-  document.getElementById('lmMsg').textContent = "Lembar Kerja dihapus.";
-}
+  document.getElementById('loadMsg').textContent = "File berhasil dimuat, masukkan Order di bawah.";
+});
 
-// Edit modal: hanya Month dan Reman
-function openEditModal(index){
-  if(index < 0 || index >= merged.length) return;
-  const row = merged[index];
+// Event tombol tambah order di menu Lembar Kerja (menu 2)
+document.getElementById('btnAddOrders').addEventListener('click', e=>{
+  addOrdersFromInput();
+});
 
-  const newMonth = prompt("Edit Month:", row.Month || "");
-  if(newMonth !== null) row.Month = newMonth;
+// Event tombol simpan lembar kerja
+document.getElementById('btnSaveLembar').addEventListener('click', e=>{
+  saveLembarKerja();
+});
 
-  const newReman = prompt("Edit Reman:", row.Reman || "");
-  if(newReman !== null) row.Reman = newReman;
-
-  renderTable(merged);
-}
-
-// Jalankan setelah DOM siap
-document.addEventListener('DOMContentLoaded', () => {
-  // Navigasi menu
-  document.getElementById('navUpload').addEventListener('click', () => showPage('pageUpload'));
-  document.getElementById('navLembar').addEventListener('click', () => showPage('pageLembar'));
-  document.getElementById('navSummary').addEventListener('click', () => showPage('pageSummary'));
-  document.getElementById('navDownload').addEventListener('click', () => showPage('pageDownload'));
-
-  // Load file button
-  document.getElementById('btnLoad').addEventListener('click', async () => {
-    const loadMsg = document.getElementById('loadMsg');
-    loadMsg.textContent = "Loading files...";
-    const fIW = document.getElementById('fileIW39').files[0];
-    if (!fIW) {
-      loadMsg.textContent = "File IW39 wajib diupload.";
-      return;
-    }
-    const fSUM = document.getElementById('fileSUM57').files[0];
-    const fPlan = document.getElementById('filePlanning').files[0];
-    const fBud = document.getElementById('fileBudget').files[0];
-    const fD1 = document.getElementById('fileData1').files[0];
-    const fD2 = document.getElementById('fileData2').files[0];
-
-    iwData = await readExcelFile(fIW);
-    sum57 = fSUM ? await readExcelFile(fSUM) : [];
-    planning = fPlan ? await readExcelFile(fPlan) : [];
-    budget = fBud ? await readExcelFile(fBud) : [];
-    data1 = fD1 ? await readExcelFile(fD1) : [];
-    data2 = fD2 ? await readExcelFile(fD2) : [];
-
-    loadMsg.textContent = `Selesai load file IW39 (${iwData.length} baris)`;
-  });
-
-  // Fungsi untuk tambah orders dari textarea inputOrders
-  function addOrdersFromInput() {
-    const raw = document.getElementById('inputOrders').value || "";
-    if (raw.trim() === "") {
-      document.getElementById('lmMsg').textContent = "Tidak ada order yang dimasukkan.";
-      return;
-    }
-    document.getElementById('lmMsg').textContent = "";
-    const lines = raw.split(/\n|,/).map(l => l.trim()).filter(l => l !== "");
-    lines.forEach(ord => {
-      const normIW = normalizeRows(iwData);
-      const foundIW = normIW.find(r => String(r['order']).split('.')[0] === ord.split('.')[0]);
-      if (foundIW) {
-        const mergedRow = buildMergedRow(foundIW, ord);
-        merged.push(mergedRow);
-      } else {
-        merged.push({
-          "Room": "-",
-          "Order Type": "-",
-          "Order": ord.split('.')[0],
-          "Description": "-",
-          "Created On": "",
-          "User Status": "",
-          "MAT": "",
-          "CPH": "",
-          "Section": "",
-          "Status Part": "",
-          "Aging": "",
-          "Month": "",
-          "Cost": "",
-          "Reman": "",
-          "Include": "",
-          "Exclude": "",
-          "Planning": "",
-          "Status AMT": ""
-        });
-      }
-    });
-    renderTable(merged);
-    document.getElementById('inputOrders').value = "";
-  }
-
-  // Simpan lembar kerja ke localStorage
-  function saveLembarKerja() {
-    localStorage.setItem('ndarboe_merged', JSON.stringify(merged));
-    document.getElementById('lmMsg').textContent = "Lembar Kerja tersimpan di localStorage.";
-  }
-
-  // Clear lembar kerja dan localStorage
-  function clearLembarKerja() {
-    if (!confirm("Yakin ingin hapus semua Lembar Kerja?")) return;
-    merged = [];
-    renderTable(merged);
-    localStorage.removeItem('ndarboe_merged');
-    document.getElementById('lmMsg').textContent = "Lembar Kerja dihapus.";
-  }
-
-  // Clear pesan saat inputOrders diubah
-  document.getElementById('inputOrders').addEventListener('input', () => {
-    document.getElementById('lmMsg').textContent = "";
-  });
-
-  // Tampilkan halaman default
-  showPage('pageUpload');
-  // Load data dari localStorage jika ada
+// Event tombol muat lembar kerja tersimpan
+document.getElementById('btnLoadLembar').addEventListener('click', e=>{
   loadSaved();
+});
+
+// Event tombol close modal edit
+document.getElementById('btnCloseEdit').addEventListener('click', e=>{
+  closeEditModal();
+});
+
+// Event tombol save modal edit
+document.getElementById('btnSaveEdit').addEventListener('click', e=>{
+  saveEditModal();
+});
+
+// Navigation tombol menu utama
+document.querySelectorAll('nav button.nav-btn').forEach(btn=>{
+  btn.addEventListener('click', e=>{
+    e.preventDefault();
+    const target = btn.getAttribute('data-target');
+    if(target) showPage(target);
+  });
+});
+
+// Inisialisasi halaman default
+document.addEventListener('DOMContentLoaded', () => {
+  showPage("pageUpload");
 });
