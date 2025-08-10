@@ -1,162 +1,65 @@
-:root{
-  --bg:#dceefc;
-  --blue:#1f5f93;
-  --deep:#163f61;
-  --sidebar:#2f86c3;
-  --muted:#cfeafc;
-  --panel:#e6f2fb;
-  --accent:#f7c8b6;
-  --text:#073049;
-  --max-w:1100px;
-  font-family: "Segoe UI", Roboto, Arial, sans-serif;
+
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background-color: #e6f2ff; /* biru paling muda */
 }
 
-*{box-sizing:border-box}
-html,body,#root{height:100%}
-body{
-  margin:0;
-  background:var(--bg);
-  color:var(--text);
-  -webkit-font-smoothing:antialiased;
-  -moz-osx-font-smoothing:grayscale;
+.header {
+  background-color: #004080; /* biru tua */
+  color: white;
+  padding: 15px;
+  text-align: center;
+  font-size: 24px;
 }
 
-.app{
-  display:flex;
-  min-height:100vh;
+.container {
+  display: flex;
+  height: calc(100vh - 60px);
 }
 
-/* SIDEBAR */
-.sidebar{
-  width:200px;
-  background:linear-gradient(180deg,var(--sidebar),#2a76b0);
-  color:white;
-  padding:18px 12px;
-  display:flex;
-  flex-direction:column;
-  gap:18px;
-}
-.logo{
-  font-weight:700;
-  font-size:18px;
-  letter-spacing:1px;
-  padding:6px 0;
-  text-align:center;
-}
-.sidebar nav ul{
-  list-style:none;
-  padding:0;
-  margin:0;
-}
-.sidebar nav li{
-  padding:10px 8px;
-  display:flex;
-  align-items:center;
-  gap:8px;
-  border-radius:4px;
-  cursor:pointer;
-  margin-bottom:6px;
-  transition:all .15s;
-  background:linear-gradient(90deg,rgba(255,255,255,0.03),transparent);
-}
-.sidebar nav li:hover{transform:translateX(4px)}
-.sidebar nav li.active{
-  background:var(--accent);
-  color:var(--text);
-  font-weight:600;
-}
-.icon{width:18px;height:18px;fill:currentColor;opacity:.9}
-
-/* MAIN */
-.main{
-  flex:1;
-  padding:0 28px 40px 28px;
-  max-width:1400px;
+.sidebar {
+  width: 220px;
+  background-color: #3399ff; /* biru agak muda */
+  color: white;
+  padding: 20px;
 }
 
-/* HERO bars like image */
-.hero{
-  background:var(--deep);
-  color:white;
-  padding:18px 28px;
-  margin:18px 0 0 0;
-  display:flex;
-  align-items:center;
-  gap:16px;
-}
-.hero.small{padding:14px 24px; margin-top:28px}
-.hero h1, .hero h2{
-  font-weight:600;
-  margin:0;
-  letter-spacing:1px;
+.sidebar ul {
+  list-style: none;
+  padding: 0;
 }
 
-/* PANEL */
-.panel{
-  background:var(--panel);
-  padding:18px 24px;
-  margin-top:0;
-  border-bottom:4px solid rgba(0,0,0,0.05);
-}
-.panel-inner{max-width:var(--max-w); margin:0 auto}
-
-/* Upload grid */
-.upload-grid{
-  display:grid;
-  grid-template-columns:repeat(3, 1fr);
-  gap:10px 24px;
-}
-.upload-grid label{
-  display:flex;
-  justify-content:space-between;
-  gap:12px;
-  align-items:center;
-  background:rgba(255,255,255,0.3);
-  padding:8px 10px;
-  border-radius:4px;
-}
-.upload-grid input[type=file]{flex:1}
-
-/* Filters */
-.filters{
-  display:flex;
-  gap:10px;
-  flex-wrap:wrap;
-  margin-bottom:12px;
-}
-.filters input{
-  padding:8px 10px;
-  border:1px solid rgba(0,0,0,0.1);
-  border-radius:4px;
-  min-width:120px;
+.sidebar ul li {
+  padding: 10px;
+  cursor: pointer;
+  border-bottom: 1px solid #66ccff;
 }
 
-/* Table */
-.table-wrap{overflow:auto;border-top:1px solid rgba(0,0,0,0.05);padding-top:10px}
-table{border-collapse:collapse;width:100%}
-table th, table td{
-  border:1px solid rgba(0,0,0,0.06);
-  padding:6px 8px;
-  font-size:13px;
-  text-align:left;
-  background:white;
+.sidebar ul li:hover {
+  background-color: #66ccff;
 }
-table thead th{background:var(--muted);font-weight:600}
-.cost-table thead th{background:var(--deep);color:white}
 
-/* cost table wrap smaller width */
-.cost-table-wrap{max-width:800px; overflow:auto; margin-top:10px}
-.cost-table td, .cost-table th{font-size:13px;padding:6px 10px}
+.main-content {
+  flex: 1;
+  padding: 20px;
+  background-color: #e6f2ff; /* biru paling muda */
+  overflow-y: auto;
+}
 
-/* totals */
-.total-row td{font-weight:700;background:rgba(0,0,0,0.03)}
+.tab-content h2 {
+  margin-top: 0;
+}
 
-/* footer */
-.footer{margin-top:28px;text-align:center;color:rgba(0,0,0,0.5)}
+button {
+  padding: 8px 16px;
+  margin-top: 10px;
+  cursor: pointer;
+}
 
-/* responsive */
-@media (max-width:900px){
-  .sidebar{display:none}
-  .upload-grid{grid-template-columns:repeat(1,1fr)}
-  .main{padding:12px}
+#excel-preview div {
+  margin-top: 20px;
+  background: white;
+  padding: 10px;
+  border: 1px solid #ccc;
 }
