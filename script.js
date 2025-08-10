@@ -472,18 +472,19 @@ function openEditModal(index){
 }
 
 // Jalankan setelah DOM siap
-document.addEventListener('DOMContentLoaded', ()=>{
-  // Pasang event listener safe setelah DOM siap
-  document.getElementById('navUpload').addEventListener('click', ()=>showPage('pageUpload'));
-  document.getElementById('navLembar').addEventListener('click', ()=>showPage('pageLembar'));
-  document.getElementById('navSummary').addEventListener('click', ()=>showPage('pageSummary'));
-  document.getElementById('navDownload').addEventListener('click', ()=>showPage('pageDownload'));
+document.addEventListener('DOMContentLoaded', () => {
+  // Navigasi menu
+  document.getElementById('navUpload').addEventListener('click', () => showPage('pageUpload'));
+  document.getElementById('navLembar').addEventListener('click', () => showPage('pageLembar'));
+  document.getElementById('navSummary').addEventListener('click', () => showPage('pageSummary'));
+  document.getElementById('navDownload').addEventListener('click', () => showPage('pageDownload'));
 
-  document.getElementById('btnLoad').addEventListener('click', async ()=>{
+  // Load file button
+  document.getElementById('btnLoad').addEventListener('click', async () => {
     const loadMsg = document.getElementById('loadMsg');
     loadMsg.textContent = "Loading files...";
     const fIW = document.getElementById('fileIW39').files[0];
-    if(!fIW) {
+    if (!fIW) {
       loadMsg.textContent = "File IW39 wajib diupload.";
       return;
     }
@@ -503,12 +504,70 @@ document.addEventListener('DOMContentLoaded', ()=>{
     loadMsg.textContent = `Selesai load file IW39 (${iwData.length} baris)`;
   });
 
-  document.getElementById('btnAddOrders').addEventListener('click', addOrdersFromInput);
-  document.getElementById('btnSave').addEventListener('click', saveLembarKerja);
-  document.getElementById('btnClear').addEventListener('click', clearLembarKerja);
-  document.getElementById('inputOrders').addEventListener('input', ()=>{ document.getElementById('lmMsg').textContent = ""; });
+  // Fungsi untuk tambah orders dari textarea inputOrders
+  function addOrdersFromInput() {
+    const raw = document.getElementById('inputOrders').value || "";
+    if (raw.trim() === "") {
+      document.getElementById('lmMsg').textContent = "Tidak ada order yang dimasukkan.";
+      return;
+    }
+    document.getElementById('lmMsg').textContent = "";
+    const lines = raw.split(/[\n,]+/).map(l => l.trim()).filter(l => l !== "");
+    lines.forEach(ord => {
+      const normIW = normalizeRows(iwData);
+      const foundIW = normIW.find(r => String(r['order']).split('.')[0] === ord.split('.')[0]);
+      if (foundIW) {
+        const mergedRow = buildMergedRow(foundIW, ord);
+        merged.push(mergedRow);
+      } else {
+        merged.push({
+          "Room": "-",
+          "Order Type": "-",
+          "Order": ord.split('.')[0],
+          "Description": "-",
+          "Created On": "",
+          "User Status": "",
+          "MAT": "",
+          "CPH": "",
+          "Section": "",
+          "Status Part": "",
+          "Aging": "",
+          "Month": "",
+          "Cost": "",
+          "Reman": "",
+          "Include": "",
+          "Exclude": "",
+          "Planning": "",
+          "Status AMT": ""
+        });
+      }
+    });
+    renderTable(merged);
+    document.getElementById('inputOrders').value = "";
+  }
 
-  // Default page dan load saved
+  // Simpan lembar kerja ke localStorage
+  function saveLembarKerja() {
+    localStorage.setItem('ndarboe_merged', JSON.stringify(merged));
+    document.getElementById('lmMsg').textContent = "Lembar Kerja tersimpan di localStorage.";
+  }
+
+  // Clear lembar kerja dan localStorage
+  function clearLembarKerja() {
+    if (!confirm("Yakin ingin hapus semua Lembar Kerja?")) return;
+    merged = [];
+    renderTable(merged);
+    localStorage.removeItem('ndarboe_merged');
+    document.getElementById('lmMsg').textContent = "Lembar Kerja dihapus.";
+  }
+
+  // Clear pesan saat inputOrders diubah
+  document.getElementById('inputOrders').addEventListener('input', () => {
+    document.getElementById('lmMsg').textContent = "";
+  });
+
+  // Tampilkan halaman default
   showPage('pageUpload');
+  // Load data dari localStorage jika ada
   loadSaved();
 });
