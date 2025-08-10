@@ -98,36 +98,15 @@ function showPage(pageId){
   }
 }
 
-// Attach nav button event listeners
-document.getElementById('navUpload').addEventListener('click', ()=>showPage('pageUpload'));
-document.getElementById('navLembar').addEventListener('click', ()=>showPage('pageLembar'));
-document.getElementById('navSummary').addEventListener('click', ()=>showPage('pageSummary'));
-document.getElementById('navDownload').addEventListener('click', ()=>showPage('pageDownload'));
-
-// Load files button handler
-document.getElementById('btnLoad').addEventListener('click', async ()=>{
-  const loadMsg = document.getElementById('loadMsg');
-  loadMsg.textContent = "Loading files...";
-  const fIW = document.getElementById('fileIW39').files[0];
-  if(!fIW) {
-    loadMsg.textContent = "File IW39 wajib diupload.";
-    return;
-  }
-  const fSUM = document.getElementById('fileSUM57').files[0];
-  const fPlan = document.getElementById('filePlanning').files[0];
-  const fBud = document.getElementById('fileBudget').files[0];
-  const fD1 = document.getElementById('fileData1').files[0];
-  const fD2 = document.getElementById('fileData2').files[0];
-
-  iwData = await readExcelFile(fIW);
-  sum57 = fSUM ? await readExcelFile(fSUM) : [];
-  planning = fPlan ? await readExcelFile(fPlan) : [];
-  budget = fBud ? await readExcelFile(fBud) : [];
-  data1 = fD1 ? await readExcelFile(fD1) : [];
-  data2 = fD2 ? await readExcelFile(fD2) : [];
-
-  loadMsg.textContent = `Selesai load file IW39 (${iwData.length} baris)`;
-});
+// Mendeteksi duplikat Order untuk pewarnaan
+function findDuplicateOrders(data){
+  const counts = {};
+  data.forEach(r=>{
+    const key = (r.Order || "").toString().toLowerCase();
+    counts[key] = (counts[key] || 0) + 1;
+  });
+  return counts;
+}
 
 // Build merged row untuk tabel
 function buildMergedRow(origNorm, orderKey){
@@ -228,16 +207,6 @@ function filteredData(){
         && (row["MAT"] || "").toString().toLowerCase().includes(filters.mat)
         && (row["CPH"] || "").toString().toLowerCase().includes(filters.cph);
   });
-}
-
-// Mendeteksi duplikat Order untuk pewarnaan
-function findDuplicateOrders(data){
-  const counts = {};
-  data.forEach(r=>{
-    const key = (r.Order || "").toString().toLowerCase();
-    counts[key] = (counts[key] || 0) + 1;
-  });
-  return counts;
 }
 
 // Render tabel Lembar Kerja dengan filter dan action edit/delete
@@ -419,11 +388,7 @@ function renderTable(data){
 }
 
 // Add multiple orders dari textarea inputOrders
-document.getElementById('btnAddOrders').
-
-
-// Add multiple orders dari textarea inputOrders
-document.getElementById('btnAddOrders').addEventListener('click', ()=>{
+function addOrdersFromInput(){
   const raw = document.getElementById('inputOrders').value || "";
   if(raw.trim() === ""){
     document.getElementById('lmMsg').textContent = "Tidak ada order yang dimasukkan.";
@@ -462,13 +427,13 @@ document.getElementById('btnAddOrders').addEventListener('click', ()=>{
   });
   renderTable(merged);
   document.getElementById('inputOrders').value = "";
-});
+}
 
 // Save / Load Lembar Kerja ke localStorage
-document.getElementById('btnSave').addEventListener('click', ()=>{
+function saveLembarKerja(){
   localStorage.setItem('ndarboe_merged', JSON.stringify(merged));
   document.getElementById('lmMsg').textContent = "Lembar Kerja tersimpan di localStorage.";
-});
+}
 function loadSaved(){
   const raw = localStorage.getItem('ndarboe_merged');
   if(raw){
@@ -484,18 +449,13 @@ function loadSaved(){
 }
 
 // Clear Lembar Kerja
-document.getElementById('btnClear').addEventListener('click', ()=>{
+function clearLembarKerja(){
   if(!confirm("Yakin ingin hapus semua Lembar Kerja?")) return;
   merged = [];
   renderTable(merged);
   localStorage.removeItem('ndarboe_merged');
   document.getElementById('lmMsg').textContent = "Lembar Kerja dihapus.";
-});
-
-// Clear pesan saat inputOrders diubah
-document.getElementById('inputOrders').addEventListener('input', ()=>{
-  document.getElementById('lmMsg').textContent = "";
-});
+}
 
 // Edit modal: hanya Month dan Reman
 function openEditModal(index){
@@ -511,6 +471,44 @@ function openEditModal(index){
   renderTable(merged);
 }
 
-// Inisialisasi page
-showPage('pageUpload');
-loadSaved();
+// Jalankan setelah DOM siap
+document.addEventListener('DOMContentLoaded', ()=>{
+  // Pasang event listener safe setelah DOM siap
+  document.getElementById('navUpload').addEventListener('click', ()=>showPage('pageUpload'));
+  document.getElementById('navLembar').addEventListener('click', ()=>showPage('pageLembar'));
+  document.getElementById('navSummary').addEventListener('click', ()=>showPage('pageSummary'));
+  document.getElementById('navDownload').addEventListener('click', ()=>showPage('pageDownload'));
+
+  document.getElementById('btnLoad').addEventListener('click', async ()=>{
+    const loadMsg = document.getElementById('loadMsg');
+    loadMsg.textContent = "Loading files...";
+    const fIW = document.getElementById('fileIW39').files[0];
+    if(!fIW) {
+      loadMsg.textContent = "File IW39 wajib diupload.";
+      return;
+    }
+    const fSUM = document.getElementById('fileSUM57').files[0];
+    const fPlan = document.getElementById('filePlanning').files[0];
+    const fBud = document.getElementById('fileBudget').files[0];
+    const fD1 = document.getElementById('fileData1').files[0];
+    const fD2 = document.getElementById('fileData2').files[0];
+
+    iwData = await readExcelFile(fIW);
+    sum57 = fSUM ? await readExcelFile(fSUM) : [];
+    planning = fPlan ? await readExcelFile(fPlan) : [];
+    budget = fBud ? await readExcelFile(fBud) : [];
+    data1 = fD1 ? await readExcelFile(fD1) : [];
+    data2 = fD2 ? await readExcelFile(fD2) : [];
+
+    loadMsg.textContent = `Selesai load file IW39 (${iwData.length} baris)`;
+  });
+
+  document.getElementById('btnAddOrders').addEventListener('click', addOrdersFromInput);
+  document.getElementById('btnSave').addEventListener('click', saveLembarKerja);
+  document.getElementById('btnClear').addEventListener('click', clearLembarKerja);
+  document.getElementById('inputOrders').addEventListener('input', ()=>{ document.getElementById('lmMsg').textContent = ""; });
+
+  // Default page dan load saved
+  showPage('pageUpload');
+  loadSaved();
+});
