@@ -56,13 +56,17 @@ function formatNumber(num) {
   return Number(num).toFixed(1);
 }
 
-// ----- Build Data Lembar Kerja: kalkulasi lookup dan rumus -----
+// ----- Validasi order input (tidak boleh titik atau koma) -----
+function isValidOrder(order) {
+  return !/[.,]/.test(order);
+}
+
+// ----- Build Data Lembar Kerja: lookup dan rumus -----
 function buildDataLembarKerja() {
   dataLembarKerja = dataLembarKerja.map(row => {
-    // Cari data IW39 berdasarkan order
     const iw = IW39.find(i => i.Order.toLowerCase() === row.Order.toLowerCase()) || {};
 
-    // Update kolom dari IW39 langsung (Room, OrderType, Description, CreatedOn, UserStatus, MAT)
+    // Assign dari IW39
     row.Room = iw.Room || "";
     row.OrderType = iw.OrderType || "";
     row.Description = iw.Description || "";
@@ -116,11 +120,6 @@ function buildDataLembarKerja() {
   });
 }
 
-// ----- Validasi order input (tidak boleh titik atau koma) -----
-function isValidOrder(order) {
-  return !/[.,]/.test(order);
-}
-
 // ----- Render tabel -----
 const outputTableBody = document.querySelector("#output-table tbody");
 
@@ -140,7 +139,7 @@ function renderTable(data) {
       tr.classList.add("duplicate");
     }
 
-    // Buat kolom td
+    // Buat sel untuk semua kolom
     const tdRoom = document.createElement("td"); tdRoom.textContent = row.Room; tr.appendChild(tdRoom);
     const tdOrderType = document.createElement("td"); tdOrderType.textContent = row.OrderType; tr.appendChild(tdOrderType);
     const tdOrder = document.createElement("td"); tdOrder.textContent = row.Order; tr.appendChild(tdOrder);
@@ -153,128 +152,109 @@ function renderTable(data) {
     const tdStatusPart = document.createElement("td"); tdStatusPart.textContent = row.StatusPart; tr.appendChild(tdStatusPart);
     const tdAging = document.createElement("td"); tdAging.textContent = row.Aging; tr.appendChild(tdAging);
 
-    // Editable Month & Reman handled by Edit button action, so tampilkan text biasa dulu
+    // Month (editable atau text biasa tergantung mode edit)
     const tdMonth = document.createElement("td");
-    tdMonth.textContent = row.Month || "";
+    if (row._editing) {
+      const select = document.createElement("select");
+      ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"].forEach(m => {
+        const option = document.createElement("option");
+        option.value = m;
+        option.textContent = m;
+        if (m === row.Month) option.selected = true;
+        select.appendChild(option);
+      });
+      tdMonth.appendChild(select);
+      row._monthSelect = select; // simpan ref select untuk simpan nanti
+    } else {
+      tdMonth.textContent = row.Month || "";
+    }
     tr.appendChild(tdMonth);
 
+    // Cost (format angka 1 decimal, rata kanan)
     const tdCost = document.createElement("td");
-    tdCost.style.textAlign = "right";
+    tdCost.classList.add("cost");
     tdCost.textContent = typeof row.Cost === "number" ? formatNumber(row.Cost) : row.Cost;
     tr.appendChild(tdCost);
 
+    // Reman (editable atau text biasa tergantung mode edit)
     const tdReman = document.createElement("td");
-    tdReman.textContent = row.Reman || "";
+    if (row._editing) {
+      const input = document.createElement("input");
+      input.type = "text";
+      input.value = row.Reman || "";
+      tdReman.appendChild(input);
+      row._remanInput = input; // simpan ref input
+    } else {
+      tdReman.textContent = row.Reman || "";
+    }
     tr.appendChild(tdReman);
 
+    // Include (format angka 1 decimal, rata kanan)
     const tdInclude = document.createElement("td");
-    tdInclude.style.textAlign = "right";
+    tdInclude.classList.add("include");
     tdInclude.textContent = typeof row.Include === "number" ? formatNumber(row.Include) : row.Include;
     tr.appendChild(tdInclude);
 
+    // Exclude (format angka 1 decimal, rata kanan)
     const tdExclude = document.createElement("td");
-    tdExclude.style.textAlign = "right";
+    tdExclude.classList.add("exclude");
     tdExclude.textContent = typeof row.Exclude === "number" ? formatNumber(row.Exclude) : row.Exclude;
     tr.appendChild(tdExclude);
 
+    // Planning
     const tdPlanning = document.createElement("td"); tdPlanning.textContent = row.Planning; tr.appendChild(tdPlanning);
+
+    // Status AMT
     const tdStatusAMT = document.createElement("td"); tdStatusAMT.textContent = row.StatusAMT; tr.appendChild(tdStatusAMT);
 
-    // Action buttons: Edit & Delete
+    // Action: Edit / Save / Delete buttons
     const tdAction = document.createElement("td");
 
-    const btnEdit = document.createElement("button");
-    btnEdit.textContent = "Edit";
-    btnEdit.classList.add("btn-action", "btn-edit");
-    btnEdit.addEventListener("click", () => {
-      showEditRow(row);
-    });
-    tdAction.appendChild(btnEdit);
+    if (row._editing) {
+      const btnSave = document.createElement("button");
+      btnSave.textContent = "Save";
+      btnSave.classList.add("btn-action");
+      btnSave.addEventListener("click", () => {
+        // Simpan Month & Reman dari elemen input/select ke data
+        row.Month = row._monthSelect.value;
+        row.Reman = row._remanInput.value.trim();
 
-    const btnDelete = document.createElement("button");
-    btnDelete.textContent = "Delete";
-    btnDelete.classList.add("btn-action", "btn-delete");
-    btnDelete.addEventListener("click", () => {
-      if (confirm(`Hapus order ${row.Order}?`)) {
-        dataLembarKerja = dataLembarKerja.filter(d => d.Order.toLowerCase() !== row.Order.toLowerCase());
+        // Hapus flag editing dan rebuild data
+        delete row._editing;
+        delete row._monthSelect;
+        delete row._remanInput;
+
         buildDataLembarKerja();
         renderTable(dataLembarKerja);
-      }
-    });
-    tdAction.appendChild(btnDelete);
+      });
+      tdAction.appendChild(btnSave);
+    } else {
+      const btnEdit = document.createElement("button");
+      btnEdit.textContent = "Edit";
+      btnEdit.classList.add("btn-action");
+      btnEdit.addEventListener("click", () => {
+        row._editing = true;
+        renderTable(dataLembarKerja);
+      });
+      tdAction.appendChild(btnEdit);
+
+      const btnDelete = document.createElement("button");
+      btnDelete.textContent = "Delete";
+      btnDelete.classList.add("btn-action", "btn-delete");
+      btnDelete.addEventListener("click", () => {
+        if (confirm(`Hapus order ${row.Order}?`)) {
+          dataLembarKerja = dataLembarKerja.filter(d => d.Order.toLowerCase() !== row.Order.toLowerCase());
+          buildDataLembarKerja();
+          renderTable(dataLembarKerja);
+        }
+      });
+      tdAction.appendChild(btnDelete);
+    }
 
     tr.appendChild(tdAction);
 
     outputTableBody.appendChild(tr);
   });
-}
-
-// ----- Show edit popup (inline) untuk Month & Reman -----
-function showEditRow(row) {
-  // Cari tr baris sesuai order
-  const trs = outputTableBody.querySelectorAll("tr");
-  let trTarget = null;
-  trs.forEach(tr => {
-    if (tr.children[2].textContent.toLowerCase() === row.Order.toLowerCase()) {
-      trTarget = tr;
-    }
-  });
-  if (!trTarget) return;
-
-  // Ganti kolom Month dan Reman jadi input/select editable
-  const tdMonth = trTarget.children[11]; // Month index 11
-  const tdReman = trTarget.children[13]; // Reman index 13
-  const tdAction = trTarget.children[18]; // Action index 18
-
-  // Simpan nilai sekarang
-  const currentMonth = row.Month || "";
-  const currentReman = row.Reman || "";
-
-  // Buat elemen input/select
-  const selectMonth = document.createElement("select");
-  ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"].forEach(m => {
-    const option = document.createElement("option");
-    option.value = m;
-    option.textContent = m;
-    if (m === currentMonth) option.selected = true;
-    selectMonth.appendChild(option);
-  });
-
-  const inputReman = document.createElement("input");
-  inputReman.type = "text";
-  inputReman.value = currentReman;
-
-  // Clear isi td dan append input/select
-  tdMonth.textContent = "";
-  tdMonth.appendChild(selectMonth);
-
-  tdReman.textContent = "";
-  tdReman.appendChild(inputReman);
-
-  // Ganti tombol Edit menjadi Save dan Cancel
-  tdAction.textContent = "";
-
-  const btnSave = document.createElement("button");
-  btnSave.textContent = "Save";
-  btnSave.classList.add("btn-action", "btn-save");
-  btnSave.addEventListener("click", () => {
-    // Update data dari input
-    row.Month = selectMonth.value;
-    row.Reman = inputReman.value.trim();
-
-    // Rebuild data (rerun kalkulasi rumus)
-    buildDataLembarKerja();
-    renderTable(dataLembarKerja);
-  });
-  tdAction.appendChild(btnSave);
-
-  const btnCancel = document.createElement("button");
-  btnCancel.textContent = "Cancel";
-  btnCancel.classList.add("btn-action", "btn-cancel");
-  btnCancel.addEventListener("click", () => {
-    renderTable(dataLembarKerja);
-  });
-  tdAction.appendChild(btnCancel);
 }
 
 // ----- Add Order multi input -----
@@ -302,7 +282,6 @@ addOrderBtn.addEventListener("click", () => {
     }
     const exists = dataLembarKerja.some(d => d.Order.toLowerCase() === order.toLowerCase());
     if (!exists) {
-      // Push order baru dengan properti kosong dulu, buildDataLembarKerja yg isi lookup
       dataLembarKerja.push({
         Room: "",
         OrderType: "",
@@ -439,25 +418,51 @@ function updateDataFromUpload(fileName) {
   buildDataLembarKerja();
   renderTable(dataLembarKerja);
 
-  // Pindah ke menu 2 tanpa blok menu lain
+  // Pindah ke menu 2
   document.querySelector('.menu-item.active').classList.remove('active');
-  document.querySelector('.content-section.active').classList.remove('active');
-
   const menu2 = document.querySelector('.menu-item[data-menu="lembar"]');
   menu2.classList.add('active');
+
+  document.querySelector('.content-section.active').classList.remove('active');
   document.getElementById('lembar').classList.add('active');
 }
 
-// ----- Menu sidebar switching -----
-document.querySelectorAll('.menu-item').forEach(menu => {
-  menu.addEventListener('click', () => {
-    document.querySelector('.menu-item.active').classList.remove('active');
-    menu.classList.add('active');
+// ----- Event Upload File (menu 1) -----
+const uploadBtn = document.getElementById("upload-btn");
+const fileInput = document.getElementById("file-input");
+const uploadStatus = document.getElementById("upload-status");
+const progressContainer = document.getElementById("progress-container");
+const uploadProgress = document.getElementById("upload-progress");
+const fileTypeSelect = document.getElementById("file-select");
 
-    document.querySelector('.content-section.active').classList.remove('active');
-    const selected = menu.getAttribute('data-menu');
-    document.getElementById(selected).classList.add('active');
-  });
+uploadBtn.addEventListener("click", () => {
+  const files = fileInput.files;
+  if (!files.length) {
+    alert("Pilih file dulu bro!");
+    return;
+  }
+  const file = files[0];
+  const selectedFileType = fileTypeSelect.value;
+
+  uploadBtn.disabled = true;
+  uploadStatus.textContent = "";
+  progressContainer.classList.remove("hidden");
+  uploadProgress.value = 0;
+
+  let progress = 0;
+  const interval = setInterval(() => {
+    progress += 10;
+    uploadProgress.value = progress;
+    if (progress >= 100) {
+      clearInterval(interval);
+      uploadStatus.textContent = `File "${file.name}" untuk kategori ${selectedFileType} berhasil diupload! 🎉`;
+      uploadBtn.disabled = false;
+      fileInput.value = '';
+      progressContainer.classList.add('hidden');
+
+      updateDataFromUpload(file.name);
+    }
+  }, 150);
 });
 
 // ----- Inisialisasi -----
