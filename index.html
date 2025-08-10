@@ -1,74 +1,64 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Ndarboe.net</title>
-<link rel="stylesheet" href="style.css" />
-<script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modern Dashboard</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<header>
-  <h1>Ndarboe.net</h1>
-  <nav>
-    <button id="navUpload" class="nav-btn active">1. Upload File</button>
-    <button id="navLembar" class="nav-btn">2. Lembar Kerja</button>
-    <button id="navSummary" class="nav-btn">3. Summary Cost RM</button>
-    <button id="navDownload" class="nav-btn">4. Download Excel</button>
-  </nav>
-</header>
+    <!-- Navbar -->
+    <header>
+        <div class="logo">📊 My Dashboard</div>
+        <nav>
+            <ul>
+                <li><a href="#" class="active" data-menu="menu1">Menu 1</a></li>
+                <li><a href="#" data-menu="menu2">Menu 2</a></li>
+                <li><a href="#" data-menu="menu3">Menu 3</a></li>
+                <li><a href="#" data-menu="menu4">Menu 4</a></li>
+            </ul>
+        </nav>
+    </header>
 
-<main>
+    <!-- Main Content -->
+    <main>
+        <section id="menu1" class="content active">
+            <h2>📌 Menu 1</h2>
+            <p>Konten untuk menu 1 akan tampil di sini.</p>
+        </section>
 
-  <!-- Upload File Page -->
-  <section id="pageUpload" class="page active">
-    <h2>Upload File Excel</h2>
-    <p>Upload file IW39, SUM57, Planning, Budget, Data1, Data2 (boleh kosong yang tidak ada)</p>
-    <div class="upload-row">
-      <label>IW39 (required): <input type="file" id="fileIW39" accept=".xlsx,.xls" /></label>
-      <label>SUM57: <input type="file" id="fileSUM57" accept=".xlsx,.xls" /></label>
-      <label>Planning: <input type="file" id="filePlanning" accept=".xlsx,.xls" /></label>
-      <label>Budget: <input type="file" id="fileBudget" accept=".xlsx,.xls" /></label>
-      <label>Data1: <input type="file" id="fileData1" accept=".xlsx,.xls" /></label>
-      <label>Data2: <input type="file" id="fileData2" accept=".xlsx,.xls" /></label>
-    </div>
-    <button id="btnLoad">Load Files</button>
-    <p id="loadMsg" class="info-msg"></p>
-  </section>
+        <section id="menu2" class="content">
+            <h2>📌 Menu 2</h2>
+            <p>Konten untuk menu 2 akan tampil di sini.</p>
+        </section>
 
-  <!-- Lembar Kerja Page -->
-  <section id="pageLembar" class="page">
-    <h2>Lembar Kerja</h2>
+        <section id="menu3" class="content">
+            <h2>📌 Menu 3</h2>
+            <p>Konten untuk menu 3 akan tampil di sini.</p>
+        </section>
 
-    <div class="filter-add">
-      <textarea id="inputOrders" placeholder="Masukkan order (pisah koma atau baris baru)"></textarea>
-      <button id="btnAddOrders">Tambah Orders</button>
-      <p id="lmMsg" class="info-msg"></p>
-    </div>
+        <section id="menu4" class="content">
+            <h2>📌 Menu 4</h2>
+            <p>Konten untuk menu 4 akan tampil di sini.</p>
+        </section>
+    </main>
 
-    <div id="tableContainer" class="table-container"></div>
+    <script>
+        // Menu Switching
+        document.querySelectorAll('nav a').forEach(link => {
+            link.addEventListener('click', e => {
+                e.preventDefault();
 
-    <div class="actions">
-      <button id="btnSave">Save Lembar Kerja</button>
-      <button id="btnClear">Clear Lembar Kerja</button>
-    </div>
-  </section>
+                // Remove active from menu
+                document.querySelectorAll('nav a').forEach(a => a.classList.remove('active'));
+                link.classList.add('active');
 
-  <!-- Summary Cost RM Page -->
-  <section id="pageSummary" class="page">
-    <h2>Summary Cost RM</h2>
-    <p><em>Konten sementara, akan dikembangkan nanti</em></p>
-  </section>
-
-  <!-- Download Excel Page -->
-  <section id="pageDownload" class="page">
-    <h2>Download Excel</h2>
-    <button id="btnDownloadExcel">Download Data Lembar Kerja (.xlsx)</button>
-  </section>
-
-</main>
-
-<script src="script.js"></script>
+                // Show correct content
+                document.querySelectorAll('.content').forEach(c => c.classList.remove('active'));
+                document.getElementById(link.dataset.menu).classList.add('active');
+            });
+        });
+    </script>
 </body>
 </html>
