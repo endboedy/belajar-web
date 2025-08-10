@@ -1,64 +1,59 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Modern Dashboard</title>
-    <link rel="stylesheet" href="style.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IW39 Monitoring</title>
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-    <!-- Navbar -->
-    <header>
-        <div class="logo">📊 My Dashboard</div>
-        <nav>
-            <ul>
-                <li><a href="#" class="active" data-menu="menu1">Menu 1</a></li>
-                <li><a href="#" data-menu="menu2">Menu 2</a></li>
-                <li><a href="#" data-menu="menu3">Menu 3</a></li>
-                <li><a href="#" data-menu="menu4">Menu 4</a></li>
-            </ul>
-        </nav>
-    </header>
+<header>
+  <h1>📊 IW39 Monitoring System</h1>
+  <nav>
+    <button onclick="showMenu(1)">📂 Menu 1 - Upload File</button>
+    <button onclick="showMenu(2)">📑 Menu 2 - Data Order</button>
+    <button onclick="showMenu(3)">📈 Menu 3</button>
+    <button onclick="showMenu(4)">⚙️ Menu 4</button>
+  </nav>
+</header>
 
-    <!-- Main Content -->
-    <main>
-        <section id="menu1" class="content active">
-            <h2>📌 Menu 1</h2>
-            <p>Konten untuk menu 1 akan tampil di sini.</p>
-        </section>
+<main>
+  <!-- Menu 1 -->
+  <section id="menu1" class="menu-section">
+    <h2>📂 Upload Data</h2>
+    <input type="file" id="fileInput" accept=".xlsx">
+    <p>Upload file Excel (.xlsx) untuk memuat data.</p>
+  </section>
 
-        <section id="menu2" class="content">
-            <h2>📌 Menu 2</h2>
-            <p>Konten untuk menu 2 akan tampil di sini.</p>
-        </section>
+  <!-- Menu 2 -->
+  <section id="menu2" class="menu-section hidden">
+    <h2>📑 Data Order</h2>
+    <div class="table-container">
+      <table id="dataTable">
+        <thead>
+          <tr id="headerRow"></tr>
+          <tr id="filterRow"></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
 
-        <section id="menu3" class="content">
-            <h2>📌 Menu 3</h2>
-            <p>Konten untuk menu 3 akan tampil di sini.</p>
-        </section>
+  <!-- Menu 3 -->
+  <section id="menu3" class="menu-section hidden">
+    <h2>📈 Menu 3</h2>
+    <p>Konten Menu 3 masih kosong.</p>
+  </section>
 
-        <section id="menu4" class="content">
-            <h2>📌 Menu 4</h2>
-            <p>Konten untuk menu 4 akan tampil di sini.</p>
-        </section>
-    </main>
+  <!-- Menu 4 -->
+  <section id="menu4" class="menu-section hidden">
+    <h2>⚙️ Menu 4</h2>
+    <p>Konten Menu 4 masih kosong.</p>
+  </section>
+</main>
 
-    <script>
-        // Menu Switching
-        document.querySelectorAll('nav a').forEach(link => {
-            link.addEventListener('click', e => {
-                e.preventDefault();
-
-                // Remove active from menu
-                document.querySelectorAll('nav a').forEach(a => a.classList.remove('active'));
-                link.classList.add('active');
-
-                // Show correct content
-                document.querySelectorAll('.content').forEach(c => c.classList.remove('active'));
-                document.getElementById(link.dataset.menu).classList.add('active');
-            });
-        });
-    </script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="script.js"></script>
 </body>
 </html>
