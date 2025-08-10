@@ -3,12 +3,157 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Ndarboe.net</title>
-  <link rel="stylesheet" href="style.css" />
+  <title>Ndarboe.net - Excel Lookup</title>
+  <style>
+    /* --- Reset dan basic styling --- */
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0; padding: 0;
+      background: #f5f5f5;
+      color: #222;
+    }
+    header {
+      background: #0077cc;
+      color: white;
+      padding: 15px 20px;
+      font-weight: bold;
+      font-size: 1.3rem;
+    }
+    .container {
+      display: flex;
+      min-height: 90vh;
+    }
+    nav.sidebar {
+      width: 200px;
+      background: #004a99;
+      color: white;
+      padding-top: 20px;
+    }
+    nav.sidebar ul {
+      list-style: none;
+      padding-left: 0;
+      margin: 0;
+    }
+    nav.sidebar li.menu-item {
+      padding: 12px 20px;
+      cursor: pointer;
+      user-select: none;
+      border-left: 4px solid transparent;
+      transition: background 0.3s, border-color 0.3s;
+    }
+    nav.sidebar li.menu-item:hover {
+      background: #0066ff;
+    }
+    nav.sidebar li.menu-item.active {
+      background: #0052cc;
+      border-left-color: #ffdd33;
+      font-weight: bold;
+    }
+    main.content {
+      flex: 1;
+      background: white;
+      padding: 20px;
+      overflow-x: auto;
+    }
+    section.content-section {
+      display: none;
+    }
+    section.content-section.active {
+      display: block;
+    }
+    /* Upload Section */
+    #upload label, #upload select, #upload input, #upload button {
+      font-size: 1rem;
+    }
+    #progress-container {
+      margin-top: 10px;
+    }
+    .hidden {
+      display: none;
+    }
+    /* Table styling */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+    }
+    thead {
+      background: #0077cc;
+      color: white;
+      user-select: none;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 6px 8px;
+      text-align: left;
+      vertical-align: middle;
+    }
+    tr.duplicate {
+      background-color: #ffe5e5;
+    }
+    td.editable {
+      cursor: pointer;
+      background-color: #f0f8ff;
+    }
+    td.cost, td.include, td.exclude {
+      text-align: right;
+      font-family: monospace;
+    }
+    button.btn-action {
+      margin-right: 5px;
+      padding: 4px 8px;
+      border: none;
+      border-radius: 3px;
+      cursor: pointer;
+      font-size: 0.85rem;
+    }
+    button.btn-edit {
+      background-color: #4CAF50;
+      color: white;
+    }
+    button.btn-delete {
+      background-color: #e53935;
+      color: white;
+    }
+    /* Filter group */
+    .filter-group label {
+      margin-right: 12px;
+      font-size: 0.9rem;
+    }
+    .filter-group input {
+      width: 110px;
+      padding: 3px 6px;
+      margin-left: 4px;
+      font-size: 0.9rem;
+    }
+    .filter-group button {
+      margin-left: 10px;
+      padding: 5px 12px;
+      font-size: 0.9rem;
+      cursor: pointer;
+    }
+    /* Add order section */
+    .add-order-section textarea {
+      width: 100%;
+      font-size: 0.9rem;
+      padding: 6px;
+      font-family: monospace;
+      resize: vertical;
+    }
+    .status-message {
+      margin-top: 6px;
+      font-style: italic;
+      color: #005500;
+      font-size: 0.9rem;
+    }
+  </style>
 </head>
 <body>
   <header>
-    <h1>Ndarboe.net</h1>
+    Ndarboe.net - Excel Lookup
   </header>
 
   <div class="container">
@@ -24,20 +169,8 @@
     <main class="content">
       <!-- Upload File -->
       <section id="upload" class="content-section active">
-        <h2>Upload File</h2>
-        <label for="file-select">Pilih File:</label>
-        <select id="file-select">
-          <option value="IW39">IW39</option>
-          <option value="SUM57">SUM57</option>
-          <option value="Planning">Planning</option>
-          <option value="Budget">Budget</option>
-          <option value="Data1">Data1</option>
-          <option value="Data2">Data2</option>
-        </select>
-        <br/><br/>
-        <input type="file" id="file-input" />
-        <br/><br/>
-        <button id="upload-btn">Upload</button>
+        <h2>Upload File Excel (.xlsx)</h2>
+        <input type="file" id="file-input" accept=".xlsx,.xls" />
         <div id="progress-container" class="hidden">
           <progress id="upload-progress" value="0" max="100"></progress>
           <span id="progress-text">0%</span>
@@ -49,19 +182,15 @@
       <section id="lembar" class="content-section">
         <h2>Lembar Kerja</h2>
 
-        <!-- Add Order Section -->
         <div class="add-order-section">
-          <label for="add-order-input">Masukkan Order (pisah dengan koma atau enter):</label><br />
-          <textarea id="add-order-input" rows="3" placeholder="Contoh: ORD004 ORD005 ORD006"></textarea>
+          <label for="add-order-input">Masukkan Order (pisah koma atau enter):</label><br />
+          <textarea id="add-order-input" rows="3" placeholder="Contoh: ORD004, ORD005, ORD006"></textarea>
           <br/>
           <button id="add-order-btn">Add Orders</button>
           <div id="add-order-status" class="status-message"></div>
         </div>
 
-        <br/>
-
-        <!-- Filter Group -->
-        <div class="filter-group">
+        <div class="filter-group" style="margin-top: 10px;">
           <label>Room: <input type="text" id="filter-room" placeholder="Filter Room" /></label>
           <label>Order: <input type="text" id="filter-order" placeholder="Filter Order" /></label>
           <label>CPH: <input type="text" id="filter-cph" placeholder="Filter CPH" /></label>
@@ -69,13 +198,11 @@
           <label>Section: <input type="text" id="filter-section" placeholder="Filter Section" /></label>
           <button id="filter-btn">Filter</button>
           <button id="reset-btn" title="Reset Filter">Reset</button>
-          <button id="save-btn" title="Simpan Data">Save</button>
-          <button id="load-btn" title="Load Data">Load</button>
         </div>
 
-        <br />
+        <br/>
 
-        <table id="output-table">
+        <table id="output-table" aria-label="Tabel Data Lembar Kerja">
           <thead>
             <tr>
               <th>Room</th>
@@ -100,7 +227,7 @@
             </tr>
           </thead>
           <tbody>
-            <!-- data akan dimunculkan di sini -->
+            <!-- Data rows here -->
           </tbody>
         </table>
       </section>
@@ -119,6 +246,27 @@
     </main>
   </div>
 
+  <!-- Load XLSX.js library from CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <!-- Load your script.js here -->
   <script src="script.js"></script>
+
+  <script>
+    // --- Sidebar menu switcher ---
+    const menuItems = document.querySelectorAll('nav.sidebar li.menu-item');
+    const contentSections = document.querySelectorAll('section.content-section');
+
+    menuItems.forEach(item => {
+      item.addEventListener('click', () => {
+        // Remove active from all
+        menuItems.forEach(i => i.classList.remove('active'));
+        contentSections.forEach(sec => sec.classList.remove('active'));
+        // Add active to clicked
+        item.classList.add('active');
+        const targetId = item.getAttribute('data-menu');
+        document.getElementById(targetId).classList.add('active');
+      });
+    });
+  </script>
 </body>
 </html>
