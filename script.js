@@ -1,95 +1,112 @@
-// ----- Dummy Data Global -----
-let IW39 = [
-  {
-    Room: "R001",
-    OrderType: "Type A",
-    Order: "ORD001",
-    Description: "JR Sample description",
-    CreatedOn: "2025-08-01",
-    UserStatus: "Open",
-    MAT: "MAT001",
-    TotalPlan: 50000,
-    TotalActual: 30000
-  },
-  {
-    Room: "R002",
-    OrderType: "Type B",
-    Order: "ORD002",
-    Description: "No JR here",
-    CreatedOn: "2025-08-02",
-    UserStatus: "Closed",
-    MAT: "MAT002",
-    TotalPlan: 40000,
-    TotalActual: 40000
-  }
-];
+// Pastikan library XLSX sudah load di HTML seperti ini:
+// <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
-// Dummy Data1 lookup (Section by Order)
-const Data1 = {
-  "ORD001": "Section A",
-  "ORD002": "Section B"
-};
-
-// Dummy Data2 lookup (CPH by MAT)
-const Data2 = {
-  "MAT001": "CPH1",
-  "MAT002": "CPH2"
-};
-
-// Dummy SUM57 lookup (Status Part & Aging by Order)
-const SUM57 = {
-  "ORD001": { StatusPart: "OK", Aging: "5" },
-  "ORD002": { StatusPart: "NG", Aging: "10" }
-};
-
-// Dummy Planning lookup (Planning & Status AMT by Order)
-const Planning = {
-  "ORD001": { Planning: "2025-08-10", StatusAMT: "On Track" },
-  "ORD002": { Planning: "2025-08-12", StatusAMT: "Delayed" }
-};
-
-// ----- Data Lembar Kerja -----
+// ===== GLOBAL DATA =====
+let IW39 = [], Data1 = {}, Data2 = {}, SUM57 = {}, Planning = {};
 let dataLembarKerja = [];
 
-// ----- Format angka 1 decimal -----
+// ===== Format angka 1 decimal =====
 function formatNumber(num) {
   return Number(num).toFixed(1);
 }
 
-// ----- Validasi order input (tidak boleh titik atau koma) -----
-function isValidOrder(order) {
-  return !/[.,]/.test(order);
+// ===== Parsing file Excel & update lookup global =====
+function parseExcelFile(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = function(event) {
+      try {
+        const data = new Uint8Array(event.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+
+        if (workbook.SheetNames.includes('IW39')) {
+          IW39 = XLSX.utils.sheet_to_json(workbook.Sheets['IW39']);
+        } else IW39 = [];
+
+        if (workbook.SheetNames.includes('Data1')) {
+          const arr = XLSX.utils.sheet_to_json(workbook.Sheets['Data1']);
+          Data1 = {};
+          arr.forEach(r => { if(r.Order && r.Section) Data1[r.Order.toString().toLowerCase()] = r.Section; });
+        } else Data1 = {};
+
+        if (workbook.SheetNames.includes('Data2')) {
+          const arr = XLSX.utils.sheet_to_json(workbook.Sheets['Data2']);
+          Data2 = {};
+          arr.forEach(r => { if(r.MAT && r.CPH) Data2[r.MAT.toString().toLowerCase()] = r.CPH; });
+        } else Data2 = {};
+
+        if (workbook.SheetNames.includes('SUM57')) {
+          const arr = XLSX.utils.sheet_to_json(workbook.Sheets['SUM57']);
+          SUM57 = {};
+          arr.forEach(r => {
+            if(r.Order) {
+              SUM57[r.Order.toString().toLowerCase()] = {
+                StatusPart: r.StatusPart || "",
+                Aging: r.Aging || ""
+              };
+            }
+          });
+        } else SUM57 = {};
+
+        if (workbook.SheetNames.includes('Planning')) {
+          const arr = XLSX.utils.sheet_to_json(workbook.Sheets['Planning']);
+          Planning = {};
+          arr.forEach(r => {
+            if(r.Order) {
+              Planning[r.Order.toString().toLowerCase()] = {
+                Planning: r.Planning || "",
+                StatusAMT: r.StatusAMT || ""
+              };
+            }
+          });
+        } else Planning = {};
+
+        resolve();
+      } catch (err) {
+        reject(err);
+      }
+    };
+    reader.onerror = reject;
+    reader.readAsArrayBuffer(file);
+  });
 }
 
-// ----- Build Data Lembar Kerja: lookup dan rumus -----
+// ===== Build dataLembarKerja with lookup and formulas =====
 function buildDataLembarKerja() {
   dataLembarKerja = dataLembarKerja.map(row => {
-    const iw = IW39.find(i => i.Order.toLowerCase() === row.Order.toLowerCase()) || {};
+    const orderKey = row.Order ? row.Order.toString().toLowerCase() : "";
 
-    // Assign dari IW39
-    row.Room = iw.Room || "";
-    row.OrderType = iw.OrderType || "";
-    row.Description = iw.Description || "";
-    row.CreatedOn = iw.CreatedOn || "";
-    row.UserStatus = iw.UserStatus || "";
-    row.MAT = iw.MAT || "";
+    // Cari data lengkap di IW39 berdasarkan Order key
+    const iw = IW39.find(i => i.Order && i.Order.toString().toLowerCase() === orderKey) || {};
 
-    // CPH: jika 2 huruf pertama Description = "JR" maka JR, else lookup Data2 by MAT
-    if ((row.Description || "").substring(0, 2).toUpperCase() === "JR") {
+    // Ambil dari IW39 kalau ada
+    row.Room = iw.Room || row.Room || "";
+    row.OrderType = iw.OrderType || row.OrderType || "";
+    row.Description = iw.Description || row.Description || "";
+    row.CreatedOn = iw.CreatedOn || row.CreatedOn || "";
+    row.UserStatus = iw.UserStatus || row.UserStatus || "";
+    row.MAT = iw.MAT || row.MAT || "";
+
+    // CPH: kalau 2 huruf pertama Description JR => JR, else lookup Data2 pakai MAT
+    if ((row.Description || "").substring(0,2).toUpperCase() === "JR") {
       row.CPH = "JR";
     } else {
-      row.CPH = Data2[row.MAT] || "";
+      row.CPH = Data2[(row.MAT || "").toString().toLowerCase()] || "";
     }
 
-    // Section lookup dari Data1 berdasarkan Order
-    row.Section = Data1[row.Order] || "";
+    // Section lookup Data1 by Order (case insensitive)
+    row.Section = Data1[orderKey] || "";
 
-    // SUM57 lookup by Order
-    const sum = SUM57[row.Order] || {};
-    row.StatusPart = sum.StatusPart || "";
-    row.Aging = sum.Aging || "";
+    // Status Part & Aging lookup SUM57 by Order
+    if (SUM57[orderKey]) {
+      row.StatusPart = SUM57[orderKey].StatusPart || "";
+      row.Aging = SUM57[orderKey].Aging || "";
+    } else {
+      row.StatusPart = "";
+      row.Aging = "";
+    }
 
-    // Cost rumus (IW39.TotalPlan - IW39.TotalActual)/16500, <0 jadi "-"
+    // Cost = (IW39.TotalPlan - IW39.TotalActual) / 16500, jika < 0 maka "-"
     if (iw.TotalPlan !== undefined && iw.TotalActual !== undefined) {
       const costCalc = (iw.TotalPlan - iw.TotalActual) / 16500;
       row.Cost = costCalc < 0 ? "-" : costCalc;
@@ -97,30 +114,42 @@ function buildDataLembarKerja() {
       row.Cost = "-";
     }
 
-    // Include rumus
+    // Include: jika Reman = "Reman" maka Cost * 0.25, jika kosong sama dengan Cost
     if ((row.Reman || "").toLowerCase() === "reman") {
       row.Include = typeof row.Cost === "number" ? row.Cost * 0.25 : "-";
     } else {
       row.Include = row.Cost;
     }
 
-    // Exclude rumus
+    // Exclude: jika OrderType = PM38 maka "-", else sama dengan Include
     if ((row.OrderType || "").toUpperCase() === "PM38") {
       row.Exclude = "-";
     } else {
       row.Exclude = row.Include;
     }
 
-    // Planning lookup
-    const plan = Planning[row.Order] || {};
-    row.Planning = plan.Planning || "";
-    row.StatusAMT = plan.StatusAMT || "";
+    // Planning & StatusAMT lookup dari Planning by Order
+    if (Planning[orderKey]) {
+      row.Planning = Planning[orderKey].Planning || "";
+      row.StatusAMT = Planning[orderKey].StatusAMT || "";
+    } else {
+      row.Planning = "";
+      row.StatusAMT = "";
+    }
 
     return row;
   });
+
+  // Setelah update data, simpan otomatis ke localStorage
+  saveDataToLocalStorage();
 }
 
-// ----- Render tabel -----
+// ===== Validasi order input =====
+function isValidOrder(order) {
+  return !/[.,]/.test(order);
+}
+
+// ===== Render Tabel Output Menu 2 =====
 const outputTableBody = document.querySelector("#output-table tbody");
 
 function renderTable(data) {
@@ -139,125 +168,209 @@ function renderTable(data) {
       tr.classList.add("duplicate");
     }
 
-    // Buat sel untuk semua kolom
-    const tdRoom = document.createElement("td"); tdRoom.textContent = row.Room; tr.appendChild(tdRoom);
-    const tdOrderType = document.createElement("td"); tdOrderType.textContent = row.OrderType; tr.appendChild(tdOrderType);
-    const tdOrder = document.createElement("td"); tdOrder.textContent = row.Order; tr.appendChild(tdOrder);
-    const tdDescription = document.createElement("td"); tdDescription.textContent = row.Description; tr.appendChild(tdDescription);
-    const tdCreatedOn = document.createElement("td"); tdCreatedOn.textContent = row.CreatedOn; tr.appendChild(tdCreatedOn);
-    const tdUserStatus = document.createElement("td"); tdUserStatus.textContent = row.UserStatus; tr.appendChild(tdUserStatus);
-    const tdMAT = document.createElement("td"); tdMAT.textContent = row.MAT; tr.appendChild(tdMAT);
-    const tdCPH = document.createElement("td"); tdCPH.textContent = row.CPH; tr.appendChild(tdCPH);
-    const tdSection = document.createElement("td"); tdSection.textContent = row.Section; tr.appendChild(tdSection);
-    const tdStatusPart = document.createElement("td"); tdStatusPart.textContent = row.StatusPart; tr.appendChild(tdStatusPart);
-    const tdAging = document.createElement("td"); tdAging.textContent = row.Aging; tr.appendChild(tdAging);
+    // Room
+    let td = document.createElement("td");
+    td.textContent = row.Room;
+    tr.appendChild(td);
 
-    // Month (editable atau text biasa tergantung mode edit)
-    const tdMonth = document.createElement("td");
-    if (row._editing) {
-      const select = document.createElement("select");
-      ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"].forEach(m => {
-        const option = document.createElement("option");
-        option.value = m;
-        option.textContent = m;
-        if (m === row.Month) option.selected = true;
-        select.appendChild(option);
-      });
-      tdMonth.appendChild(select);
-      row._monthSelect = select; // simpan ref select untuk simpan nanti
-    } else {
-      tdMonth.textContent = row.Month || "";
-    }
-    tr.appendChild(tdMonth);
+    // OrderType
+    td = document.createElement("td");
+    td.textContent = row.OrderType;
+    tr.appendChild(td);
 
-    // Cost (format angka 1 decimal, rata kanan)
-    const tdCost = document.createElement("td");
-    tdCost.classList.add("cost");
-    tdCost.textContent = typeof row.Cost === "number" ? formatNumber(row.Cost) : row.Cost;
-    tr.appendChild(tdCost);
+    // Order
+    td = document.createElement("td");
+    td.textContent = row.Order;
+    tr.appendChild(td);
 
-    // Reman (editable atau text biasa tergantung mode edit)
-    const tdReman = document.createElement("td");
-    if (row._editing) {
-      const input = document.createElement("input");
-      input.type = "text";
-      input.value = row.Reman || "";
-      tdReman.appendChild(input);
-      row._remanInput = input; // simpan ref input
-    } else {
-      tdReman.textContent = row.Reman || "";
-    }
-    tr.appendChild(tdReman);
+    // Description
+    td = document.createElement("td");
+    td.textContent = row.Description;
+    tr.appendChild(td);
 
-    // Include (format angka 1 decimal, rata kanan)
-    const tdInclude = document.createElement("td");
-    tdInclude.classList.add("include");
-    tdInclude.textContent = typeof row.Include === "number" ? formatNumber(row.Include) : row.Include;
-    tr.appendChild(tdInclude);
+    // CreatedOn
+    td = document.createElement("td");
+    td.textContent = row.CreatedOn;
+    tr.appendChild(td);
 
-    // Exclude (format angka 1 decimal, rata kanan)
-    const tdExclude = document.createElement("td");
-    tdExclude.classList.add("exclude");
-    tdExclude.textContent = typeof row.Exclude === "number" ? formatNumber(row.Exclude) : row.Exclude;
-    tr.appendChild(tdExclude);
+    // UserStatus
+    td = document.createElement("td");
+    td.textContent = row.UserStatus;
+    tr.appendChild(td);
+
+    // MAT
+    td = document.createElement("td");
+    td.textContent = row.MAT;
+    tr.appendChild(td);
+
+    // CPH
+    td = document.createElement("td");
+    td.textContent = row.CPH;
+    tr.appendChild(td);
+
+    // Section
+    td = document.createElement("td");
+    td.textContent = row.Section;
+    tr.appendChild(td);
+
+    // StatusPart
+    td = document.createElement("td");
+    td.textContent = row.StatusPart;
+    tr.appendChild(td);
+
+    // Aging
+    td = document.createElement("td");
+    td.textContent = row.Aging;
+    tr.appendChild(td);
+
+    // Month (editable)
+    td = document.createElement("td");
+    td.classList.add("editable");
+    td.textContent = row.Month || "";
+    td.title = "Klik untuk edit bulan";
+    td.addEventListener("click", () => editMonth(td, row));
+    tr.appendChild(td);
+
+    // Cost (right align, 1 decimal)
+    td = document.createElement("td");
+    td.classList.add("cost");
+    td.textContent = typeof row.Cost === "number" ? formatNumber(row.Cost) : row.Cost;
+    tr.appendChild(td);
+
+    // Reman (editable)
+    td = document.createElement("td");
+    td.classList.add("editable");
+    td.textContent = row.Reman || "";
+    td.title = "Klik untuk edit Reman";
+    td.addEventListener("click", () => editReman(td, row));
+    tr.appendChild(td);
+
+    // Include (right align, 1 decimal)
+    td = document.createElement("td");
+    td.classList.add("include");
+    td.textContent = typeof row.Include === "number" ? formatNumber(row.Include) : row.Include;
+    tr.appendChild(td);
+
+    // Exclude (right align, 1 decimal)
+    td = document.createElement("td");
+    td.classList.add("exclude");
+    td.textContent = typeof row.Exclude === "number" ? formatNumber(row.Exclude) : row.Exclude;
+    tr.appendChild(td);
 
     // Planning
-    const tdPlanning = document.createElement("td"); tdPlanning.textContent = row.Planning; tr.appendChild(tdPlanning);
+    td = document.createElement("td");
+    td.textContent = row.Planning;
+    tr.appendChild(td);
 
-    // Status AMT
-    const tdStatusAMT = document.createElement("td"); tdStatusAMT.textContent = row.StatusAMT; tr.appendChild(tdStatusAMT);
+    // StatusAMT
+    td = document.createElement("td");
+    td.textContent = row.StatusAMT;
+    tr.appendChild(td);
 
-    // Action: Edit / Save / Delete buttons
-    const tdAction = document.createElement("td");
+    // Action (Edit & Delete)
+    td = document.createElement("td");
+    // Edit button
+    const btnEdit = document.createElement("button");
+    btnEdit.textContent = "Edit";
+    btnEdit.classList.add("btn-action", "btn-edit");
+    btnEdit.addEventListener("click", () => {
+      editMonthAction(row);
+      editRemanAction(row);
+    });
+    td.appendChild(btnEdit);
 
-    if (row._editing) {
-      const btnSave = document.createElement("button");
-      btnSave.textContent = "Save";
-      btnSave.classList.add("btn-action");
-      btnSave.addEventListener("click", () => {
-        // Simpan Month & Reman dari elemen input/select ke data
-        row.Month = row._monthSelect.value;
-        row.Reman = row._remanInput.value.trim();
-
-        // Hapus flag editing dan rebuild data
-        delete row._editing;
-        delete row._monthSelect;
-        delete row._remanInput;
-
+    // Delete button
+    const btnDelete = document.createElement("button");
+    btnDelete.textContent = "Delete";
+    btnDelete.classList.add("btn-action", "btn-delete");
+    btnDelete.addEventListener("click", () => {
+      if (confirm(`Hapus order ${row.Order}?`)) {
+        dataLembarKerja = dataLembarKerja.filter(d => d.Order.toLowerCase() !== row.Order.toLowerCase());
         buildDataLembarKerja();
         renderTable(dataLembarKerja);
-      });
-      tdAction.appendChild(btnSave);
-    } else {
-      const btnEdit = document.createElement("button");
-      btnEdit.textContent = "Edit";
-      btnEdit.classList.add("btn-action");
-      btnEdit.addEventListener("click", () => {
-        row._editing = true;
-        renderTable(dataLembarKerja);
-      });
-      tdAction.appendChild(btnEdit);
+      }
+    });
+    td.appendChild(btnDelete);
 
-      const btnDelete = document.createElement("button");
-      btnDelete.textContent = "Delete";
-      btnDelete.classList.add("btn-action", "btn-delete");
-      btnDelete.addEventListener("click", () => {
-        if (confirm(`Hapus order ${row.Order}?`)) {
-          dataLembarKerja = dataLembarKerja.filter(d => d.Order.toLowerCase() !== row.Order.toLowerCase());
-          buildDataLembarKerja();
-          renderTable(dataLembarKerja);
-        }
-      });
-      tdAction.appendChild(btnDelete);
-    }
-
-    tr.appendChild(tdAction);
+    tr.appendChild(td);
 
     outputTableBody.appendChild(tr);
   });
 }
 
-// ----- Add Order multi input -----
+// ===== Inline Edit Month =====
+function editMonth(td, row) {
+  const select = document.createElement("select");
+  const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  months.forEach(m => {
+    const option = document.createElement("option");
+    option.value = m;
+    option.textContent = m;
+    if (m === row.Month) option.selected = true;
+    select.appendChild(option);
+  });
+
+  select.addEventListener("change", () => {
+    row.Month = select.value;
+    buildDataLembarKerja();
+    renderTable(dataLembarKerja);
+  });
+
+  select.addEventListener("blur", () => renderTable(dataLembarKerja));
+
+  td.textContent = "";
+  td.appendChild(select);
+  select.focus();
+}
+
+// ===== Inline Edit Reman =====
+function editReman(td, row) {
+  const input = document.createElement("input");
+  input.type = "text";
+  input.value = row.Reman || "";
+
+  input.addEventListener("keydown", e => {
+    if (e.key === "Enter") {
+      row.Reman = input.value.trim();
+      buildDataLembarKerja();
+      renderTable(dataLembarKerja);
+    } else if (e.key === "Escape") {
+      renderTable(dataLembarKerja);
+    }
+  });
+
+  input.addEventListener("blur", () => {
+    row.Reman = input.value.trim();
+    buildDataLembarKerja();
+    renderTable(dataLembarKerja);
+  });
+
+  td.textContent = "";
+  td.appendChild(input);
+  input.focus();
+}
+
+// ===== Edit action via Edit button (focus Month & Reman) =====
+function editMonthAction(row) {
+  const trs = outputTableBody.querySelectorAll("tr");
+  trs.forEach(tr => {
+    if (tr.children[2].textContent.toLowerCase() === row.Order.toLowerCase()) {
+      const tdMonth = tr.children[11];
+      editMonth(tdMonth, row);
+    }
+  });
+}
+function editRemanAction(row) {
+  const trs = outputTableBody.querySelectorAll("tr");
+  trs.forEach(tr => {
+    if (tr.children[2].textContent.toLowerCase() === row.Order.toLowerCase()) {
+      const tdReman = tr.children[13];
+      editReman(tdReman, row);
+    }
+  });
+}
+
+// ===== Add order multi input =====
 const addOrderBtn = document.getElementById("add-order-btn");
 const addOrderInput = document.getElementById("add-order-input");
 const addOrderStatus = document.getElementById("add-order-status");
@@ -322,170 +435,129 @@ addOrderBtn.addEventListener("click", () => {
   addOrderStatus.textContent = msg;
 });
 
-// ----- Filter data -----
+// ===== Filter elements & filter action =====
+const filterRoom = document.getElementById("filter-room");
+const filterOrder = document.getElementById("filter-order");
+const filterCPH = document.getElementById("filter-cph");
+const filterMAT = document.getElementById("filter-mat");
+const filterSection = document.getElementById("filter-section");
 const filterBtn = document.getElementById("filter-btn");
 const resetBtn = document.getElementById("reset-btn");
 
 filterBtn.addEventListener("click", () => {
-  const fRoom = document.getElementById("filter-room").value.trim().toLowerCase();
-  const fOrder = document.getElementById("filter-order").value.trim().toLowerCase();
-  const fCPH = document.getElementById("filter-cph").value.trim().toLowerCase();
-  const fMAT = document.getElementById("filter-mat").value.trim().toLowerCase();
-  const fSection = document.getElementById("filter-section").value.trim().toLowerCase();
+  const filtered = dataLembarKerja.filter(row => {
+    const roomMatch = row.Room.toLowerCase().includes(filterRoom.value.toLowerCase());
+    const orderMatch = row.Order.toLowerCase().includes(filterOrder.value.toLowerCase());
+    const cphMatch = row.CPH.toLowerCase().includes(filterCPH.value.toLowerCase());
+    const matMatch = row.MAT.toLowerCase().includes(filterMAT.value.toLowerCase());
+    const sectionMatch = row.Section.toLowerCase().includes(filterSection.value.toLowerCase());
 
-  const filtered = dataLembarKerja.filter(d => {
-    return (
-      d.Room.toLowerCase().includes(fRoom) &&
-      d.Order.toLowerCase().includes(fOrder) &&
-      d.CPH.toLowerCase().includes(fCPH) &&
-      d.MAT.toLowerCase().includes(fMAT) &&
-      d.Section.toLowerCase().includes(fSection)
-    );
+    return roomMatch && orderMatch && cphMatch && matMatch && sectionMatch;
   });
-
   renderTable(filtered);
 });
 
 resetBtn.addEventListener("click", () => {
-  document.getElementById("filter-room").value = "";
-  document.getElementById("filter-order").value = "";
-  document.getElementById("filter-cph").value = "";
-  document.getElementById("filter-mat").value = "";
-  document.getElementById("filter-section").value = "";
+  filterRoom.value = "";
+  filterOrder.value = "";
+  filterCPH.value = "";
+  filterMAT.value = "";
+  filterSection.value = "";
   renderTable(dataLembarKerja);
 });
 
-// ----- Save & Load data ke localStorage -----
+// ===== Save & Load =====
 const saveBtn = document.getElementById("save-btn");
 const loadBtn = document.getElementById("load-btn");
 
+// Save: export Excel file
 saveBtn.addEventListener("click", () => {
-  localStorage.setItem("dataLembarKerja", JSON.stringify(dataLembarKerja));
-  alert("Data berhasil disimpan ke localStorage 👍");
+  if (!dataLembarKerja.length) {
+    alert("Data kosong, tidak ada yang disimpan.");
+    return;
+  }
+  const ws = XLSX.utils.json_to_sheet(dataLembarKerja);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "LembarKerja");
+  XLSX.writeFile(wb, "LembarKerja.xlsx");
 });
 
+// Load: load data dari localStorage ke tabel
 loadBtn.addEventListener("click", () => {
+  loadDataFromLocalStorage();
+  alert("Data berhasil dimuat dari penyimpanan lokal.");
+});
+
+// Simpan otomatis ke localStorage
+function saveDataToLocalStorage() {
+  localStorage.setItem("dataLembarKerja", JSON.stringify(dataLembarKerja));
+}
+
+// Load dari localStorage
+function loadDataFromLocalStorage() {
   const saved = localStorage.getItem("dataLembarKerja");
   if (saved) {
     dataLembarKerja = JSON.parse(saved);
     buildDataLembarKerja();
     renderTable(dataLembarKerja);
-    alert("Data berhasil dimuat dari localStorage 👍");
   } else {
     alert("Tidak ada data tersimpan di localStorage.");
   }
-});
-
-// ----- Update data dari file upload (menu 1) -----
-function updateDataFromUpload(fileName) {
-  if (fileName.toLowerCase().includes('iw39')) {
-    IW39.length = 0;
-    IW39.push(
-      {
-        Room: "R010",
-        OrderType: "Type Z",
-        Order: "ORD010",
-        Description: "JR New description",
-        CreatedOn: "2025-08-10",
-        UserStatus: "Open",
-        MAT: "MAT999",
-        TotalPlan: 90000,
-        TotalActual: 20000
-      }
-    );
-  }
-  // Update dataLembarKerja dari IW39
-  dataLembarKerja = IW39.map(iw => ({
-    Room: iw.Room,
-    OrderType: iw.OrderType,
-    Order: iw.Order,
-    Description: iw.Description,
-    CreatedOn: iw.CreatedOn,
-    UserStatus: iw.UserStatus,
-    MAT: iw.MAT,
-    CPH: "",
-    Section: "",
-    StatusPart: "",
-    Aging: "",
-    Month: "",
-    Cost: "-",
-    Reman: "",
-    Include: "-",
-    Exclude: "-",
-    Planning: "",
-    StatusAMT: ""
-  }));
-  buildDataLembarKerja();
-  renderTable(dataLembarKerja);
-
-  // Pindah ke menu 2
-  document.querySelector('.menu-item.active').classList.remove('active');
-  const menu2 = document.querySelector('.menu-item[data-menu="lembar"]');
-  menu2.classList.add('active');
-
-  document.querySelector('.content-section.active').classList.remove('active');
-  document.getElementById('lembar').classList.add('active');
 }
 
-// ----- Event Upload File (menu 1) -----
-const uploadBtn = document.getElementById("upload-btn");
+// ===== Upload file dan parsing =====
 const fileInput = document.getElementById("file-input");
-const uploadStatus = document.getElementById("upload-status");
+const uploadBtn = document.getElementById("upload-btn");
 const progressContainer = document.getElementById("progress-container");
 const uploadProgress = document.getElementById("upload-progress");
-const fileTypeSelect = document.getElementById("file-select");
+const progressText = document.getElementById("progress-text");
+const uploadStatus = document.getElementById("upload-status");
 
 uploadBtn.addEventListener("click", () => {
-  const files = fileInput.files;
-  if (!files.length) {
-    alert("Pilih file dulu bro!");
+  const file = fileInput.files[0];
+  if (!file) {
+    alert("Pilih file Excel terlebih dahulu bro.");
     return;
   }
-  const file = files[0];
-  const selectedFileType = fileTypeSelect.value;
-
-  uploadBtn.disabled = true;
-  uploadStatus.textContent = "";
+  // Mulai proses upload (read)
   progressContainer.classList.remove("hidden");
   uploadProgress.value = 0;
+  progressText.textContent = "0%";
+  uploadStatus.textContent = "";
 
-  let progress = 0;
-  const interval = setInterval(() => {
-    progress += 10;
-    uploadProgress.value = progress;
-    if (progress >= 100) {
-      clearInterval(interval);
-      uploadStatus.textContent = `File "${file.name}" untuk kategori ${selectedFileType} berhasil diupload! 🎉`;
-      uploadBtn.disabled = false;
-      fileInput.value = '';
-      progressContainer.classList.add('hidden');
-
-      updateDataFromUpload(file.name);
-    }
-  }, 150);
+  parseExcelFile(file).then(() => {
+    uploadProgress.value = 100;
+    progressText.textContent = "100%";
+    uploadStatus.textContent = "File berhasil diupload dan data di-load.";
+    // Setelah upload berhasil, rebuild data lookup agar lookup baru bisa jalan
+    buildDataLembarKerja();
+    renderTable(dataLembarKerja);
+  }).catch(err => {
+    uploadStatus.textContent = "Error saat memproses file: " + err.message;
+  });
 });
 
-// ----- Inisialisasi -----
-dataLembarKerja = IW39.map(iw => ({
-  Room: iw.Room,
-  OrderType: iw.OrderType,
-  Order: iw.Order,
-  Description: iw.Description,
-  CreatedOn: iw.CreatedOn,
-  UserStatus: iw.UserStatus,
-  MAT: iw.MAT,
-  CPH: "",
-  Section: "",
-  StatusPart: "",
-  Aging: "",
-  Month: "",
-  Cost: "-",
-  Reman: "",
-  Include: "-",
-  Exclude: "-",
-  Planning: "",
-  StatusAMT: ""
-}));
-buildDataLembarKerja();
-renderTable(dataLembarKerja);
+// ===== Sidebar Menu Switching =====
+const menuItems = document.querySelectorAll(".menu-item");
+const contentSections = document.querySelectorAll(".content-section");
+
+menuItems.forEach(item => {
+  item.addEventListener("click", () => {
+    // Remove active class from all menu items
+    menuItems.forEach(i => i.classList.remove("active"));
+    // Add active class to clicked menu
+    item.classList.add("active");
+    // Hide all content sections
+    contentSections.forEach(section => section.classList.remove("active"));
+    // Show corresponding section
+    const menuName = item.dataset.menu;
+    document.getElementById(menuName).classList.add("active");
+  });
+});
+
+// ===== Onload Load Data if ada di localStorage =====
+window.onload = () => {
+  loadDataFromLocalStorage();
+  renderTable(dataLembarKerja);
+};
 
