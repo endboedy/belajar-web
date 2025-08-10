@@ -1,70 +1,82 @@
-/* Reset */
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
-
 body {
-    font-family: 'Segoe UI', sans-serif;
-    background-color: #f4f6f8;
-    color: #333;
+  font-family: Arial, sans-serif;
+  background: #f5f7fa;
+  margin: 0;
+  padding: 0;
 }
 
-/* Navbar */
 header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background-color: #2d3436;
-    padding: 10px 20px;
-    color: white;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  background: #2c3e50;
+  color: white;
+  padding: 15px;
 }
 
-header .logo {
-    font-weight: bold;
-    font-size: 18px;
+header h1 {
+  margin: 0 0 10px;
 }
 
-nav ul {
-    display: flex;
-    list-style: none;
-    gap: 15px;
+nav button {
+  background: #34495e;
+  color: white;
+  border: none;
+  padding: 8px 15px;
+  margin: 0 5px;
+  cursor: pointer;
+  border-radius: 5px;
 }
 
-nav a {
-    color: white;
-    text-decoration: none;
-    padding: 8px 14px;
-    border-radius: 6px;
-    transition: background 0.3s;
+nav button:hover {
+  background: #1abc9c;
 }
 
-nav a:hover,
-nav a.active {
-    background-color: #0984e3;
+.menu-section {
+  padding: 20px;
 }
 
-/* Content */
-main {
-    padding: 20px;
+.hidden {
+  display: none;
 }
 
-.content {
-    display: none;
-    background: white;
-    padding: 20px;
-    border-radius: 10px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-    animation: fadeIn 0.3s ease-in-out;
+.table-container {
+  overflow-x: auto;
+  max-height: 500px;
+  overflow-y: auto;
+  border: 1px solid #ccc;
 }
 
-.content.active {
-    display: block;
+table {
+  border-collapse: collapse;
+  width: 100%;
 }
 
-@keyframes fadeIn {
-    from {opacity: 0;}
-    to {opacity: 1;}
+thead th, thead td {
+  position: sticky;
+  top: 0;
+  background: #2980b9;
+  color: white;
+  padding: 8px;
+  border: 1px solid #ccc;
+  z-index: 2;
+}
+
+thead tr:nth-child(2) td {
+  top: 38px; /* posisi filter row */
+  background: #3498db;
+}
+
+tbody td {
+  padding: 6px;
+  border: 1px solid #ccc;
+}
+
+.duplicate {
+  background: red !important;
+  color: white !important;
+}
+
+input.table-filter {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 4px;
+  border: none;
 }
