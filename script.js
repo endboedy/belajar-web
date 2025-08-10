@@ -302,7 +302,8 @@ addOrderBtn.addEventListener("click", () => {
     return;
   }
 
-  let orders = rawInput.split(/[\s,\n]+/).map(s => s.trim()).filter(s => s.length > 0);
+  // split by whitespace, comma, newline
+  let orders = rawInput.split(/[\s,]+/).map(s => s.trim()).filter(s => s.length > 0);
 
   let addedCount = 0;
   let skippedOrders = [];
@@ -466,7 +467,7 @@ const fileInput = document.getElementById("file-input");
 const uploadStatus = document.getElementById("upload-status");
 const progressContainer = document.getElementById("progress-container");
 const uploadProgress = document.getElementById("upload-progress");
-const fileTypeSelect = document.getElementById("file-type");
+const fileTypeSelect = document.getElementById("file-select");
 
 uploadBtn.addEventListener("click", () => {
   const files = fileInput.files;
@@ -486,6 +487,7 @@ uploadBtn.addEventListener("click", () => {
   const interval = setInterval(() => {
     progress += 10;
     uploadProgress.value = progress;
+    document.getElementById("progress-text").textContent = progress + "%";
     if (progress >= 100) {
       clearInterval(interval);
       uploadStatus.textContent = `File "${file.name}" untuk kategori ${selectedFileType} berhasil diupload! 🎉`;
@@ -498,7 +500,22 @@ uploadBtn.addEventListener("click", () => {
   }, 150);
 });
 
-// ----- Inisialisasi -----
+// ----- Sidebar menu switching -----
+const menuItems = document.querySelectorAll(".menu-item");
+const contentSections = document.querySelectorAll(".content-section");
+
+menuItems.forEach(item => {
+  item.addEventListener("click", () => {
+    document.querySelector(".menu-item.active").classList.remove("active");
+    item.classList.add("active");
+
+    document.querySelector(".content-section.active").classList.remove("active");
+    const menu = item.getAttribute("data-menu");
+    document.getElementById(menu).classList.add("active");
+  });
+});
+
+// ----- Inisialisasi awal -----
 dataLembarKerja = IW39.map(iw => ({
   Room: iw.Room,
   OrderType: iw.OrderType,
@@ -519,5 +536,6 @@ dataLembarKerja = IW39.map(iw => ({
   Planning: "",
   StatusAMT: ""
 }));
+
 buildDataLembarKerja();
 renderTable(dataLembarKerja);
