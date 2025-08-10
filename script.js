@@ -1,5 +1,4 @@
-  // ----- Dummy Data Global -----
-// Dummy data IW39
+// ----- Dummy Data Global -----
 let IW39 = [
   {
     Room: "R001",
@@ -50,7 +49,6 @@ const Planning = {
 };
 
 // ----- Data Lembar Kerja -----
-// Data yg tampil di tabel menu 2, mulai dari data IW39
 let dataLembarKerja = [];
 
 // ----- Format angka 1 decimal -----
@@ -61,11 +59,10 @@ function formatNumber(num) {
 // ----- Build Data Lembar Kerja: kalkulasi lookup dan rumus -----
 function buildDataLembarKerja() {
   dataLembarKerja = dataLembarKerja.map(row => {
-    // Cari data IW39 berdasarkan order
     const iw = IW39.find(i => i.Order.toLowerCase() === row.Order.toLowerCase()) || {};
 
     // CPH: jika 2 huruf pertama Description = "JR" maka JR, else lookup Data2 by MAT
-    if ((iw.Description || "").substring(0,2).toUpperCase() === "JR") {
+    if ((iw.Description || "").substring(0, 2).toUpperCase() === "JR") {
       row.CPH = "JR";
     } else {
       row.CPH = Data2[row.MAT] || "";
@@ -79,17 +76,13 @@ function buildDataLembarKerja() {
     row.StatusPart = sum.StatusPart || "";
     row.Aging = sum.Aging || "";
 
-    // Month tetap apa adanya (manual input)
-
     // Cost rumus (IW39.TotalPlan - IW39.TotalActual)/16500, <0 jadi "-"
     if (iw.TotalPlan !== undefined && iw.TotalActual !== undefined) {
-      const costCalc = (iw.TotalPlan - iw.TotalActual)/16500;
+      const costCalc = (iw.TotalPlan - iw.TotalActual) / 16500;
       row.Cost = costCalc < 0 ? "-" : costCalc;
     } else {
       row.Cost = "-";
     }
-
-    // Reman tetap manual
 
     // Include rumus
     if ((row.Reman || "").toLowerCase() === "reman") {
@@ -123,7 +116,6 @@ function isValidOrder(order) {
 const outputTableBody = document.querySelector("#output-table tbody");
 
 function renderTable(data) {
-  // cek duplikat order
   const ordersLower = data.map(d => d.Order.toLowerCase());
   const duplicates = ordersLower.filter((item, idx) => ordersLower.indexOf(item) !== idx);
 
@@ -135,23 +127,53 @@ function renderTable(data) {
 
   data.forEach(row => {
     const tr = document.createElement("tr");
-    // Tandai jika duplikat order
     if (duplicates.includes(row.Order.toLowerCase())) {
       tr.classList.add("duplicate");
     }
 
-    // Buat kolom dengan kelas khusus untuk angka (cost/include/exclude)
-    const tdRoom = document.createElement("td"); tdRoom.textContent = row.Room; tr.appendChild(tdRoom);
-    const tdOrderType = document.createElement("td"); tdOrderType.textContent = row.OrderType; tr.appendChild(tdOrderType);
-    const tdOrder = document.createElement("td"); tdOrder.textContent = row.Order; tr.appendChild(tdOrder);
-    const tdDescription = document.createElement("td"); tdDescription.textContent = row.Description; tr.appendChild(tdDescription);
-    const tdCreatedOn = document.createElement("td"); tdCreatedOn.textContent = row.CreatedOn; tr.appendChild(tdCreatedOn);
-    const tdUserStatus = document.createElement("td"); tdUserStatus.textContent = row.UserStatus; tr.appendChild(tdUserStatus);
-    const tdMAT = document.createElement("td"); tdMAT.textContent = row.MAT; tr.appendChild(tdMAT);
-    const tdCPH = document.createElement("td"); tdCPH.textContent = row.CPH; tr.appendChild(tdCPH);
-    const tdSection = document.createElement("td"); tdSection.textContent = row.Section; tr.appendChild(tdSection);
-    const tdStatusPart = document.createElement("td"); tdStatusPart.textContent = row.StatusPart; tr.appendChild(tdStatusPart);
-    const tdAging = document.createElement("td"); tdAging.textContent = row.Aging; tr.appendChild(tdAging);
+    const tdRoom = document.createElement("td");
+    tdRoom.textContent = row.Room;
+    tr.appendChild(tdRoom);
+
+    const tdOrderType = document.createElement("td");
+    tdOrderType.textContent = row.OrderType;
+    tr.appendChild(tdOrderType);
+
+    const tdOrder = document.createElement("td");
+    tdOrder.textContent = row.Order;
+    tr.appendChild(tdOrder);
+
+    const tdDescription = document.createElement("td");
+    tdDescription.textContent = row.Description;
+    tr.appendChild(tdDescription);
+
+    const tdCreatedOn = document.createElement("td");
+    tdCreatedOn.textContent = row.CreatedOn;
+    tr.appendChild(tdCreatedOn);
+
+    const tdUserStatus = document.createElement("td");
+    tdUserStatus.textContent = row.UserStatus;
+    tr.appendChild(tdUserStatus);
+
+    const tdMAT = document.createElement("td");
+    tdMAT.textContent = row.MAT;
+    tr.appendChild(tdMAT);
+
+    const tdCPH = document.createElement("td");
+    tdCPH.textContent = row.CPH;
+    tr.appendChild(tdCPH);
+
+    const tdSection = document.createElement("td");
+    tdSection.textContent = row.Section;
+    tr.appendChild(tdSection);
+
+    const tdStatusPart = document.createElement("td");
+    tdStatusPart.textContent = row.StatusPart;
+    tr.appendChild(tdStatusPart);
+
+    const tdAging = document.createElement("td");
+    tdAging.textContent = row.Aging;
+    tr.appendChild(tdAging);
 
     // Editable Month
     const tdMonth = document.createElement("td");
@@ -188,9 +210,14 @@ function renderTable(data) {
     tr.appendChild(tdExclude);
 
     // Planning
-    const tdPlanning = document.createElement("td"); tdPlanning.textContent = row.Planning; tr.appendChild(tdPlanning);
+    const tdPlanning = document.createElement("td");
+    tdPlanning.textContent = row.Planning;
+    tr.appendChild(tdPlanning);
+
     // Status AMT
-    const tdStatusAMT = document.createElement("td"); tdStatusAMT.textContent = row.StatusAMT; tr.appendChild(tdStatusAMT);
+    const tdStatusAMT = document.createElement("td");
+    tdStatusAMT.textContent = row.StatusAMT;
+    tr.appendChild(tdStatusAMT);
 
     // Action (delete button)
     const tdAction = document.createElement("td");
@@ -275,7 +302,6 @@ addOrderBtn.addEventListener("click", () => {
     return;
   }
 
-  // Split by space, newline, or comma (tapi nanti validasi)
   let orders = rawInput.split(/[\s,\n]+/).map(s => s.trim()).filter(s => s.length > 0);
 
   let addedCount = 0;
@@ -287,7 +313,6 @@ addOrderBtn.addEventListener("click", () => {
       invalidOrders.push(order);
       return;
     }
-    // cek duplicate di dataLembarKerja
     const exists = dataLembarKerja.some(d => d.Order.toLowerCase() === order.toLowerCase());
     if (!exists) {
       dataLembarKerja.push({
@@ -386,9 +411,8 @@ loadBtn.addEventListener("click", () => {
 
 // ----- Update data dari file upload (menu 1) -----
 function updateDataFromUpload(fileName) {
-  // Contoh update data IW39 dari file upload
   if (fileName.toLowerCase().includes('iw39')) {
-    IW39.length = 0; // clear existing data
+    IW39.length = 0;
     IW39.push(
       {
         Room: "R010",
@@ -401,13 +425,9 @@ function updateDataFromUpload(fileName) {
         TotalPlan: 90000,
         TotalActual: 20000
       }
-      // bisa ditambah data lain sesuai upload file asli nanti
     );
   }
-
-  // TODO: update Data1, Data2, SUM57, Planning sesuai file upload juga jika perlu
-
-  // Update dataLembarKerja dengan data IW39 terbaru
+  // Update dataLembarKerja dari IW39
   dataLembarKerja = IW39.map(iw => ({
     Room: iw.Room,
     OrderType: iw.OrderType,
@@ -431,7 +451,7 @@ function updateDataFromUpload(fileName) {
   buildDataLembarKerja();
   renderTable(dataLembarKerja);
 
-  // Pindah ke menu 2 secara otomatis
+  // Pindah ke menu 2
   document.querySelector('.menu-item.active').classList.remove('active');
   const menu2 = document.querySelector('.menu-item[data-menu="lembar"]');
   menu2.classList.add('active');
@@ -462,7 +482,6 @@ uploadBtn.addEventListener("click", () => {
   progressContainer.classList.remove("hidden");
   uploadProgress.value = 0;
 
-  // Simulasi proses upload dengan progress bar
   let progress = 0;
   const interval = setInterval(() => {
     progress += 10;
@@ -474,14 +493,12 @@ uploadBtn.addEventListener("click", () => {
       fileInput.value = '';
       progressContainer.classList.add('hidden');
 
-      // Update data dari file upload dan render menu 2
       updateDataFromUpload(file.name);
     }
   }, 150);
 });
 
 // ----- Inisialisasi -----
-// Mulai dengan data dari IW39 (Order dari IW39 otomatis masuk)
 dataLembarKerja = IW39.map(iw => ({
   Room: iw.Room,
   OrderType: iw.OrderType,
