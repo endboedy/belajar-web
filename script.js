@@ -33,12 +33,40 @@ async function loadExcelFiles() {
 }
 
 function handleUpload(fileKey) {
+  const input = document.querySelector(`input[name="${fileKey}"]`);
+  const file = input.files[0];
   const status = document.getElementById(`status-${fileKey}`);
-  status.textContent = `${fileKey}: sukses`;
-  status.style.color = fileKey === 'Budget' ? '#004080' : 'green'; // Highlight Budget
+
+  if (!file) {
+    status.textContent = `${fileKey}: file belum dipilih`;
+    status.style.color = 'red';
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = function (e) {
+    try {
+      const data = new Uint8Array(e.target.result);
+      const workbook = XLSX.read(data, { type: 'array' });
+      const sheetName = workbook.SheetNames[0];
+      const sheet = workbook.Sheets[sheetName];
+      const html = XLSX.utils.sheet_to_html(sheet);
+      const previewDiv = document.getElementById('excel-preview');
+      const section = document.createElement('div');
+      section.innerHTML = `<h3>${fileKey}</h3>` + html;
+      previewDiv.appendChild(section);
+
+      status.textContent = `${fileKey}: sukses upload`;
+      status.style.color = fileKey === 'Budget' ? '#004080' : 'green';
+    } catch (err) {
+      status.textContent = `${fileKey}: gagal upload`;
+      status.style.color = 'red';
+    }
+  };
+  reader.readAsArrayBuffer(file);
 }
 
-#upload-status p {
-  margin: 5px 0;
-  font-weight: bold;
+function uploadAll() {
+  const fileKeys = ['IW39', 'SUM57', 'Planning', 'Budget', 'Data1', 'Data2'];
+  fileKeys.forEach(key => handleUpload(key));
 }
