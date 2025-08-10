@@ -1,139 +1,108 @@
-// Data global
-let iwData = [];
-let data1 = [];
-let data2 = [];
-let dataPlanning = [];
+let tableData = [];
 
-// Ambil data dari file Excel
-async function loadData() {
-    const [iwResp, data1Resp, data2Resp, planningResp] = await Promise.all([
-        fetch('IW39.json'),
-        fetch('Data1.json'),
-        fetch('SUM57.json'),
-        fetch('Planning.json')
-    ]);
-
-    iwData = await iwResp.json();
-    data1 = await data1Resp.json();
-    data2 = await data2Resp.json();
-    dataPlanning = await planningResp.json();
-
-    renderTable(iwData);
+function showMenu(num) {
+  document.querySelectorAll('.menu-section').forEach(sec => sec.classList.add('hidden'));
+  document.getElementById(`menu${num}`).classList.remove('hidden');
 }
 
-// Render tabel
-function renderTable(data) {
-    const tableContainer = document.getElementById('table-container');
-    tableContainer.innerHTML = '';
+document.getElementById('fileInput').addEventListener('change', handleFile);
 
-    let table = document.createElement('table');
-    table.classList.add('data-table');
-    table.style.width = '100%';
+function handleFile(e) {
+  const file = e.target.files[0];
+  if (!file) return;
 
-    // Header
-    const headerRow = document.createElement('tr');
-    const headers = [
-        "Room", "Order", "Order Type", "Order Description", "Created On", "User Status", 
-        "MAT", "CPH", "Section", "Status Part", "Aging", "Month", "Cost", "Reman", 
-        "Include", "Exclude", "Planning", "Status AMT"
-    ];
-
-    headers.forEach(h => {
-        let th = document.createElement('th');
-        th.textContent = h;
-        headerRow.appendChild(th);
-    });
-    table.appendChild(headerRow);
-
-    // Filter row
-    const filterRow = document.createElement('tr');
-    headers.forEach((_, i) => {
-        let th = document.createElement('th');
-        let input = document.createElement('input');
-        input.type = 'text';
-        input.placeholder = 'Filter...';
-        input.style.width = '100%';
-        input.addEventListener('input', () => filterTable());
-        th.appendChild(input);
-        filterRow.appendChild(th);
-    });
-    table.appendChild(filterRow);
-
-    // Isi data
-    const orderCounts = {};
-    data.forEach(row => {
-        orderCounts[row.Order] = (orderCounts[row.Order] || 0) + 1;
-    });
-
-    data.forEach(row => {
-        const tr = document.createElement('tr');
-
-        headers.forEach(h => {
-            let td = document.createElement('td');
-
-            let value = row[h.replace(/\s+/g, '')] || '';
-
-            // Isi kolom tambahan dari sumber lain
-            if (h === "Section") {
-                let d1 = data1.find(d => d.Room === row.Room);
-                value = d1 ? d1.Section : '';
-            }
-            if (h === "Status Part") {
-                let d2 = data2.find(d => d.Order === row.Order);
-                value = d2 ? d2.StatusPart : '';
-            }
-            if (h === "Status AMT") {
-                let plan = dataPlanning.find(d => d.Order === row.Order);
-                value = plan ? plan.StatusAMT : '';
-            }
-
-            td.textContent = value;
-
-            // Warna merah font putih jika order duplikat
-            if (h === "Order" && orderCounts[row.Order] > 1) {
-                td.style.backgroundColor = 'red';
-                td.style.color = 'white';
-                td.style.fontWeight = 'bold';
-            }
-
-            // Format angka rata kanan
-            if (["Cost", "Include", "Exclude"].includes(h)) {
-                td.style.textAlign = 'right';
-            }
-
-            tr.appendChild(td);
-        });
-
-        table.appendChild(tr);
-    });
-
-    tableContainer.appendChild(table);
+  const reader = new FileReader();
+  reader.onload = function(evt) {
+    const data = new Uint8Array(evt.target.result);
+    const workbook = XLSX.read(data, { type: 'array' });
+    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+    tableData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+    renderTable();
+    showMenu(2);
+  };
+  reader.readAsArrayBuffer(file);
 }
 
-// Filter tabel real-time
-function filterTable() {
-    const table = document.querySelector('.data-table');
-    const filters = Array.from(table.querySelectorAll('tr:nth-child(2) input')).map(input => input.value.toLowerCase());
+function renderTable() {
+  if (tableData.length === 0) return;
+  const headerRow = document.getElementById('headerRow');
+  const filterRow = document.getElementById('filterRow');
+  const tbody = document.querySelector('#dataTable tbody');
 
-    Array.from(table.querySelectorAll('tr')).slice(2).forEach(row => {
-        let cells = row.querySelectorAll('td');
-        let match = true;
+  headerRow.innerHTML = '';
+  filterRow.innerHTML = '';
+  tbody.innerHTML = '';
 
-        cells.forEach((cell, i) => {
-            if (filters[i] && !cell.textContent.toLowerCase().includes(filters[i])) {
-                match = false;
-            }
-        });
+  // Header
+  tableData[0].forEach(h => {
+    const th = document.createElement('th');
+    th.textContent = h;
+    headerRow.appendChild(th);
 
-        row.style.display = match ? '' : 'none';
+    const td = document.createElement('td');
+    const input = document.createElement('input');
+    input.classList.add('table-filter');
+    input.dataset.col = h;
+    input.addEventListener('input', applyFilters);
+    td.appendChild(input);
+    filterRow.appendChild(td);
+  });
+
+  // Body
+  const orderSet = new Set();
+  for (let i = 1; i < tableData.length; i++) {
+    const row = tableData[i];
+    const tr = document.createElement('tr');
+
+    row.forEach((cell, idx) => {
+      const td = document.createElement('td');
+      td.textContent = cell;
+
+      // Highlight duplicate in column "Order"
+      if (tableData[0][idx].toLowerCase() === 'order') {
+        if (orderSet.has(cell)) {
+          td.classList.add('duplicate');
+        } else {
+          orderSet.add(cell);
+        }
+      }
+      tr.appendChild(td);
     });
+    tbody.appendChild(tr);
+  }
 }
 
-// Sticky header & filter
-document.addEventListener('scroll', () => {
-    const ths = document.querySelectorAll('.data-table th');
-    ths.forEach(th => th.style.position = 'sticky');
-});
+function applyFilters() {
+  const filters = Array.from(document.querySelectorAll('.table-filter')).map(inp => inp.value.toLowerCase());
+  const tbody = document.querySelector('#dataTable tbody');
+  tbody.innerHTML = '';
 
-// Load data awal
-document.addEventListener('DOMContentLoaded', loadData);
+  const orderSet = new Set();
+  for (let i = 1; i < tableData.length; i++) {
+    const row = tableData[i];
+    let match = true;
+
+    row.forEach((cell, idx) => {
+      if (filters[idx] && !String(cell).toLowerCase().includes(filters[idx])) {
+        match = false;
+      }
+    });
+
+    if (match) {
+      const tr = document.createElement('tr');
+      row.forEach((cell, idx) => {
+        const td = document.createElement('td');
+        td.textContent = cell;
+        if (tableData[0][idx].toLowerCase() === 'order') {
+          if (orderSet.has(cell)) {
+            td.classList.add('duplicate');
+          } else {
+            orderSet.add(cell);
+          }
+        }
+        tr.appendChild(td);
+      });
+      tbody.appendChild(tr);
+    }
+  }
+}
