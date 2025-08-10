@@ -1,26 +1,30 @@
 
+/* Reset dan dasar */
 body {
   margin: 0;
   font-family: Arial, sans-serif;
-  background-color: #e6f2ff;
+  background-color: #e6f2ff; /* biru paling muda */
 }
 
+/* Header */
 .header {
-  background-color: #004080;
+  background-color: #004080; /* biru tua */
   color: white;
   padding: 15px;
   text-align: center;
   font-size: 24px;
 }
 
+/* Layout utama */
 .container {
   display: flex;
   height: calc(100vh - 60px);
 }
 
+/* Sidebar */
 .sidebar {
   width: 220px;
-  background-color: #3399ff;
+  background-color: #3399ff; /* biru agak muda */
   color: white;
   padding: 20px;
 }
@@ -40,6 +44,7 @@ body {
   background-color: #66ccff;
 }
 
+/* Konten utama */
 .main-content {
   flex: 1;
   padding: 20px;
@@ -51,10 +56,16 @@ body {
   margin-top: 0;
 }
 
+/* Tombol */
 button {
   padding: 8px 16px;
   margin-top: 10px;
   cursor: pointer;
+  border: none;
+  background-color: #004080;
+  color: white;
+  border-radius: 4px;
+  transition: background-color 0.3s ease;
 }
 
 button:hover {
@@ -62,6 +73,22 @@ button:hover {
   color: white;
 }
 
+/* Input file */
+input[type="file"] {
+  margin: 5px 0;
+  padding: 5px;
+  border: 1px solid #ccc;
+  background-color: #fff;
+  border-radius: 4px;
+}
+
+form label {
+  display: block;
+  margin-bottom: 10px;
+  font-weight: bold;
+}
+
+/* Status Upload */
 #upload-status p {
   margin: 5px 0;
   font-weight: bold;
@@ -80,6 +107,7 @@ button:hover {
   color: #004080;
 }
 
+/* Progress Bar */
 .progress-container {
   width: 100%;
   background-color: #ccc;
@@ -96,6 +124,7 @@ button:hover {
   transition: width 0.4s ease;
 }
 
+/* Preview Excel */
 #excel-preview div {
   margin-top: 20px;
   background: white;
