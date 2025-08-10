@@ -1,115 +1,62 @@
-<!doctype html>
-<html lang="id">
+
+<!DOCTYPE html>
+<html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Monthly Plan - Demo</title>
-  <link rel="stylesheet" href="styles.css" />
+  <meta charset="UTF-8" />
+  <title>Ndarboe.net</title>
+  <link rel="stylesheet" href="style.css" />
+  https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js
 </head>
 <body>
-  <div class="app">
+  <header class="header">
+    <h1>Ndarboe.net</h1>
+  </header>
+  <div class="container">
     <aside class="sidebar">
-      <div class="logo">LOGO</div>
-      <nav>
-        <ul>
-          <li class="menu-item active" data-target="upload"><svg viewBox="0 0 24 24" class="icon"><path d="M5 20h14v-2H5v2zM11 4h2v8h-2zM7 8h2v8H7zM15 8h2v8h-2z"/></svg> Upload Data</li>
-          <li class="menu-item" data-target="monthly"><svg viewBox="0 0 24 24" class="icon"><circle cx="12" cy="12" r="8"/></svg> Monthly Plan</li>
-          <li class="menu-item" data-target="cost"><svg viewBox="0 0 24 24" class="icon"><path d="M12 2v20"/></svg> Cost RM</li>
-          <li class="menu-item" data-target="download"><svg viewBox="0 0 24 24" class="icon"><path d="M5 20h14v-2H5zM12 3v12"/></svg> Download Excel</li>
-        </ul>
-      </nav>
+      <ul>
+        <li onclick="showTab('upload')">Upload File</li>
+        <li onclick="showTab('worksheet')">Lembar Kerja</li>
+        <li onclick="showTab('summary')">Summary Cost RM</li>
+        <li onclick="showTab('download')">Download Excel</li>
+      </ul>
     </aside>
-
-    <main class="main">
-      <header class="hero">
-        <h1>MONTHLY PLAN</h1>
-      </header>
-
-      <!-- Upload / file inputs -->
-      <section id="upload" class="panel">
-        <div class="panel-inner">
-          <form class="upload-grid">
-            <label>IW39 <input type="file" name="iw39" class="file-input" /></label>
-            <label>SUM57 <input type="file" name="sum57" class="file-input" /></label>
-            <label>Planning <input type="file" name="planning" class="file-input" /></label>
-            <label>Budget <input type="file" name="budget" class="file-input" /></label>
-            <label>Data1 <input type="file" name="data1" class="file-input" /></label>
-            <label>Data2 <input type="file" name="data2" class="file-input" /></label>
-          </form>
-        </div>
+    <main class="main-content">
+      <section id="upload" class="tab-content">
+        <h2>Upload File</h2>
+        <p>File Excel tersedia di folder <code>excel/</code> GitHub:</p>
+        <ul id="file-list">
+          <li>IW39.xlsx</li>
+          <li>SUM57.xlsx</li>
+          <li>Planning.xlsx</li>
+          <li>Budget.xlsx</li>
+          <li>Data1.xlsx</li>
+          <li>Data2.xlsx</li>
+        </ul>
+        <button onclick="loadExcelFiles()">Refresh & Preview</button>
+        <div id="excel-preview"></div>
       </section>
 
-      <header class="hero small">
-        <h2>MONTHLY PLAN</h2>
-      </header>
-
-      <!-- Search / filter row -->
-      <section id="monthly" class="panel">
-        <div class="panel-inner">
-          <div class="filters">
-            <input type="text" id="f-room" placeholder="Room" />
-            <input type="text" id="f-order" placeholder="Order" />
-            <input type="text" id="f-mat" placeholder="MAT" />
-            <input type="text" id="f-section" placeholder="Section" />
-            <input type="text" id="f-cph" placeholder="CPH" />
-            <button id="clear-filters" type="button">Clear</button>
-          </div>
-
-          <div class="table-wrap">
-            <table id="data-table">
-              <thead>
-                <tr>
-                  <th>Room</th><th>Order Type</th><th>Order</th><th>Description</th>
-                  <th>Created On</th><th>User Status</th><th>MAT</th><th>CPH</th>
-                  <th>Section</th><th>Month</th><th>Cost</th>
-                </tr>
-              </thead>
-              <tbody>
-                <!-- sample rows -->
-                <tr><td>A1</td><td>Type1</td><td>WO-001</td><td>Desc A</td><td>2025-08-01</td><td>Open</td><td>MAT1</td><td>2.5</td><td>S1</td><td>Aug</td><td>1,200</td></tr>
-                <tr><td>B2</td><td>Type2</td><td>WO-002</td><td>Desc B</td><td>2025-08-03</td><td>Closed</td><td>MAT2</td><td>1.2</td><td>S2</td><td>Aug</td><td>800</td></tr>
-                <tr><td>A1</td><td>Type1</td><td>WO-003</td><td>Desc C</td><td>2025-08-05</td><td>Open</td><td>MAT1</td><td>3.0</td><td>S1</td><td>Aug</td><td>2,400</td></tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
+      <section id="worksheet" class="tab-content" style="display:none;">
+        <h2>Lembar Kerja</h2>
+        <p>Konten akan ditambahkan setelah menu 1 selesai.</p>
       </section>
 
-      <header class="hero small">
-        <h2>MONTHLY PLAN</h2>
-      </header>
-
-      <!-- Cost RM table section -->
-      <section id="cost" class="panel">
-        <div class="panel-inner">
-          <div class="month-row">
-            <label>Month <input type="text" value="Aug" readonly /></label>
-          </div>
-
-          <div class="cost-table-wrap">
-            <table class="cost-table">
-              <thead>
-                <tr>
-                  <th>CPH</th><th>Include</th><th>Exclude</th><th>Budget</th><th>Wheel Type</th><th>Track Type</th><th>DT Type</th><th>SE Type</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr><td>GET-BBB</td><td>388,530</td><td>338,701</td><td>335,279</td><td>14,599</td><td>373,931</td><td>-</td><td>-</td></tr>
-                <tr><td>FLUID</td><td>392,425</td><td>392,425</td><td>392,425</td><td>-</td><td>-</td><td>-</td><td>-</td></tr>
-                <tr><td>PCR</td><td>1,840,011</td><td>937,268</td><td>1,180,374</td><td>1,252,772</td><td>506,002</td><td>18,599</td><td>62,637</td></tr>
-                <tr class="total-row"><td>Total</td><td>5,707,405</td><td>4,093,424</td><td>3,851,320</td><td>2,440,479</td><td>2,152,311</td><td>268,923</td><td>192,528</td></tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
+      <section id="summary" class="tab-content" style="display:none;">
+        <h2>Summary Cost RM</h2>
+        <p>Konten akan ditambahkan setelah Lembar Kerja selesai.</p>
       </section>
 
-      <footer class="footer">
-        <small>Demo layout — simpan file dan buka index.html</small>
-      </footer>
+      <section id="download" class="tab-content" style="display:none;">
+        <h2>Download Excel</h2>
+        <p>Fitur export akan tersedia setelah data dari menu 2 dan 3 siap.</p>
+      </section>
     </main>
   </div>
-
   <script src="script.js"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", function() {
+      showTab('upload');
+    });
+  </script>
 </body>
 </html>
