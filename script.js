@@ -56,13 +56,17 @@ function formatNumber(num) {
   return Number(num).toFixed(1);
 }
 
-// ----- Build Data Lembar Kerja: kalkulasi lookup dan rumus -----
+// ----- Validasi order input (tidak boleh titik atau koma) -----
+function isValidOrder(order) {
+  return !/[.,]/.test(order);
+}
+
+// ----- Build Data Lembar Kerja: lookup dan rumus -----
 function buildDataLembarKerja() {
   dataLembarKerja = dataLembarKerja.map(row => {
-    // Cari data IW39 berdasar order (case insensitive)
     const iw = IW39.find(i => i.Order.toLowerCase() === row.Order.toLowerCase()) || {};
 
-    // Update kolom-kolom yang berasal dari IW39 langsung
+    // Assign dari IW39
     row.Room = iw.Room || "";
     row.OrderType = iw.OrderType || "";
     row.Description = iw.Description || "";
@@ -116,11 +120,6 @@ function buildDataLembarKerja() {
   });
 }
 
-// ----- Validasi order input (tidak boleh titik atau koma) -----
-function isValidOrder(order) {
-  return !/[.,]/.test(order);
-}
-
 // ----- Render tabel -----
 const outputTableBody = document.querySelector("#output-table tbody");
 
@@ -134,35 +133,28 @@ function renderTable(data) {
     return;
   }
 
-  data.forEach((row, rowIndex) => {
+  data.forEach(row => {
     const tr = document.createElement("tr");
     if (duplicates.includes(row.Order.toLowerCase())) {
       tr.classList.add("duplicate");
     }
 
-    // Buat sel-sel td
-    function createTd(text, className = "") {
-      const td = document.createElement("td");
-      td.textContent = text;
-      if (className) td.classList.add(className);
-      return td;
-    }
+    // Buat sel untuk semua kolom
+    const tdRoom = document.createElement("td"); tdRoom.textContent = row.Room; tr.appendChild(tdRoom);
+    const tdOrderType = document.createElement("td"); tdOrderType.textContent = row.OrderType; tr.appendChild(tdOrderType);
+    const tdOrder = document.createElement("td"); tdOrder.textContent = row.Order; tr.appendChild(tdOrder);
+    const tdDescription = document.createElement("td"); tdDescription.textContent = row.Description; tr.appendChild(tdDescription);
+    const tdCreatedOn = document.createElement("td"); tdCreatedOn.textContent = row.CreatedOn; tr.appendChild(tdCreatedOn);
+    const tdUserStatus = document.createElement("td"); tdUserStatus.textContent = row.UserStatus; tr.appendChild(tdUserStatus);
+    const tdMAT = document.createElement("td"); tdMAT.textContent = row.MAT; tr.appendChild(tdMAT);
+    const tdCPH = document.createElement("td"); tdCPH.textContent = row.CPH; tr.appendChild(tdCPH);
+    const tdSection = document.createElement("td"); tdSection.textContent = row.Section; tr.appendChild(tdSection);
+    const tdStatusPart = document.createElement("td"); tdStatusPart.textContent = row.StatusPart; tr.appendChild(tdStatusPart);
+    const tdAging = document.createElement("td"); tdAging.textContent = row.Aging; tr.appendChild(tdAging);
 
-    tr.appendChild(createTd(row.Room));
-    tr.appendChild(createTd(row.OrderType));
-    tr.appendChild(createTd(row.Order));
-    tr.appendChild(createTd(row.Description));
-    tr.appendChild(createTd(row.CreatedOn));
-    tr.appendChild(createTd(row.UserStatus));
-    tr.appendChild(createTd(row.MAT));
-    tr.appendChild(createTd(row.CPH));
-    tr.appendChild(createTd(row.Section));
-    tr.appendChild(createTd(row.StatusPart));
-    tr.appendChild(createTd(row.Aging));
-
-    // Month (editable only saat mode edit)
+    // Month (editable atau text biasa tergantung mode edit)
     const tdMonth = document.createElement("td");
-    if (row.isEditing) {
+    if (row._editing) {
       const select = document.createElement("select");
       ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"].forEach(m => {
         const option = document.createElement("option");
@@ -172,83 +164,80 @@ function renderTable(data) {
         select.appendChild(option);
       });
       tdMonth.appendChild(select);
-      select.addEventListener("change", () => {
-        row.Month = select.value;
-      });
+      row._monthSelect = select; // simpan ref select untuk simpan nanti
     } else {
       tdMonth.textContent = row.Month || "";
     }
     tr.appendChild(tdMonth);
 
     // Cost (format angka 1 decimal, rata kanan)
-    const tdCost = createTd(typeof row.Cost === "number" ? formatNumber(row.Cost) : row.Cost, "right");
+    const tdCost = document.createElement("td");
+    tdCost.classList.add("cost");
+    tdCost.textContent = typeof row.Cost === "number" ? formatNumber(row.Cost) : row.Cost;
     tr.appendChild(tdCost);
 
-    // Reman (editable only saat mode edit)
+    // Reman (editable atau text biasa tergantung mode edit)
     const tdReman = document.createElement("td");
-    if (row.isEditing) {
+    if (row._editing) {
       const input = document.createElement("input");
       input.type = "text";
       input.value = row.Reman || "";
       tdReman.appendChild(input);
-      input.addEventListener("input", () => {
-        row.Reman = input.value;
-      });
+      row._remanInput = input; // simpan ref input
     } else {
       tdReman.textContent = row.Reman || "";
     }
     tr.appendChild(tdReman);
 
     // Include (format angka 1 decimal, rata kanan)
-    const tdInclude = createTd(typeof row.Include === "number" ? formatNumber(row.Include) : row.Include, "right");
+    const tdInclude = document.createElement("td");
+    tdInclude.classList.add("include");
+    tdInclude.textContent = typeof row.Include === "number" ? formatNumber(row.Include) : row.Include;
     tr.appendChild(tdInclude);
 
     // Exclude (format angka 1 decimal, rata kanan)
-    const tdExclude = createTd(typeof row.Exclude === "number" ? formatNumber(row.Exclude) : row.Exclude, "right");
+    const tdExclude = document.createElement("td");
+    tdExclude.classList.add("exclude");
+    tdExclude.textContent = typeof row.Exclude === "number" ? formatNumber(row.Exclude) : row.Exclude;
     tr.appendChild(tdExclude);
 
-    tr.appendChild(createTd(row.Planning));
-    tr.appendChild(createTd(row.StatusAMT));
+    // Planning
+    const tdPlanning = document.createElement("td"); tdPlanning.textContent = row.Planning; tr.appendChild(tdPlanning);
 
-    // Action: tombol Edit / Save / Cancel dan Delete
+    // Status AMT
+    const tdStatusAMT = document.createElement("td"); tdStatusAMT.textContent = row.StatusAMT; tr.appendChild(tdStatusAMT);
+
+    // Action: Edit / Save / Delete buttons
     const tdAction = document.createElement("td");
 
-    if (row.isEditing) {
-      // Tombol Save
+    if (row._editing) {
       const btnSave = document.createElement("button");
       btnSave.textContent = "Save";
-      btnSave.classList.add("btn-action", "btn-save");
+      btnSave.classList.add("btn-action");
       btnSave.addEventListener("click", () => {
-        row.isEditing = false;
+        // Simpan Month & Reman dari elemen input/select ke data
+        row.Month = row._monthSelect.value;
+        row.Reman = row._remanInput.value.trim();
+
+        // Hapus flag editing dan rebuild data
+        delete row._editing;
+        delete row._monthSelect;
+        delete row._remanInput;
+
         buildDataLembarKerja();
         renderTable(dataLembarKerja);
       });
       tdAction.appendChild(btnSave);
-
-      // Tombol Cancel
-      const btnCancel = document.createElement("button");
-      btnCancel.textContent = "Cancel";
-      btnCancel.classList.add("btn-action", "btn-cancel");
-      btnCancel.addEventListener("click", () => {
-        row.isEditing = false;
-        // Reload data dari saved (bisa implementasikan reload khusus jika perlu)
-        renderTable(dataLembarKerja);
-      });
-      tdAction.appendChild(btnCancel);
     } else {
-      // Tombol Edit
       const btnEdit = document.createElement("button");
       btnEdit.textContent = "Edit";
-      btnEdit.classList.add("btn-action", "btn-edit");
+      btnEdit.classList.add("btn-action");
       btnEdit.addEventListener("click", () => {
-        // Set hanya row ini yang mode edit, reset row lain
-        dataLembarKerja.forEach(r => r.isEditing = false);
-        row.isEditing = true;
+        row._editing = true;
         renderTable(dataLembarKerja);
       });
       tdAction.appendChild(btnEdit);
 
-      // Tombol Delete
       const btnDelete = document.createElement("button");
       btnDelete.textContent = "Delete";
       btnDelete.classList.add("btn-action", "btn-delete");
@@ -263,12 +252,6 @@ function renderTable(data) {
     }
 
     tr.appendChild(tdAction);
-
-    // Tandai warna merah untuk order duplicate
-    if (duplicates.includes(row.Order.toLowerCase())) {
-      tr.style.backgroundColor = "#d9534f"; // merah
-      tr.style.color = "white";
-    }
 
     outputTableBody.appendChild(tr);
   });
@@ -286,8 +269,7 @@ addOrderBtn.addEventListener("click", () => {
     return;
   }
 
-  // Pisah berdasarkan spasi, koma, atau enter
-  let orders = rawInput.split(/[\s,]+/).map(s => s.trim()).filter(s => s.length > 0);
+  let orders = rawInput.split(/[\s,\n]+/).map(s => s.trim()).filter(s => s.length > 0);
 
   let addedCount = 0;
   let skippedOrders = [];
@@ -395,10 +377,16 @@ loadBtn.addEventListener("click", () => {
 });
 
 // ----- Update data dari file upload (menu 1) -----
-function updateDataFromUpload(fileName) {
+
+function updateDataFromUpload(fileName, fileObj) {
   if (fileName.toLowerCase().includes('iw39')) {
-    // Contoh data dummy baru, kamu bisa sesuaikan dengan file sebenarnya
-    IW39 = [
+    parseExcelToIW39(fileObj);
+  }
+}
+
+  if (fileName.toLowerCase().includes('iw39')) {
+    IW39.length = 0;
+    IW39.push(
       {
         Room: "R010",
         OrderType: "Type Z",
@@ -410,7 +398,7 @@ function updateDataFromUpload(fileName) {
         TotalPlan: 90000,
         TotalActual: 20000
       }
-    ];
+    );
   }
   // Update dataLembarKerja dari IW39
   dataLembarKerja = IW39.map(iw => ({
@@ -436,8 +424,13 @@ function updateDataFromUpload(fileName) {
   buildDataLembarKerja();
   renderTable(dataLembarKerja);
 
-  // Tampilkan notif upload sukses saja, jangan switch menu otomatis
-  alert(`File "${fileName}" berhasil diupload. Silakan klik menu "Lembar Kerja" untuk melihat data.`);
+  // Pindah ke menu 2
+  document.querySelector('.menu-item.active').classList.remove('active');
+  const menu2 = document.querySelector('.menu-item[data-menu="lembar"]');
+  menu2.classList.add('active');
+
+  document.querySelector('.content-section.active').classList.remove('active');
+  document.getElementById('lembar').classList.add('active');
 }
 
 // ----- Event Upload File (menu 1) -----
@@ -478,27 +471,58 @@ uploadBtn.addEventListener("click", () => {
   }, 150);
 });
 
-// ----- Switch Menu Manual -----
-const menuItems = document.querySelectorAll('.menu-item');
-menuItems.forEach(item => {
-  item.addEventListener('click', () => {
-    const menu = item.getAttribute('data-menu');
-    switchMenu(menu);
-  });
-});
+// ----- Inisialisasi -----
+dataLembarKerja = IW39.map(iw => ({
+  Room: iw.Room,
+  OrderType: iw.OrderType,
+  Order: iw.Order,
+  Description: iw.Description,
+  CreatedOn: iw.CreatedOn,
+  UserStatus: iw.UserStatus,
+  MAT: iw.MAT,
+  CPH: "",
+  Section: "",
+  StatusPart: "",
+  Aging: "",
+  Month: "",
+  Cost: "-",
+  Reman: "",
+  Include: "-",
+  Exclude: "-",
+  Planning: "",
+  StatusAMT: ""
+}));
+buildDataLembarKerja();
+renderTable(dataLembarKerja);
 
-function switchMenu(menuName) {
-  document.querySelectorAll('.menu-item').forEach(mi => mi.classList.remove('active'));
-  document.querySelectorAll('.content-section').forEach(cs => cs.classList.remove('active'));
 
-  document.querySelector(`.menu-item[data-menu="${menuName}"]`).classList.add('active');
-  document.getElementById(menuName).classList.add('active');
+
+
+function parseExcelToIW39(file) {
+  const reader = new FileReader();
+  reader.onload = function (e) {
+    const data = new Uint8Array(e.target.result);
+    const workbook = XLSX.read(data, { type: 'array' });
+    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+    const jsonData = XLSX.utils.sheet_to_json(sheet);
+
+    IW39.length = 0;
+    jsonData.forEach(row => {
+      IW39.push({
+        Room: row.Room || "",
+        OrderType: row.OrderType || "",
+        Order: row.Order || "",
+        Description: row.Description || "",
+        CreatedOn: row.CreatedOn || "",
+        UserStatus: row.UserStatus || "",
+        MAT: row.MAT || "",
+        TotalPlan: row.TotalPlan || 0,
+        TotalActual: row.TotalActual || 0
+      });
+    });
+
+    buildDataLembarKerja();
+    renderTable(dataLembarKerja);
+  };
+  reader.readAsArrayBuffer(file);
 }
-
-// ----- Inisialisasi awal: set menu default ke Upload -----
-window.onload = () => {
-  switchMenu("upload");
-  // kosongkan data awal
-  dataLembarKerja = [];
-  renderTable(dataLembarKerja);
-};
