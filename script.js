@@ -80,3 +80,8 @@ function uploadAll() {
     }, index * 500); // delay per file
   });
 }
+
+// Panggil showTab saat halaman selesai dimuat
+document.addEventListener("DOMContentLoaded", function () {
+  showTab('upload');
+});
