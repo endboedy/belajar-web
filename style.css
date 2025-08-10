@@ -1,98 +1,70 @@
-/* Reset dan styling dasar */
+/* Reset */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
 body {
-  font-family: Arial, sans-serif;
-  margin: 0;
-  padding: 0;
-  background-color: #f4f6f8;
-  color: #333;
+    font-family: 'Segoe UI', sans-serif;
+    background-color: #f4f6f8;
+    color: #333;
 }
 
-/* Container utama */
-.container {
-  max-width: 100%;
-  padding: 20px;
-  overflow-x: auto;
+/* Navbar */
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #2d3436;
+    padding: 10px 20px;
+    color: white;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
 
-/* Judul halaman */
-h1 {
-  text-align: center;
-  margin-bottom: 20px;
+header .logo {
+    font-weight: bold;
+    font-size: 18px;
 }
 
-/* Styling tabel */
-.data-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 14px;
-  background-color: white;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+nav ul {
+    display: flex;
+    list-style: none;
+    gap: 15px;
 }
 
-/* Header tabel */
-.data-table th {
-  background-color: #007bff;
-  color: white;
-  padding: 8px;
-  text-align: left;
-  position: sticky;
-  top: 0;
-  z-index: 2;
+nav a {
+    color: white;
+    text-decoration: none;
+    padding: 8px 14px;
+    border-radius: 6px;
+    transition: background 0.3s;
 }
 
-/* Baris filter (row kedua) */
-.data-table tr:nth-child(2) th {
-  background-color: #f9f9f9;
-  top: 36px; /* Sesuai tinggi header row */
-  z-index: 1;
-  padding: 4px;
+nav a:hover,
+nav a.active {
+    background-color: #0984e3;
 }
 
-.data-table input {
-  width: 100%;
-  padding: 4px;
-  box-sizing: border-box;
-  font-size: 13px;
+/* Content */
+main {
+    padding: 20px;
 }
 
-/* Isi tabel */
-.data-table td {
-  border: 1px solid #ddd;
-  padding: 6px;
-  vertical-align: middle;
+.content {
+    display: none;
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    animation: fadeIn 0.3s ease-in-out;
 }
 
-/* Efek hover */
-.data-table tbody tr:hover {
-  background-color: #f1f1f1;
+.content.active {
+    display: block;
 }
 
-/* Warna highlight order duplikat */
-.duplicate-order {
-  background-color: red !important;
-  color: white !important;
-  font-weight: bold;
-}
-
-/* Kolom angka rata kanan */
-.text-right {
-  text-align: right;
-}
-
-/* Scroll horizontal tabel */
-.table-wrapper {
-  overflow-x: auto;
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-  .data-table {
-    font-size: 12px;
-  }
-  .data-table th, .data-table td {
-    padding: 4px;
-  }
-  .data-table input {
-    font-size: 12px;
-  }
+@keyframes fadeIn {
+    from {opacity: 0;}
+    to {opacity: 1;}
 }
