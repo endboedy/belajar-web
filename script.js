@@ -31,3 +31,9 @@ async function loadExcelFiles() {
     }
   }
 }
+
+function handleUpload(fileKey) {
+  const status = document.getElementById(`status-${fileKey}`);
+  status.textContent = `${fileKey}: sukses`;
+  status.style.color = fileKey === 'Budget' ? '#004080' : 'green'; // Highlight Budget
+}
