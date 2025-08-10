@@ -2,53 +2,59 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Ndarboe.net</title>
-  <link rel="stylesheet" href="style.css">
-  <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></ <header>
-    <h1>Ndarboe.net</h1>
-    <nav>
+  <link rel="stylesheet" href="style.css" />
+  https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js
+</head>
+<body>
+  <div class="container">
+    <aside class="sidebar">
+      <h2>Ndarboe.net</h2>
       <ul>
-        <li><a href="#" onclick="showTab('upload')">Upload File</a></li>
-        <li><a href="#" onclick="showTab('worksheet')">Lembar Kerja</a></li>
-        <li><a href="#" onclick="showTab('summary')">Summary Cost RM</a></li>
-        <li><a href="#" onclick="showTab('download')">Download Excel</a></li>
+        <li onclick="showTab('upload')">Upload File</li>
+        <li onclick="showTab('worksheet')">Lembar Kerja</li>
+        <li onclick="showTab('summary')">Summary Cost RM</li>
+        <li onclick="showTab('download')">Download Excel</li>
       </ul>
-    </nav>
-  </header>
+    </aside>
+    <main class="main-content">
+      <section id="upload" class="tab-content">
+        <h2>Upload File</h2>
+        <p>File Excel tersedia di folder <code>excel/</code> GitHub:</p>
+        <ul id="file-list">
+          <li>IW39.xlsx</li>
+          <li>SUM57.xlsx</li>
+          <li>Planning.xlsx</li>
+          <li>Budget.xlsx</li>
+          <li>Data1.xlsx</li>
+          <li>Data2.xlsx</li>
+        </ul>
+        <button onclick="loadExcelFiles()">Refresh & Preview</button>
+        <div id="excel-preview"></div>
+      </section>
 
-  <main>
-    <section id="upload" class="tab-content">
-      <h2>Upload File</h2>
-      <p>File Excel tersedia di folder <code>excel/</code> GitHub:</p>
-      <ul id="file-list">
-        <li>IW39.xlsx</li>
-        <li>SUM57.xlsx</li>
-        <li>Planning.xlsx</li>
-        <li>Budget.xlsx</li>
-        <li>Data1.xlsx</li>
-        <li>Data2.xlsx</li>
-      </ul>
-      <button onclick="loadExcelFiles()">Refresh & Preview</button>
-      <div id="excel-preview"></div>
-    </section>
+      <section id="worksheet" class="tab-content" style="display:none;">
+        <h2>Lembar Kerja</h2>
+        <p>Konten akan ditambahkan setelah menu 1 selesai.</p>
+      </section>
 
-    <section id="worksheet" class="tab-content" style="display:none;">
-      <h2>Lembar Kerja</h2>
-      <p>Konten akan ditambahkan setelah menu 1 selesai.</p>
-    </section>
+      <section id="summary" class="tab-content" style="display:none;">
+        <h2>Summary Cost RM</h2>
+        <p>Konten akan ditambahkan setelah Lembar Kerja selesai.</p>
+      </section>
 
-    <section id="summary" class="tab-content" style="display:none;">
-      <h2>Summary Cost RM</h2>
-      <p>Konten akan ditambahkan setelah Lembar Kerja selesai.</p>
-    </section>
-
-    <section id="download" class="tab-content" style="display:none;">
-      <h2>Download Excel</h2>
-      <p>Fitur export akan tersedia setelah data dari menu 2 dan 3 siap.</p>
-    </section>
-  </main>
-
+      <section id="download" class="tab-content" style="display:none;">
+        <h2>Download Excel</h2>
+        <p>Fitur export akan tersedia setelah data dari menu 2 dan 3 siap.</p>
+      </section>
+    </main>
+  </div>
   <script src="script.js"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", function() {
+      showTab('upload');
+    });
+  </script>
 </body>
 </html>
