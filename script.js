@@ -450,12 +450,12 @@ addOrderBtn.addEventListener("click", () => {
 
 // ----- Filter buttons -----
 const filterRoom = document.getElementById("filter-room");
-const filterOrderType = document.getElementById("filter-ordertype");
+const filterOrderType = document.getElementById("filter-order");
 const filterSection = document.getElementById("filter-section");
 const filterMonth = document.getElementById("filter-month");
 const filterReman = document.getElementById("filter-reman");
 
-const filterInputs = [filterRoom, filterOrderType, filterSection, filterMonth, filterReman];
+const filterInputs = [filterRoom, filterOrder, filterSection, filterMonth, filterReman];
 
 filterInputs.forEach(input => {
   input.addEventListener("input", () => {
@@ -488,3 +488,4 @@ fileInput.addEventListener("change", async (e) => {
     alert("Error saat membaca file Excel: " + err.message);
   }
 });
+
