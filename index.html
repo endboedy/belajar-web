@@ -1,82 +1,105 @@
-
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Ndarboe.net</title>
   <link rel="stylesheet" href="style.css" />
-  https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js
 </head>
 <body>
-  <header class="header">
+  <header>
     <h1>Ndarboe.net</h1>
   </header>
+
   <div class="container">
-    <aside class="sidebar">
+    <nav class="sidebar">
       <ul>
-        <li onclick="showTab('upload')">Upload File</li>
-        <li onclick="showTab('worksheet')">Lembar Kerja</li>
-        <li onclick="showTab('summary')">Summary Cost RM</li>
-        <li onclick="showTab('download')">Download Excel</li>
+        <li class="menu-item active" data-menu="upload">Upload File</li>
+        <li class="menu-item" data-menu="lembar">Lembar Kerja</li>
+        <li class="menu-item" data-menu="summary">Summary CRM</li>
+        <li class="menu-item" data-menu="download">Download Excel</li>
       </ul>
-    </aside>
-    <main class="main-content">
-      <section id="upload" class="tab-content">
+    </nav>
+
+    <main class="content">
+      <!-- Upload File -->
+      <section id="upload" class="content-section active">
         <h2>Upload File</h2>
-        <form id="upload-form">
-          <label>IW39: <input type="file" name="IW39" onchange="handleUpload('IW39')"></label><br />
-          <label>SUM57: <input type="file" name="SUM57" onchange="handleUpload('SUM57')"></label><br />
-          <label>Planning: <input type="file" name="Planning" onchange="handleUpload('Planning')"></label><br />
-          <label>Budget: <input type="file" name="Budget" onchange="handleUpload('Budget')"></label><br />
-          <label>Data1: <input type="file" name="Data1" onchange="handleUpload('Data1')"></label><br />
-          <label>Data2: <input type="file" name="Data2" onchange="handleUpload('Data2')"></label><br />
-        </form>
-        <button onclick="uploadAll()">Upload Semua</button>
-
-        <div id="upload-status">
-          <p id="status-IW39">IW39: belum upload</p>
-          <p id="status-SUM57">SUM57: belum upload</p>
-          <p id="status-Planning">Planning: belum upload</p>
-          <p id="status-Budget">Budget: belum upload</p>
-          <p id="status-Data1">Data1: belum upload</p>
-          <p id="status-Data2">Data2: belum upload</p>
+        <label for="file-select">Pilih File:</label>
+        <select id="file-select">
+          <option value="IW39">IW39</option>
+          <option value="SUM57">SUM57</option>
+          <option value="Planning">Planning</option>
+          <option value="Budget">Budget</option>
+          <option value="Data1">Data1</option>
+          <option value="Data2">Data2</option>
+        </select>
+        <br/><br/>
+        <input type="file" id="file-input" />
+        <br/><br/>
+        <button id="upload-btn">Upload</button>
+        <div id="progress-container" class="hidden">
+          <progress id="upload-progress" value="0" max="100"></progress>
+          <span id="progress-text">0%</span>
         </div>
-
-        <div class="progress-container">
-          <div id="progress-bar"></div>
-        </div>
-
-        <p>File Excel tersedia di folder <code>excel/</code> GitHub:</p>
-        <ul id="file-list">
-          <li>IW39.xlsx</li>
-          <li>SUM57.xlsx</li>
-          <li>Planning.xlsx</li>
-          <li>Budget.xlsx</li>
-          <li>Data1.xlsx</li>
-          <li>Data2.xlsx</li>
-        </ul>
-        <button onclick="loadExcelFiles()">Refresh & Preview</button>
-        <div id="excel-preview"></div>
+        <div id="upload-status"></div>
       </section>
 
-      <section id="worksheet" class="tab-content" style="display:none;">
+      <!-- Lembar Kerja -->
+      <section id="lembar" class="content-section">
         <h2>Lembar Kerja</h2>
-        <p>Konten akan ditambahkan setelah menu 1 selesai.</p>
+        <div class="filter-group">
+          <label>Room: <input type="text" id="filter-room" placeholder="Filter Room" /></label>
+          <label>Order: <input type="text" id="filter-order" placeholder="Filter Order" /></label>
+          <label>CPH: <input type="text" id="filter-cph" placeholder="Filter CPH" /></label>
+          <label>MAT: <input type="text" id="filter-mat" placeholder="Filter MAT" /></label>
+          <label>Section: <input type="text" id="filter-section" placeholder="Filter Section" /></label>
+          <button id="filter-btn">Filter</button>
+        </div>
+        <br />
+        <table id="output-table">
+          <thead>
+            <tr>
+              <th>Room</th>
+              <th>Order Type</th>
+              <th>Order</th>
+              <th>Description</th>
+              <th>Created On</th>
+              <th>User Status</th>
+              <th>MAT</th>
+              <th>CPH</th>
+              <th>Section</th>
+              <th>Status Part</th>
+              <th>Aging</th>
+              <th>Month</th>
+              <th>Cost</th>
+              <th>Reman</th>
+              <th>Include</th>
+              <th>Exclude</th>
+              <th>Planning</th>
+              <th>Status AMT</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- data akan dimunculkan di sini -->
+          </tbody>
+        </table>
       </section>
 
-      <section id="summary" class="tab-content" style="display:none;">
-        <h2>Summary Cost RM</h2>
-        <p>Konten akan ditambahkan setelah Lembar Kerja selesai.</p>
+      <!-- Summary CRM -->
+      <section id="summary" class="content-section">
+        <h2>Summary CRM</h2>
+        <p>(Konten akan ditambahkan setelah menu 1 dan 2 selesai)</p>
       </section>
 
-      <section id="download" class="tab-content" style="display:none;">
+      <!-- Download Excel -->
+      <section id="download" class="content-section">
         <h2>Download Excel</h2>
-        <p>Fitur export akan tersedia setelah data dari menu 2 dan 3 siap.</p>
+        <p>(Fitur akan tersedia setelah menu 1, 2, dan 3 selesai)</p>
       </section>
     </main>
   </div>
 
-  <!-- Script utama -->
   <script src="script.js"></script>
 </body>
 </html>
