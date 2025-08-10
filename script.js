@@ -1,95 +1,128 @@
 
-// Include xlsx.js in your HTML before this script:
-// <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+// Include xlsx.js via HTML: <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
-let IW39 = [];
+let IW39 = [], SUM57 = [], Data1 = [], Data2 = [], Planning = [];
 let dataLembarKerja = [];
 
-// Function to parse Excel file and populate IW39
-function parseExcelToIW39(file) {
+function parseExcel(file, callback) {
   const reader = new FileReader();
   reader.onload = function (e) {
     const data = new Uint8Array(e.target.result);
     const workbook = XLSX.read(data, { type: 'array' });
     const sheet = workbook.Sheets[workbook.SheetNames[0]];
     const jsonData = XLSX.utils.sheet_to_json(sheet);
-
-    IW39.length = 0;
-    jsonData.forEach(row => {
-      IW39.push({
-        Room: row.Room || "",
-        OrderType: row.OrderType || "",
-        Order: row.Order || "",
-        Description: row.Description || "",
-        CreatedOn: row.CreatedOn || "",
-        UserStatus: row.UserStatus || "",
-        MAT: row.MAT || "",
-        TotalPlan: row.TotalPlan || 0,
-        TotalActual: row.TotalActual || 0
-      });
-    });
-
-    console.log("IW39 loaded:", IW39);
-    buildDataLembarKerja();
-    renderTable(dataLembarKerja);
+    callback(jsonData);
   };
   reader.readAsArrayBuffer(file);
 }
 
-// Function to handle file upload
 function updateDataFromUpload(fileName, fileObj) {
-  if (fileName.toLowerCase().includes('iw39')) {
-    parseExcelToIW39(fileObj);
+  const lowerName = fileName.toLowerCase();
+  if (lowerName.includes('iw39')) {
+    parseExcel(fileObj, (data) => {
+      IW39 = data;
+      buildDataLembarKerja();
+      renderTable(dataLembarKerja);
+    });
+  } else if (lowerName.includes('sum57')) {
+    parseExcel(fileObj, (data) => { SUM57 = data; });
+  } else if (lowerName.includes('planning')) {
+    parseExcel(fileObj, (data) => { Planning = data; });
+  } else if (lowerName.includes('data1')) {
+    parseExcel(fileObj, (data) => { Data1 = data; });
+  } else if (lowerName.includes('data2')) {
+    parseExcel(fileObj, (data) => { Data2 = data; });
   }
 }
 
-// Dummy manual input orders
-let manualOrders = [
-  { Order: "4700706921", Month: "Jan", Reman: "Reman" },
-  { Order: "4700712211", Month: "Feb", Reman: "" },
-  { Order: "4700719015", Month: "Mar", Reman: "Reman" }
-];
+function addManualOrder(order) {
+  dataLembarKerja.push({ Order: order });
+  buildDataLembarKerja();
+  renderTable(dataLembarKerja);
+}
 
-// Function to build data for Lembar Kerja
 function buildDataLembarKerja() {
-  dataLembarKerja = manualOrders.map(row => {
-    const iw = IW39.find(i => i.Order.toString().toLowerCase() === row.Order.toString().toLowerCase()) || {};
+  dataLembarKerja = dataLembarKerja.map(row => {
+    const iw = IW39.find(i => i.Order?.toString().toLowerCase() === row.Order?.toString().toLowerCase()) || {};
+    const sum = SUM57.find(s => s.Order?.toString().toLowerCase() === row.Order?.toString().toLowerCase()) || {};
+    const plan = Planning.find(p => p.Order?.toString().toLowerCase() === row.Order?.toString().toLowerCase()) || {};
+    const matKey = iw.MAT || '';
+    const data2 = Data2.find(d => d.MAT?.toString().toLowerCase() === matKey.toLowerCase()) || {};
+    const data1 = Data1.find(d => d.Order?.toString().toLowerCase() === row.Order?.toString().toLowerCase()) || {};
 
+    const cph = iw.Description?.startsWith("JR") ? "JR" : (data2.CPH || "");
     const cost = ((iw.TotalPlan || 0) - (iw.TotalActual || 0)) / 16500;
     const finalCost = cost < 0 ? "-" : cost;
-    const include = row.Reman === "Reman" ? (typeof cost === "number" ? cost * 0.25 : cost) : cost;
+    const include = row.Reman === "Reman" ? cost * 0.25 : cost;
     const exclude = iw.OrderType === "PM38" ? "-" : include;
 
     return {
-      Order: row.Order,
+      ...row,
       Room: iw.Room || "",
       OrderType: iw.OrderType || "",
       Description: iw.Description || "",
       CreatedOn: iw.CreatedOn || "",
       UserStatus: iw.UserStatus || "",
       MAT: iw.MAT || "",
-      CPH: iw.Description && iw.Description.startsWith("JR") ? "JR" : "", // Simplified logic
-      Section: "", // Placeholder for lookup from Data1
-      StatusPart: "", // Placeholder for lookup from SUM57
-      Aging: "", // Placeholder for lookup from SUM57
-      Month: row.Month,
+      CPH: cph,
+      Section: data1.Section || "",
+      StatusPart: sum.StatusPart || "",
+      Aging: sum.Aging || "",
+      Month: row.Month || "",
       Cost: finalCost,
-      Reman: row.Reman,
+      Reman: row.Reman || "",
       Include: include,
       Exclude: exclude,
-      Planning: "", // Placeholder for lookup from Planning
-      StatusAMT: "" // Placeholder for lookup from Planning
+      Planning: plan.EventStart || "",
+      StatusAMT: plan.StatusAMT || ""
     };
   });
 }
 
-// Function to render table (simplified)
 function renderTable(data) {
   const table = document.getElementById("lembarKerjaTable");
   table.innerHTML = "";
+  if (data.length === 0) return;
 
-  const header = "<tr>" + Object.keys(data[0] || {}).map(k => `<th>${k}</th>`).join("") + "</tr>";
-  const rows = data.map(row => "<tr>" + Object.values(row).map(v => `<td>${v}</td>`).join("") + "</tr>").join("");
+  const headers = Object.keys(data[0]);
+  const thead = document.createElement("thead");
+  const headerRow = document.createElement("tr");
+  headers.forEach(h => {
+    const th = document.createElement("th");
+    th.textContent = h;
+    headerRow.appendChild(th);
+  });
+  thead.appendChild(headerRow);
+  table.appendChild(thead);
 
-  table.innerHTML = header + rows;
+  const tbody = document.createElement("tbody");
+  data.forEach((row, idx) => {
+    const tr = document.createElement("tr");
+    headers.forEach(h => {
+      const td = document.createElement("td");
+      td.textContent = row[h];
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  });
+  table.appendChild(tbody);
+}
+
+function saveToLocalStorage() {
+  localStorage.setItem("lembarKerjaData", JSON.stringify(dataLembarKerja));
+}
+
+function loadFromLocalStorage() {
+  const saved = localStorage.getItem("lembarKerjaData");
+  if (saved) {
+    dataLembarKerja = JSON.parse(saved);
+    renderTable(dataLembarKerja);
+  }
+}
+
+function filterTable(keyword) {
+  const filtered = dataLembarKerja.filter(row =>
+    Object.values(row).some(val => val?.toString().toLowerCase().includes(keyword.toLowerCase()))
+  );
+  renderTable(filtered);
 }
