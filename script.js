@@ -395,7 +395,7 @@ function addOrdersFromInput(){
     return;
   }
   document.getElementById('lmMsg').textContent = "";
-  const lines = raw.split(/[\n,]+/).map(l=>l.trim()).filter(l=>l!=="");
+  const lines = raw.split(/\n|,/).map(l=>l.trim()).filter(l=>l!=="");
   lines.forEach(ord=>{
     const normIW = normalizeRows(iwData);
     const foundIW = normIW.find(r=>String(r['order']).split('.')[0] === ord.split('.')[0]);
@@ -512,7 +512,7 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
     document.getElementById('lmMsg').textContent = "";
-    const lines = raw.split(/[\n,]+/).map(l => l.trim()).filter(l => l !== "");
+    const lines = raw.split(/\n|,/).map(l => l.trim()).filter(l => l !== "");
     lines.forEach(ord => {
       const normIW = normalizeRows(iwData);
       const foundIW = normIW.find(r => String(r['order']).split('.')[0] === ord.split('.')[0]);
