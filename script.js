@@ -9,7 +9,7 @@ let IW39 = [
     UserStatus: "Open",
     MAT: "MAT001",
     TotalPlan: 50000,
-    TotalActual: 30000,
+    TotalActual: 30000
   },
   {
     Room: "R002",
@@ -20,32 +20,32 @@ let IW39 = [
     UserStatus: "Closed",
     MAT: "MAT002",
     TotalPlan: 40000,
-    TotalActual: 40000,
-  },
+    TotalActual: 40000
+  }
 ];
 
 // Dummy Data1 lookup (Section by Order)
 const Data1 = {
-  ORD001: "Section A",
-  ORD002: "Section B",
+  "ORD001": "Section A",
+  "ORD002": "Section B"
 };
 
 // Dummy Data2 lookup (CPH by MAT)
 const Data2 = {
-  MAT001: "CPH1",
-  MAT002: "CPH2",
+  "MAT001": "CPH1",
+  "MAT002": "CPH2"
 };
 
 // Dummy SUM57 lookup (Status Part & Aging by Order)
 const SUM57 = {
-  ORD001: { StatusPart: "OK", Aging: "5" },
-  ORD002: { StatusPart: "NG", Aging: "10" },
+  "ORD001": { StatusPart: "OK", Aging: "5" },
+  "ORD002": { StatusPart: "NG", Aging: "10" }
 };
 
 // Dummy Planning lookup (Planning & Status AMT by Order)
 const Planning = {
-  ORD001: { Planning: "2025-08-10", StatusAMT: "On Track" },
-  ORD002: { Planning: "2025-08-12", StatusAMT: "Delayed" },
+  "ORD001": { Planning: "2025-08-10", StatusAMT: "On Track" },
+  "ORD002": { Planning: "2025-08-12", StatusAMT: "Delayed" }
 };
 
 // ----- Data Lembar Kerja -----
@@ -58,12 +58,20 @@ function formatNumber(num) {
 
 // ----- Build Data Lembar Kerja: kalkulasi lookup dan rumus -----
 function buildDataLembarKerja() {
-  dataLembarKerja = dataLembarKerja.map((row) => {
-    const iw =
-      IW39.find((i) => i.Order.toLowerCase() === row.Order.toLowerCase()) || {};
+  dataLembarKerja = dataLembarKerja.map(row => {
+    // Cari data IW39 berdasarkan order
+    const iw = IW39.find(i => i.Order.toLowerCase() === row.Order.toLowerCase()) || {};
+
+    // Update kolom dari IW39 langsung (Room, OrderType, Description, CreatedOn, UserStatus, MAT)
+    row.Room = iw.Room || "";
+    row.OrderType = iw.OrderType || "";
+    row.Description = iw.Description || "";
+    row.CreatedOn = iw.CreatedOn || "";
+    row.UserStatus = iw.UserStatus || "";
+    row.MAT = iw.MAT || "";
 
     // CPH: jika 2 huruf pertama Description = "JR" maka JR, else lookup Data2 by MAT
-    if ((iw.Description || "").substring(0, 2).toUpperCase() === "JR") {
+    if ((row.Description || "").substring(0, 2).toUpperCase() === "JR") {
       row.CPH = "JR";
     } else {
       row.CPH = Data2[row.MAT] || "";
@@ -117,10 +125,8 @@ function isValidOrder(order) {
 const outputTableBody = document.querySelector("#output-table tbody");
 
 function renderTable(data) {
-  const ordersLower = data.map((d) => d.Order.toLowerCase());
-  const duplicates = ordersLower.filter(
-    (item, idx) => ordersLower.indexOf(item) !== idx
-  );
+  const ordersLower = data.map(d => d.Order.toLowerCase());
+  const duplicates = ordersLower.filter((item, idx) => ordersLower.indexOf(item) !== idx);
 
   outputTableBody.innerHTML = "";
   if (data.length === 0) {
@@ -128,200 +134,147 @@ function renderTable(data) {
     return;
   }
 
-  data.forEach((row) => {
+  data.forEach(row => {
     const tr = document.createElement("tr");
     if (duplicates.includes(row.Order.toLowerCase())) {
       tr.classList.add("duplicate");
     }
 
-    tr.appendChild(createTd(row.Room));
-    tr.appendChild(createTd(row.OrderType));
-    tr.appendChild(createTd(row.Order));
-    tr.appendChild(createTd(row.Description));
-    tr.appendChild(createTd(row.CreatedOn));
-    tr.appendChild(createTd(row.UserStatus));
-    tr.appendChild(createTd(row.MAT));
-    tr.appendChild(createTd(row.CPH));
-    tr.appendChild(createTd(row.Section));
-    tr.appendChild(createTd(row.StatusPart));
-    tr.appendChild(createTd(row.Aging));
+    // Buat kolom td
+    const tdRoom = document.createElement("td"); tdRoom.textContent = row.Room; tr.appendChild(tdRoom);
+    const tdOrderType = document.createElement("td"); tdOrderType.textContent = row.OrderType; tr.appendChild(tdOrderType);
+    const tdOrder = document.createElement("td"); tdOrder.textContent = row.Order; tr.appendChild(tdOrder);
+    const tdDescription = document.createElement("td"); tdDescription.textContent = row.Description; tr.appendChild(tdDescription);
+    const tdCreatedOn = document.createElement("td"); tdCreatedOn.textContent = row.CreatedOn; tr.appendChild(tdCreatedOn);
+    const tdUserStatus = document.createElement("td"); tdUserStatus.textContent = row.UserStatus; tr.appendChild(tdUserStatus);
+    const tdMAT = document.createElement("td"); tdMAT.textContent = row.MAT; tr.appendChild(tdMAT);
+    const tdCPH = document.createElement("td"); tdCPH.textContent = row.CPH; tr.appendChild(tdCPH);
+    const tdSection = document.createElement("td"); tdSection.textContent = row.Section; tr.appendChild(tdSection);
+    const tdStatusPart = document.createElement("td"); tdStatusPart.textContent = row.StatusPart; tr.appendChild(tdStatusPart);
+    const tdAging = document.createElement("td"); tdAging.textContent = row.Aging; tr.appendChild(tdAging);
 
-    // Editable Month
-    tr.appendChild(createEditableMonthTd(row));
+    // Editable Month & Reman handled by Edit button action, so tampilkan text biasa dulu
+    const tdMonth = document.createElement("td");
+    tdMonth.textContent = row.Month || "";
+    tr.appendChild(tdMonth);
 
-    // Cost (format angka 1 decimal, rata kanan)
-    const tdCost = createTd(
-      typeof row.Cost === "number" ? formatNumber(row.Cost) : row.Cost
-    );
-    tdCost.classList.add("cost");
+    const tdCost = document.createElement("td");
+    tdCost.style.textAlign = "right";
+    tdCost.textContent = typeof row.Cost === "number" ? formatNumber(row.Cost) : row.Cost;
     tr.appendChild(tdCost);
 
-    // Editable Reman
-    tr.appendChild(createEditableRemanTd(row));
+    const tdReman = document.createElement("td");
+    tdReman.textContent = row.Reman || "";
+    tr.appendChild(tdReman);
 
-    // Include (format angka 1 decimal, rata kanan)
-    const tdInclude = createTd(
-      typeof row.Include === "number" ? formatNumber(row.Include) : row.Include
-    );
-    tdInclude.classList.add("include");
+    const tdInclude = document.createElement("td");
+    tdInclude.style.textAlign = "right";
+    tdInclude.textContent = typeof row.Include === "number" ? formatNumber(row.Include) : row.Include;
     tr.appendChild(tdInclude);
 
-    // Exclude (format angka 1 decimal, rata kanan)
-    const tdExclude = createTd(
-      typeof row.Exclude === "number" ? formatNumber(row.Exclude) : row.Exclude
-    );
-    tdExclude.classList.add("exclude");
+    const tdExclude = document.createElement("td");
+    tdExclude.style.textAlign = "right";
+    tdExclude.textContent = typeof row.Exclude === "number" ? formatNumber(row.Exclude) : row.Exclude;
     tr.appendChild(tdExclude);
 
-    tr.appendChild(createTd(row.Planning));
-    tr.appendChild(createTd(row.StatusAMT));
+    const tdPlanning = document.createElement("td"); tdPlanning.textContent = row.Planning; tr.appendChild(tdPlanning);
+    const tdStatusAMT = document.createElement("td"); tdStatusAMT.textContent = row.StatusAMT; tr.appendChild(tdStatusAMT);
 
-    // Action (edit and delete buttons)
+    // Action buttons: Edit & Delete
     const tdAction = document.createElement("td");
-    const btnDelete = document.createElement("button");
-    btnDelete.textContent = "Delete";
-    btnDelete.classList.add("btn-action", "btn-delete");
-    btnDelete.addEventListener("click", () => {
-      if (confirm(`Hapus order ${row.Order}?`)) {
-        dataLembarKerja = dataLembarKerja.filter(
-          (d) => d.Order.toLowerCase() !== row.Order.toLowerCase()
-        );
-        buildDataLembarKerja();
-        renderTable(dataLembarKerja);
-      }
-    });
 
     const btnEdit = document.createElement("button");
     btnEdit.textContent = "Edit";
     btnEdit.classList.add("btn-action", "btn-edit");
     btnEdit.addEventListener("click", () => {
-      editMonthInline(row);
-      editRemanInline(row);
+      showEditRow(row);
     });
-
     tdAction.appendChild(btnEdit);
+
+    const btnDelete = document.createElement("button");
+    btnDelete.textContent = "Delete";
+    btnDelete.classList.add("btn-action", "btn-delete");
+    btnDelete.addEventListener("click", () => {
+      if (confirm(`Hapus order ${row.Order}?`)) {
+        dataLembarKerja = dataLembarKerja.filter(d => d.Order.toLowerCase() !== row.Order.toLowerCase());
+        buildDataLembarKerja();
+        renderTable(dataLembarKerja);
+      }
+    });
     tdAction.appendChild(btnDelete);
+
     tr.appendChild(tdAction);
 
     outputTableBody.appendChild(tr);
   });
 }
 
-function createTd(text) {
-  const td = document.createElement("td");
-  td.textContent = text;
-  return td;
-}
+// ----- Show edit popup (inline) untuk Month & Reman -----
+function showEditRow(row) {
+  // Cari tr baris sesuai order
+  const trs = outputTableBody.querySelectorAll("tr");
+  let trTarget = null;
+  trs.forEach(tr => {
+    if (tr.children[2].textContent.toLowerCase() === row.Order.toLowerCase()) {
+      trTarget = tr;
+    }
+  });
+  if (!trTarget) return;
 
-function createEditableMonthTd(row) {
-  const td = document.createElement("td");
-  td.classList.add("editable");
-  td.textContent = row.Month || "";
-  td.title = "Klik untuk edit bulan";
-  td.addEventListener("click", () => editMonth(td, row));
-  return td;
-}
+  // Ganti kolom Month dan Reman jadi input/select editable
+  const tdMonth = trTarget.children[11]; // Month index 11
+  const tdReman = trTarget.children[13]; // Reman index 13
+  const tdAction = trTarget.children[18]; // Action index 18
 
-function createEditableRemanTd(row) {
-  const td = document.createElement("td");
-  td.classList.add("editable");
-  td.textContent = row.Reman || "";
-  td.title = "Klik untuk edit Reman";
-  td.addEventListener("click", () => editReman(td, row));
-  return td;
-}
+  // Simpan nilai sekarang
+  const currentMonth = row.Month || "";
+  const currentReman = row.Reman || "";
 
-// ----- Edit inline Month -----
-function editMonth(td, row) {
-  const select = document.createElement("select");
-  const months = [
-    "Jan",
-    "Feb",
-    "Mar",
-    "Apr",
-    "May",
-    "Jun",
-    "Jul",
-    "Aug",
-    "Sep",
-    "Oct",
-    "Nov",
-    "Dec",
-  ];
-  months.forEach((m) => {
+  // Buat elemen input/select
+  const selectMonth = document.createElement("select");
+  ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"].forEach(m => {
     const option = document.createElement("option");
     option.value = m;
     option.textContent = m;
-    if (m === row.Month) option.selected = true;
-    select.appendChild(option);
+    if (m === currentMonth) option.selected = true;
+    selectMonth.appendChild(option);
   });
 
-  select.addEventListener("change", () => {
-    row.Month = select.value;
+  const inputReman = document.createElement("input");
+  inputReman.type = "text";
+  inputReman.value = currentReman;
+
+  // Clear isi td dan append input/select
+  tdMonth.textContent = "";
+  tdMonth.appendChild(selectMonth);
+
+  tdReman.textContent = "";
+  tdReman.appendChild(inputReman);
+
+  // Ganti tombol Edit menjadi Save dan Cancel
+  tdAction.textContent = "";
+
+  const btnSave = document.createElement("button");
+  btnSave.textContent = "Save";
+  btnSave.classList.add("btn-action", "btn-save");
+  btnSave.addEventListener("click", () => {
+    // Update data dari input
+    row.Month = selectMonth.value;
+    row.Reman = inputReman.value.trim();
+
+    // Rebuild data (rerun kalkulasi rumus)
     buildDataLembarKerja();
     renderTable(dataLembarKerja);
   });
+  tdAction.appendChild(btnSave);
 
-  select.addEventListener("blur", () => renderTable(dataLembarKerja));
-
-  td.textContent = "";
-  td.appendChild(select);
-  select.focus();
-}
-
-// ----- Edit inline Reman -----
-function editReman(td, row) {
-  const input = document.createElement("input");
-  input.type = "text";
-  input.value = row.Reman || "";
-
-  input.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") {
-      row.Reman = input.value.trim();
-      buildDataLembarKerja();
-      renderTable(dataLembarKerja);
-    } else if (e.key === "Escape") {
-      renderTable(dataLembarKerja);
-    }
-  });
-
-  input.addEventListener("blur", () => {
-    row.Reman = input.value.trim();
-    buildDataLembarKerja();
+  const btnCancel = document.createElement("button");
+  btnCancel.textContent = "Cancel";
+  btnCancel.classList.add("btn-action", "btn-cancel");
+  btnCancel.addEventListener("click", () => {
     renderTable(dataLembarKerja);
   });
-
-  td.textContent = "";
-  td.appendChild(input);
-  input.focus();
-}
-
-// Inline edit triggered by Edit button (opens editing for both Month & Reman)
-function editMonthInline(row) {
-  // Find the Month cell and trigger click to enable editing
-  const trs = outputTableBody.querySelectorAll("tr");
-  for (const tr of trs) {
-    if (
-      tr.children[2].textContent.toLowerCase() === row.Order.toLowerCase()
-    ) {
-      const monthTd = tr.children[11]; // Month column index (0-based)
-      monthTd.click();
-      break;
-    }
-  }
-}
-
-function editRemanInline(row) {
-  const trs = outputTableBody.querySelectorAll("tr");
-  for (const tr of trs) {
-    if (
-      tr.children[2].textContent.toLowerCase() === row.Order.toLowerCase()
-    ) {
-      const remanTd = tr.children[13]; // Reman column index (0-based)
-      remanTd.click();
-      break;
-    }
-  }
+  tdAction.appendChild(btnCancel);
 }
 
 // ----- Add Order multi input -----
@@ -336,24 +289,20 @@ addOrderBtn.addEventListener("click", () => {
     return;
   }
 
-  let orders = rawInput
-    .split(/[\s,\n]+/)
-    .map((s) => s.trim())
-    .filter((s) => s.length > 0);
+  let orders = rawInput.split(/[\s,\n]+/).map(s => s.trim()).filter(s => s.length > 0);
 
   let addedCount = 0;
   let skippedOrders = [];
   let invalidOrders = [];
 
-  orders.forEach((order) => {
+  orders.forEach(order => {
     if (!isValidOrder(order)) {
       invalidOrders.push(order);
       return;
     }
-    const exists = dataLembarKerja.some(
-      (d) => d.Order.toLowerCase() === order.toLowerCase()
-    );
+    const exists = dataLembarKerja.some(d => d.Order.toLowerCase() === order.toLowerCase());
     if (!exists) {
+      // Push order baru dengan properti kosong dulu, buildDataLembarKerja yg isi lookup
       dataLembarKerja.push({
         Room: "",
         OrderType: "",
@@ -372,7 +321,7 @@ addOrderBtn.addEventListener("click", () => {
         Include: "-",
         Exclude: "-",
         Planning: "",
-        StatusAMT: "",
+        StatusAMT: ""
       });
       addedCount++;
     } else {
@@ -386,14 +335,10 @@ addOrderBtn.addEventListener("click", () => {
 
   let msg = `${addedCount} Order berhasil ditambahkan.`;
   if (invalidOrders.length) {
-    msg += ` Order tidak valid (ada titik atau koma): ${invalidOrders.join(
-      ", "
-    )}.`;
+    msg += ` Order tidak valid (ada titik atau koma): ${invalidOrders.join(", ")}.`;
   }
   if (skippedOrders.length) {
-    msg += ` Order sudah ada dan tidak dimasukkan ulang: ${skippedOrders.join(
-      ", "
-    )}.`;
+    msg += ` Order sudah ada dan tidak dimasukkan ulang: ${skippedOrders.join(", ")}.`;
   }
   addOrderStatus.textContent = msg;
 });
@@ -404,18 +349,12 @@ const resetBtn = document.getElementById("reset-btn");
 
 filterBtn.addEventListener("click", () => {
   const fRoom = document.getElementById("filter-room").value.trim().toLowerCase();
-  const fOrder = document
-    .getElementById("filter-order")
-    .value.trim()
-    .toLowerCase();
+  const fOrder = document.getElementById("filter-order").value.trim().toLowerCase();
   const fCPH = document.getElementById("filter-cph").value.trim().toLowerCase();
   const fMAT = document.getElementById("filter-mat").value.trim().toLowerCase();
-  const fSection = document
-    .getElementById("filter-section")
-    .value.trim()
-    .toLowerCase();
+  const fSection = document.getElementById("filter-section").value.trim().toLowerCase();
 
-  const filtered = dataLembarKerja.filter((d) => {
+  const filtered = dataLembarKerja.filter(d => {
     return (
       d.Room.toLowerCase().includes(fRoom) &&
       d.Order.toLowerCase().includes(fOrder) &&
@@ -460,22 +399,24 @@ loadBtn.addEventListener("click", () => {
 
 // ----- Update data dari file upload (menu 1) -----
 function updateDataFromUpload(fileName) {
-  if (fileName.toLowerCase().includes("iw39")) {
+  if (fileName.toLowerCase().includes('iw39')) {
     IW39.length = 0;
-    IW39.push({
-      Room: "R010",
-      OrderType: "Type Z",
-      Order: "ORD010",
-      Description: "JR New description",
-      CreatedOn: "2025-08-10",
-      UserStatus: "Open",
-      MAT: "MAT999",
-      TotalPlan: 90000,
-      TotalActual: 20000,
-    });
+    IW39.push(
+      {
+        Room: "R010",
+        OrderType: "Type Z",
+        Order: "ORD010",
+        Description: "JR New description",
+        CreatedOn: "2025-08-10",
+        UserStatus: "Open",
+        MAT: "MAT999",
+        TotalPlan: 90000,
+        TotalActual: 20000
+      }
+    );
   }
   // Update dataLembarKerja dari IW39
-  dataLembarKerja = IW39.map((iw) => ({
+  dataLembarKerja = IW39.map(iw => ({
     Room: iw.Room,
     OrderType: iw.OrderType,
     Order: iw.Order,
@@ -493,77 +434,34 @@ function updateDataFromUpload(fileName) {
     Include: "-",
     Exclude: "-",
     Planning: "",
-    StatusAMT: "",
+    StatusAMT: ""
   }));
   buildDataLembarKerja();
   renderTable(dataLembarKerja);
 
-  // Pindah ke menu 2
-  document.querySelector(".menu-item.active").classList.remove("active");
-  const menu2 = document.querySelector('.menu-item[data-menu="lembar"]');
-  menu2.classList.add("active");
+  // Pindah ke menu 2 tanpa blok menu lain
+  document.querySelector('.menu-item.active').classList.remove('active');
+  document.querySelector('.content-section.active').classList.remove('active');
 
-  document.querySelector(".content-section.active").classList.remove("active");
-  document.getElementById("lembar").classList.add("active");
+  const menu2 = document.querySelector('.menu-item[data-menu="lembar"]');
+  menu2.classList.add('active');
+  document.getElementById('lembar').classList.add('active');
 }
 
-// ----- Menu navigation -----
-const menuItems = document.querySelectorAll(".menu-item");
-menuItems.forEach((item) => {
-  item.addEventListener("click", () => {
-    if (item.classList.contains("active")) return; // no action if already active
+// ----- Menu sidebar switching -----
+document.querySelectorAll('.menu-item').forEach(menu => {
+  menu.addEventListener('click', () => {
+    document.querySelector('.menu-item.active').classList.remove('active');
+    menu.classList.add('active');
 
-    // Remove active from old
-    document.querySelector(".menu-item.active").classList.remove("active");
-    document.querySelector(".content-section.active").classList.remove("active");
-
-    // Set new active
-    item.classList.add("active");
-    const menu = item.getAttribute("data-menu");
-    document.getElementById(menu).classList.add("active");
+    document.querySelector('.content-section.active').classList.remove('active');
+    const selected = menu.getAttribute('data-menu');
+    document.getElementById(selected).classList.add('active');
   });
 });
 
-// ----- Event Upload File (menu 1) -----
-const uploadBtn = document.getElementById("upload-btn");
-const fileInput = document.getElementById("file-input");
-const uploadStatus = document.getElementById("upload-status");
-const progressContainer = document.getElementById("progress-container");
-const uploadProgress = document.getElementById("upload-progress");
-const fileTypeSelect = document.getElementById("file-select");
-
-uploadBtn.addEventListener("click", () => {
-  const files = fileInput.files;
-  if (!files.length) {
-    alert("Pilih file dulu bro!");
-    return;
-  }
-  const file = files[0];
-  const selectedFileType = fileTypeSelect.value;
-
-  uploadBtn.disabled = true;
-  uploadStatus.textContent = "";
-  progressContainer.classList.remove("hidden");
-  uploadProgress.value = 0;
-
-  let progress = 0;
-  const interval = setInterval(() => {
-    progress += 10;
-    uploadProgress.value = progress;
-    if (progress >= 100) {
-      clearInterval(interval);
-      uploadStatus.textContent = `File "${file.name}" untuk kategori ${selectedFileType} berhasil diupload! 🎉`;
-      uploadBtn.disabled = false;
-      fileInput.value = "";
-      progressContainer.classList.add("hidden");
-
-      updateDataFromUpload(file.name);
-    }
-  }, 150);
-});
-
 // ----- Inisialisasi -----
-dataLembarKerja = IW39.map((iw) => ({
+dataLembarKerja = IW39.map(iw => ({
   Room: iw.Room,
   OrderType: iw.OrderType,
   Order: iw.Order,
@@ -581,7 +479,7 @@ dataLembarKerja = IW39.map((iw) => ({
   Include: "-",
   Exclude: "-",
   Planning: "",
-  StatusAMT: "",
+  StatusAMT: ""
 }));
 buildDataLembarKerja();
 renderTable(dataLembarKerja);
