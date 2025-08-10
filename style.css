@@ -128,7 +128,43 @@ header {
   font-weight: 600;
 }
 
-/* Lembar Kerja Filters */
+/* Lembar Kerja */
+.add-order-section label {
+  font-weight: 600;
+}
+
+.add-order-section textarea {
+  width: 100%;
+  font-size: 1rem;
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  resize: vertical;
+}
+
+.add-order-section button {
+  margin-top: 8px;
+  padding: 8px 14px;
+  background: #1e40af;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background 0.3s ease;
+}
+
+.add-order-section button:hover {
+  background: #374ac0;
+}
+
+.status-message {
+  margin-top: 6px;
+  font-weight: 600;
+  color: green;
+}
+
+/* Filter Group */
 .filter-group {
   display: flex;
   flex-wrap: wrap;
@@ -149,7 +185,7 @@ header {
   min-width: 120px;
 }
 
-#filter-btn {
+.filter-group button {
   background: #1e40af;
   color: white;
   border: none;
@@ -160,8 +196,24 @@ header {
   transition: background 0.3s ease;
 }
 
-#filter-btn:hover {
+.filter-group button:hover {
   background: #374ac0;
+}
+
+.filter-group #reset-btn {
+  background: #6b7280;
+}
+
+.filter-group #reset-btn:hover {
+  background: #4b5563;
+}
+
+.filter-group #save-btn, .filter-group #load-btn {
+  background: #059669;
+}
+
+.filter-group #save-btn:hover, .filter-group #load-btn:hover {
+  background: #047857;
 }
 
 /* Table */
@@ -169,14 +221,15 @@ table {
   width: 100%;
   border-collapse: collapse;
   margin-top: 15px;
+  font-size: 0.9rem;
 }
 
 th, td {
   text-align: left;
   padding: 10px 8px;
   border-bottom: 1px solid #ddd;
-  font-size: 0.9rem;
   color: #333;
+  vertical-align: middle;
 }
 
 th {
@@ -186,6 +239,59 @@ th {
 
 tr:hover {
   background-color: #f9faff;
+}
+
+/* Rata kanan untuk kolom angka */
+td.cost, td.include, td.exclude {
+  text-align: right;
+  font-family: monospace;
+}
+
+/* Format input editable */
+td.editable {
+  cursor: pointer;
+  background: #fcfcfc;
+  transition: background 0.3s ease;
+}
+
+td.editable:hover {
+  background: #e6f0ff;
+}
+
+/* Warna merah untuk baris duplikat order */
+tr.duplicate {
+  background-color: #dc2626;
+  color: white;
+}
+
+/* Action buttons */
+.btn-action {
+  padding: 4px 8px;
+  margin: 0 2px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  border-radius: 5px;
+  border: none;
+  font-weight: 600;
+  transition: background-color 0.3s ease;
+}
+
+.btn-edit {
+  background-color: #2563eb;
+  color: white;
+}
+
+.btn-edit:hover {
+  background-color: #1e40af;
+}
+
+.btn-delete {
+  background-color: #dc2626;
+  color: white;
+}
+
+.btn-delete:hover {
+  background-color: #b91c1c;
 }
 
 /* Responsive */
