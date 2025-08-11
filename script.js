@@ -1,145 +1,115 @@
-// =============================
-// Variabel Global
-// =============================
-let iw39Data = [];
-let sum57Data = [];
-let planningData = [];
-let data1 = [];
-let data2 = [];
-let data3 = []; // kalau memang ada
+// script.js
+document.addEventListener("DOMContentLoaded", () => {
+    let iw39Data = [];
+    let sum57Data = [];
+    let planningData = [];
+    let data1Data = [];
+    let data2Data = [];
 
-let uploadedFiles = {}; // tracking file yang sudah diupload
+    // Input file elements
+    const iw39Input = document.getElementById("iw39File");
+    const sum57Input = document.getElementById("sum57File");
+    const planningInput = document.getElementById("planningFile");
+    const data1Input = document.getElementById("data1File");
+    const data2Input = document.getElementById("data2File");
 
-// =============================
-// Helper: Baca file Excel
-// =============================
-function readExcelFile(file, callback) {
-    let reader = new FileReader();
-    reader.onload = function(e) {
-        let data = new Uint8Array(e.target.result);
-        let workbook = XLSX.read(data, { type: 'array' });
-        let sheetName = workbook.SheetNames[0];
-        let sheet = workbook.Sheets[sheetName];
-        let jsonData = XLSX.utils.sheet_to_json(sheet);
-        callback(jsonData);
-    };
-    reader.readAsArrayBuffer(file);
-}
+    const orderSearchInput = document.getElementById("orderSearch");
+    const searchBtn = document.getElementById("searchBtn");
+    const menu2TableBody = document.getElementById("menu2TableBody");
 
-// =============================
-// Upload File Handler
-// =============================
-document.getElementById("fileUpload").addEventListener("change", function(event) {
-    let files = event.target.files;
-    Array.from(files).forEach(file => {
-        let name = file.name.toLowerCase();
-        if (name.includes("iw39")) {
-            readExcelFile(file, (data) => {
-                iw39Data = data;
-                uploadedFiles.iw39 = true;
-                console.log("IW39 Loaded", iw39Data);
-            });
-        } else if (name.includes("sum57")) {
-            readExcelFile(file, (data) => {
-                sum57Data = data;
-                uploadedFiles.sum57 = true;
-                console.log("SUM57 Loaded", sum57Data);
-            });
-        } else if (name.includes("planning")) {
-            readExcelFile(file, (data) => {
-                planningData = data;
-                uploadedFiles.planning = true;
-                console.log("Planning Loaded", planningData);
-            });
-        } else if (name.includes("data1")) {
-            readExcelFile(file, (data) => {
-                data1 = data;
-                uploadedFiles.data1 = true;
-            });
-        } else if (name.includes("data2")) {
-            readExcelFile(file, (data) => {
-                data2 = data;
-                uploadedFiles.data2 = true;
-            });
-        } else if (name.includes("data3")) {
-            readExcelFile(file, (data) => {
-                data3 = data;
-                uploadedFiles.data3 = true;
-            });
+    // Fungsi baca Excel
+    function readExcel(file, callback) {
+        const reader = new FileReader();
+        reader.onload = function (e) {
+            try {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const firstSheet = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[firstSheet];
+                const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
+                callback(jsonData);
+            } catch (err) {
+                console.error("Gagal memproses file:", err);
+                alert(`Error saat memproses file: ${file.name}`);
+            }
+        };
+        reader.readAsArrayBuffer(file);
+    }
+
+    // Event upload
+    iw39Input?.addEventListener("change", (e) => {
+        readExcel(e.target.files[0], (data) => {
+            iw39Data = data;
+            console.log("IW39 loaded:", iw39Data.length);
+        });
+    });
+
+    sum57Input?.addEventListener("change", (e) => {
+        readExcel(e.target.files[0], (data) => {
+            sum57Data = data;
+            console.log("SUM57 loaded:", sum57Data.length);
+        });
+    });
+
+    planningInput?.addEventListener("change", (e) => {
+        readExcel(e.target.files[0], (data) => {
+            planningData = data;
+            console.log("Planning loaded:", planningData.length);
+        });
+    });
+
+    data1Input?.addEventListener("change", (e) => {
+        readExcel(e.target.files[0], (data) => {
+            data1Data = data;
+            console.log("Data1 loaded:", data1Data.length);
+        });
+    });
+
+    data2Input?.addEventListener("change", (e) => {
+        readExcel(e.target.files[0], (data) => {
+            data2Data = data;
+            console.log("Data2 loaded:", data2Data.length);
+        });
+    });
+
+    // Lookup Menu 2
+    searchBtn?.addEventListener("click", () => {
+        const searchOrder = orderSearchInput.value.trim().toLowerCase();
+        if (!searchOrder) {
+            alert("Masukkan nomor order untuk mencari.");
+            return;
         }
+
+        // Gabungkan semua data
+        const allData = [...iw39Data, ...sum57Data, ...planningData, ...data1Data, ...data2Data];
+
+        // Filter by Order
+        const filtered = allData.filter(i => {
+            const orderValue = i.Order ? String(i.Order).toLowerCase() : "";
+            return orderValue.includes(searchOrder);
+        });
+
+        // Tampilkan hasil
+        renderMenu2Table(filtered);
     });
+
+    function renderMenu2Table(data) {
+        menu2TableBody.innerHTML = "";
+        if (data.length === 0) {
+            menu2TableBody.innerHTML = `<tr><td colspan="5" style="text-align:center;">Tidak ada data ditemukan</td></tr>`;
+            return;
+        }
+
+        data.forEach(row => {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+                <td>${row.Order || ""}</td>
+                <td>${row.Description || ""}</td>
+                <td>${row.Status || ""}</td>
+                <td>${row.Date || ""}</td>
+                <td>${row.Remarks || ""}</td>
+            `;
+            menu2TableBody.appendChild(tr);
+        });
+    }
 });
-
-// =============================
-// Lookup & Bangun Tabel Menu 2
-// =============================
-function buildDataLembarKerja(orderInput) {
-    let orderKey = String(orderInput || "").toLowerCase();
-
-    let result = [];
-
-    if (uploadedFiles.iw39) {
-        let iwMatch = iw39Data.find(i => String(i.Order || "").toLowerCase() === orderKey);
-        if (iwMatch) result.push({ source: "IW39", ...iwMatch });
-    }
-    if (uploadedFiles.sum57) {
-        let sumMatch = sum57Data.find(i => String(i.Order || "").toLowerCase() === orderKey);
-        if (sumMatch) result.push({ source: "SUM57", ...sumMatch });
-    }
-    if (uploadedFiles.planning) {
-        let planMatch = planningData.find(i => String(i.Order || "").toLowerCase() === orderKey);
-        if (planMatch) result.push({ source: "Planning", ...planMatch });
-    }
-    if (uploadedFiles.data1) {
-        let match1 = data1.find(i => String(i.Order || "").toLowerCase() === orderKey);
-        if (match1) result.push({ source: "Data1", ...match1 });
-    }
-    if (uploadedFiles.data2) {
-        let match2 = data2.find(i => String(i.Order || "").toLowerCase() === orderKey);
-        if (match2) result.push({ source: "Data2", ...match2 });
-    }
-    if (uploadedFiles.data3) {
-        let match3 = data3.find(i => String(i.Order || "").toLowerCase() === orderKey);
-        if (match3) result.push({ source: "Data3", ...match3 });
-    }
-
-    // Render ke tabel
-    let tbody = document.querySelector("#lembarKerjaTable tbody");
-    tbody.innerHTML = "";
-
-    result.forEach((row, index) => {
-        let tr = document.createElement("tr");
-        tr.innerHTML = `
-            <td>${row.source}</td>
-            <td>${row.Order || ""}</td>
-            <td>${row.Description || ""}</td>
-            <td>${row.Date || ""}</td>
-            <td>
-                <button onclick="editRow(${index})">Edit</button>
-            </td>
-        `;
-        tbody.appendChild(tr);
-    });
-}
-
-// =============================
-// Edit Row
-// =============================
-function editRow(index) {
-    alert("Edit row index: " + index);
-    // bisa tambahkan modal/form untuk update data
-}
-
-// =============================
-// Load Data dari Storage (opsional)
-// =============================
-function loadDataFromStorage() {
-    let orderInput = document.getElementById("orderInput").value;
-    if (!orderInput) {
-        alert("Masukkan nomor Order");
-        return;
-    }
-    buildDataLembarKerja(orderInput);
-}
-
-document.getElementById("btnLookup").addEventListener("click", loadDataFromStorage);
