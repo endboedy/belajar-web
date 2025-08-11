@@ -1,6 +1,8 @@
-// script.js
+  // script.js
 // Pastikan XLSX sudah dimuat di HTML <head> sebelum file ini.
 // Full robust implementation: upload (multi type), lookup, add order, edit inline, filter, save/load.
+
+'use strict';
 
 window.addEventListener("DOMContentLoaded", () => {
 
@@ -12,7 +14,7 @@ window.addEventListener("DOMContentLoaded", () => {
 
   // Excel serial to JS Date (handles Excel 1900 leap bug)
   function excelDateToJS(n) {
-    // If input already a date string, return Date try
+    // If input is not finite number -> return null
     if (!isFinite(n)) return null;
     const excelEpoch = new Date(Date.UTC(1899, 11, 30)); // 1899-12-30
     const days = Math.floor(Number(n));
@@ -31,7 +33,7 @@ window.addEventListener("DOMContentLoaded", () => {
       // fallback to raw
       return String(val);
     }
-    // try parse date string
+    // try parse date string / Date object
     const tryDate = new Date(val);
     if (!isNaN(tryDate.getTime())) {
       return `${String(tryDate.getDate()).padStart(2,'0')}-${monthAbbr[tryDate.getMonth()]}-${tryDate.getFullYear()}`;
@@ -44,9 +46,10 @@ window.addEventListener("DOMContentLoaded", () => {
   function mapRowKeys(row) {
     const mapped = {};
     Object.keys(row).forEach(k => {
-      const lk = k.trim().toLowerCase();
+      const lk = String(k).trim().toLowerCase();
       const v = row[k];
-      if (lk === "order" || lk === "order no" || lk.includes("order") && !lk.includes("order type")) mapped.Order = safeStr(v);
+      // Use parentheses for clarity in combined conditions
+      if (lk === "order" || lk === "order no" || (lk.includes("order") && !lk.includes("order type"))) mapped.Order = safeStr(v);
       else if (lk === "room" || lk.includes("room")) mapped.Room = safeStr(v);
       else if (lk === "order type" || lk === "ordertype" || lk.includes("order type")) mapped.OrderType = safeStr(v);
       else if (lk === "description" || lk.includes("desc")) mapped.Description = safeStr(v);
@@ -100,14 +103,27 @@ window.addEventListener("DOMContentLoaded", () => {
   const saveBtn = document.getElementById("save-btn");
   const loadBtn = document.getElementById("load-btn");
 
-  const outputTableBody = document.querySelector("#output-table tbody");
+  // Ensure we have an output tbody; if not, create a fallback to avoid null errors
+  let outputTableBody = document.querySelector("#output-table tbody");
+  if (!outputTableBody) {
+    console.warn('Warning: #output-table tbody not found — creating fallback table at end of <body>.');
+    const table = document.createElement('table');
+    table.id = 'output-table';
+    table.style.width = '100%';
+    const tbody = document.createElement('tbody');
+    table.appendChild(tbody);
+    document.body.appendChild(table);
+    outputTableBody = tbody;
+  }
 
   // ---------- Excel parsing ----------
   function parseExcelFileToJSON(file) {
     return new Promise((resolve, reject) => {
+      if (typeof FileReader === 'undefined') return reject(new Error('FileReader not supported in this environment'));
       const reader = new FileReader();
       reader.onload = e => {
         try {
+          if (typeof XLSX === 'undefined') throw new Error('XLSX library not found. Include SheetJS (xlsx.full.min.js) before this script.');
           const data = new Uint8Array(e.target.result);
           const wb = XLSX.read(data, { type: "array" });
           const sheetName = wb.SheetNames[0];
@@ -124,146 +140,153 @@ window.addEventListener("DOMContentLoaded", () => {
   }
 
   // ---------- Upload handler ----------
-  uploadBtn.addEventListener("click", async () => {
-    const file = fileInput.files[0];
-    const selectedType = fileSelect.value; // IW39, SUM57, Planning, Budget, Data1, Data2
-
-    if (!file) {
-      alert("Pilih file dulu bro!");
-      return;
-    }
-
-    progressContainer.classList.remove("hidden");
-    uploadProgress.value = 0;
-    progressText.textContent = "0%";
-    uploadStatus.textContent = "";
-
-    try {
-      // parse
-      const {sheetName, json} = await parseExcelFileToJSON(file);
-
-      // If Budget sheet selected or sheetName includes "budget", skip gracefully
-      if (selectedType.toLowerCase() === "budget" || sheetName.toLowerCase().includes("budget")) {
-        uploadProgress.value = 100;
-        progressText.textContent = "100%";
-        uploadStatus.style.color = "green";
-        uploadStatus.textContent = `File "${file.name}" (Budget) di-skip (tidak digunakan).`;
-        // hide progress shortly
-        setTimeout(()=> progressContainer.classList.add("hidden"), 600);
-        fileInput.value = "";
+  if (uploadBtn) {
+    uploadBtn.addEventListener("click", async () => {
+      // guard required elements
+      if (!fileInput || !fileSelect) {
+        alert("Elemen input file atau selector tidak ditemukan. Pastikan HTML sesuai.");
         return;
       }
 
-      // Normalize rows
-      const normalized = json.map(r => mapRowKeys(r));
+      const file = fileInput.files && fileInput.files[0];
+      const selectedType = fileSelect.value || "";
 
-      // Process into appropriate dataset based on selectedType
-      if (selectedType === "IW39") {
-        // Build IW39 array with canonical keys
-        IW39 = normalized.map(r => ({
-          Order: safeStr(r.Order),
-          Room: safeStr(r.Room),
-          OrderType: safeStr(r.OrderType),
-          Description: safeStr(r.Description),
-          CreatedOn: r.CreatedOn !== undefined ? r.CreatedOn : safeStr(r.CreatedOn),
-          UserStatus: safeStr(r.UserStatus),
-          MAT: safeStr(r.MAT),
-          TotalPlan: Number(r.TotalPlan || 0),
-          TotalActual: Number(r.TotalActual || 0)
-        }));
-        // If master empty -> initialize
-        if (dataLembarKerja.length === 0) {
-          dataLembarKerja = IW39.map(i => ({
-            Order: safeStr(i.Order),
-            Room: i.Room || "",
-            OrderType: i.OrderType || "",
-            Description: i.Description || "",
-            CreatedOn: i.CreatedOn || "",
-            UserStatus: i.UserStatus || "",
-            MAT: i.MAT || "",
-            CPH: "",
-            Section: "",
-            StatusPart: "",
-            Aging: "",
-            Month: "",
-            Cost: "-",
-            Reman: "",
-            Include: "-",
-            Exclude: "-",
-            Planning: "",
-            StatusAMT: ""
-          }));
-        } else {
-          // update existing master rows where order matches
-          dataLembarKerja = dataLembarKerja.map(row => {
-            const match = IW39.find(i => safeLower(i.Order) === safeLower(row.Order));
-            if (match) {
-              return {
-                ...row,
-                Room: match.Room || row.Room,
-                OrderType: match.OrderType || row.OrderType,
-                Description: match.Description || row.Description,
-                CreatedOn: match.CreatedOn || row.CreatedOn,
-                UserStatus: match.UserStatus || row.UserStatus,
-                MAT: match.MAT || row.MAT
-              };
-            }
-            return row;
-          });
-        }
-      } else if (selectedType === "Data1") {
-        Data1 = {};
-        normalized.forEach(r => {
-          if (r.Order) Data1[safeStr(r.Order)] = safeStr(r.Section || r.Section || "");
-        });
-      } else if (selectedType === "Data2") {
-        Data2 = {};
-        normalized.forEach(r => {
-          if (r.MAT) Data2[safeStr(r.MAT)] = safeStr(r.CPH || "");
-        });
-      } else if (selectedType === "SUM57") {
-        SUM57 = {};
-        normalized.forEach(r => {
-          if (r.Order) SUM57[safeStr(r.Order)] = { StatusPart: safeStr(r.StatusPart), Aging: safeStr(r.Aging) };
-        });
-      } else if (selectedType === "Planning") {
-        Planning = {};
-        normalized.forEach(r => {
-          if (r.Order) Planning[safeStr(r.Order)] = { Planning: r.Planning || "", StatusAMT: r.StatusAMT || "" };
-        });
-      } else {
-        // Unknown type: skip but warn (no console error)
-        console.log(`Uploaded file type not specifically handled: ${selectedType}`);
+      if (!file) {
+        alert("Pilih file dulu bro!");
+        return;
       }
 
-      // success UI
-      uploadProgress.value = 100;
-      progressText.textContent = "100%";
-      uploadStatus.style.color = "green";
-      uploadStatus.textContent = `File "${file.name}" berhasil diupload untuk ${selectedType}.`;
+      if (progressContainer) progressContainer.classList.remove("hidden");
+      if (uploadProgress) uploadProgress.value = 0;
+      if (progressText) progressText.textContent = "0%";
+      if (uploadStatus) uploadStatus.textContent = "";
 
-      // rebuild derived fields and render
-      buildDataLembarKerja();
-      renderTable(dataLembarKerja);
+      try {
+        // parse
+        const {sheetName, json} = await parseExcelFileToJSON(file);
 
-    } catch (err) {
-      uploadStatus.style.color = "red";
-      uploadStatus.textContent = `Error saat memproses file: ${err && err.message ? err.message : err}`;
-      console.error(err);
-    } finally {
-      setTimeout(() => progressContainer.classList.add("hidden"), 600);
-      fileInput.value = "";
-    }
-  });
+        // If Budget sheet selected or sheetName includes "budget", skip gracefully
+        if (selectedType.toLowerCase() === "budget" || (sheetName && sheetName.toLowerCase().includes("budget"))) {
+          if (uploadProgress) uploadProgress.value = 100;
+          if (progressText) progressText.textContent = "100%";
+          if (uploadStatus) { uploadStatus.style.color = "green"; uploadStatus.textContent = `File "${file.name}" (Budget) di-skip (tidak digunakan).`; }
+          // hide progress shortly
+          setTimeout(()=> { if (progressContainer) progressContainer.classList.add("hidden"); }, 600);
+          fileInput.value = "";
+          return;
+        }
+
+        // Normalize rows
+        const normalized = (Array.isArray(json) ? json : []).map(r => mapRowKeys(r));
+
+        // Process into appropriate dataset based on selectedType
+        if (selectedType === "IW39") {
+          // Build IW39 array with canonical keys
+          IW39 = normalized.map(r => ({
+            Order: safeStr(r.Order),
+            Room: safeStr(r.Room),
+            OrderType: safeStr(r.OrderType),
+            Description: safeStr(r.Description),
+            CreatedOn: r.CreatedOn !== undefined ? r.CreatedOn : safeStr(r.CreatedOn),
+            UserStatus: safeStr(r.UserStatus),
+            MAT: safeStr(r.MAT),
+            TotalPlan: Number(r.TotalPlan || 0),
+            TotalActual: Number(r.TotalActual || 0)
+          }));
+          // If master empty -> initialize
+          if (dataLembarKerja.length === 0) {
+            dataLembarKerja = IW39.map(i => ({
+              Order: safeStr(i.Order),
+              Room: i.Room || "",
+              OrderType: i.OrderType || "",
+              Description: i.Description || "",
+              CreatedOn: i.CreatedOn || "",
+              UserStatus: i.UserStatus || "",
+              MAT: i.MAT || "",
+              CPH: "",
+              Section: "",
+              StatusPart: "",
+              Aging: "",
+              Month: "",
+              Cost: "-",
+              Reman: "",
+              Include: "-",
+              Exclude: "-",
+              Planning: "",
+              StatusAMT: ""
+            }));
+          } else {
+            // update existing master rows where order matches
+            dataLembarKerja = dataLembarKerja.map(row => {
+              const match = IW39.find(i => safeLower(i.Order) === safeLower(row.Order));
+              if (match) {
+                return {
+                  ...row,
+                  Room: match.Room || row.Room,
+                  OrderType: match.OrderType || row.OrderType,
+                  Description: match.Description || row.Description,
+                  CreatedOn: match.CreatedOn || row.CreatedOn,
+                  UserStatus: match.UserStatus || row.UserStatus,
+                  MAT: match.MAT || row.MAT
+                };
+              }
+              return row;
+            });
+          }
+        } else if (selectedType === "Data1") {
+          Data1 = {};
+          normalized.forEach(r => {
+            if (r.Order) Data1[safeStr(r.Order)] = safeStr(r.Section || "");
+          });
+        } else if (selectedType === "Data2") {
+          Data2 = {};
+          normalized.forEach(r => {
+            if (r.MAT) Data2[safeStr(r.MAT)] = safeStr(r.CPH || "");
+          });
+        } else if (selectedType === "SUM57") {
+          SUM57 = {};
+          normalized.forEach(r => {
+            if (r.Order) SUM57[safeStr(r.Order)] = { StatusPart: safeStr(r.StatusPart), Aging: safeStr(r.Aging) };
+          });
+        } else if (selectedType === "Planning") {
+          Planning = {};
+          normalized.forEach(r => {
+            if (r.Order) Planning[safeStr(r.Order)] = { Planning: r.Planning || "", StatusAMT: r.StatusAMT || "" };
+          });
+        } else {
+          // Unknown type: skip but warn (no console error)
+          console.log(`Uploaded file type not specifically handled: ${selectedType}`);
+        }
+
+        // success UI
+        if (uploadProgress) uploadProgress.value = 100;
+        if (progressText) progressText.textContent = "100%";
+        if (uploadStatus) { uploadStatus.style.color = "green"; uploadStatus.textContent = `File "${file.name}" berhasil diupload untuk ${selectedType}.`; }
+
+        // rebuild derived fields and render
+        buildDataLembarKerja();
+        renderTable(dataLembarKerja);
+
+      } catch (err) {
+        if (uploadStatus) { uploadStatus.style.color = "red"; uploadStatus.textContent = `Error saat memproses file: ${err && err.message ? err.message : err}`; }
+        console.error(err);
+      } finally {
+        setTimeout(() => { if (progressContainer) progressContainer.classList.add("hidden"); }, 600);
+        if (fileInput) fileInput.value = "";
+      }
+    });
+  } else {
+    console.warn("uploadBtn not found — upload feature disabled.");
+  }
 
   // ---------- Build / lookup / compute ----------
   function buildDataLembarKerja() {
     // ensure Order strings
-    dataLembarKerja = dataLembarKerja.map(r => ({ ...r, Order: safeStr(r.Order) }));
+    dataLembarKerja = Array.isArray(dataLembarKerja) ? dataLembarKerja.map(r => ({ ...r, Order: safeStr(r.Order) })) : [];
 
     dataLembarKerja = dataLembarKerja.map(row => {
       // find IW39 row
-      const iw = IW39.find(i => safeLower(i.Order) === safeLower(row.Order)) || {};
+      const iw = (Array.isArray(IW39) ? IW39.find(i => safeLower(i.Order) === safeLower(row.Order)) : undefined) || {};
 
       row.Room = iw.Room || row.Room || "";
       row.OrderType = iw.OrderType || row.OrderType || "";
@@ -332,6 +355,10 @@ window.addEventListener("DOMContentLoaded", () => {
     const ordersLower = dt.map(d => safeLower(d.Order));
     const duplicates = ordersLower.filter((item, idx) => ordersLower.indexOf(item) !== idx);
 
+    if (!outputTableBody) {
+      console.error('#output-table tbody is missing; cannot render table.');
+      return;
+    }
     outputTableBody.innerHTML = "";
 
     if (!dt.length) {
@@ -345,7 +372,7 @@ window.addEventListener("DOMContentLoaded", () => {
         tr.classList.add("duplicate");
       }
 
-      function mkCell(val) { const td = document.createElement("td"); td.textContent = val ?? ""; return td; }
+      function mkCell(val) { const td = document.createElement("td"); td.textContent = (val === null || val === undefined) ? "" : String(val); return td; }
 
       tr.appendChild(mkCell(row.Room));
       tr.appendChild(mkCell(row.OrderType));
@@ -519,65 +546,77 @@ window.addEventListener("DOMContentLoaded", () => {
         const monthTd = tr.children[11];
         const costTd = tr.children[12];
         const remanTd = tr.children[13];
-        editMonth(monthTd, row);
-        editCost(costTd, row);
-        editReman(remanTd, row);
+        if (monthTd) editMonth(monthTd, row);
+        if (costTd) editCost(costTd, row);
+        if (remanTd) editReman(remanTd, row);
         break;
       }
     }
   }
 
   // ---------- Add Order ----------
-  addOrderBtn.addEventListener("click", () => {
-    const raw = addOrderInput.value.trim();
-    if (!raw) {
-      addOrderStatus.style.color = "red";
-      addOrderStatus.textContent = "Masukkan minimal 1 order.";
-      return;
-    }
-    const orders = raw.split(/[\s,]+/).map(s => s.trim()).filter(Boolean);
+  if (addOrderBtn && addOrderInput && addOrderStatus) {
+    addOrderBtn.addEventListener("click", () => {
+      const raw = addOrderInput.value.trim();
+      if (!raw) {
+        addOrderStatus.style.color = "red";
+        addOrderStatus.textContent = "Masukkan minimal 1 order.";
+        return;
+      }
+      const orders = raw.split(/[\s,]+/).map(s => s.trim()).filter(Boolean);
 
-    let added = 0, skipped = [], invalid = [];
-    for (const o of orders) {
-      if (!isValidOrder(o)) { invalid.push(o); continue; }
-      if (dataLembarKerja.some(d => safeLower(d.Order) === safeLower(o))) { skipped.push(o); continue; }
-      // push base row then fill via buildDataLembarKerja
-      dataLembarKerja.push({
-        Order: safeStr(o),
-        Room: "", OrderType: "", Description: "", CreatedOn: "", UserStatus: "",
-        MAT: "", CPH: "", Section: "", StatusPart: "", Aging: "", Month: "",
-        Cost: "-", Reman: "", Include: "-", Exclude: "-", Planning: "", StatusAMT: ""
-      });
-      added++;
-    }
+      let added = 0, skipped = [], invalid = [];
+      for (const o of orders) {
+        if (!isValidOrder(o)) { invalid.push(o); continue; }
+        if (dataLembarKerja.some(d => safeLower(d.Order) === safeLower(o))) { skipped.push(o); continue; }
+        // push base row then fill via buildDataLembarKerja
+        dataLembarKerja.push({
+          Order: safeStr(o),
+          Room: "", OrderType: "", Description: "", CreatedOn: "", UserStatus: "",
+          MAT: "", CPH: "", Section: "", StatusPart: "", Aging: "", Month: "",
+          Cost: "-", Reman: "", Include: "-", Exclude: "-", Planning: "", StatusAMT: ""
+        });
+        added++;
+      }
 
-    buildDataLembarKerja(); // perform lookups & calculations
-    renderTable(dataLembarKerja);
-    saveDataToLocalStorage();
+      buildDataLembarKerja(); // perform lookups & calculations
+      renderTable(dataLembarKerja);
+      saveDataToLocalStorage();
 
-    let msg = `${added} order ditambahkan.`;
-    if (skipped.length) msg += ` Sudah ada: ${skipped.join(", ")}.`;
-    if (invalid.length) msg += ` Invalid: ${invalid.join(", ")}.`;
-    addOrderStatus.style.color = added ? "green" : "red";
-    addOrderStatus.textContent = msg;
-    addOrderInput.value = "";
-  });
+      let msg = `${added} order ditambahkan.`;
+      if (skipped.length) msg += ` Sudah ada: ${skipped.join(", ")}.`;
+      if (invalid.length) msg += ` Invalid: ${invalid.join(", ")}.`;
+      addOrderStatus.style.color = added ? "green" : "red";
+      addOrderStatus.textContent = msg;
+      addOrderInput.value = "";
+    });
+  } else {
+    console.warn('addOrder elements not fully present; add-order feature disabled.');
+  }
 
   // ---------- Filters ----------
-  filterBtn.addEventListener("click", () => {
-    let filtered = dataLembarKerja;
-    if (filterRoom.value.trim()) filtered = filtered.filter(d => (d.Room || "").toLowerCase().includes(filterRoom.value.trim().toLowerCase()));
-    if (filterOrder.value.trim()) filtered = filtered.filter(d => (d.Order || "").toLowerCase().includes(filterOrder.value.trim().toLowerCase()));
-    if (filterCPH.value.trim()) filtered = filtered.filter(d => (d.CPH || "").toLowerCase().includes(filterCPH.value.trim().toLowerCase()));
-    if (filterMAT.value.trim()) filtered = filtered.filter(d => (d.MAT || "").toLowerCase().includes(filterMAT.value.trim().toLowerCase()));
-    if (filterSection.value.trim()) filtered = filtered.filter(d => (d.Section || "").toLowerCase().includes(filterSection.value.trim().toLowerCase()));
-    renderTable(filtered);
-  });
+  if (filterBtn) {
+    filterBtn.addEventListener("click", () => {
+      let filtered = dataLembarKerja;
+      if (filterRoom && filterRoom.value.trim()) filtered = filtered.filter(d => (d.Room || "").toLowerCase().includes(filterRoom.value.trim().toLowerCase()));
+      if (filterOrder && filterOrder.value.trim()) filtered = filtered.filter(d => (d.Order || "").toLowerCase().includes(filterOrder.value.trim().toLowerCase()));
+      if (filterCPH && filterCPH.value.trim()) filtered = filtered.filter(d => (d.CPH || "").toLowerCase().includes(filterCPH.value.trim().toLowerCase()));
+      if (filterMAT && filterMAT.value.trim()) filtered = filtered.filter(d => (d.MAT || "").toLowerCase().includes(filterMAT.value.trim().toLowerCase()));
+      if (filterSection && filterSection.value.trim()) filtered = filtered.filter(d => (d.Section || "").toLowerCase().includes(filterSection.value.trim().toLowerCase()));
+      renderTable(filtered);
+    });
+  }
 
-  resetBtn.addEventListener("click", () => {
-    filterRoom.value = ""; filterOrder.value = ""; filterCPH.value = ""; filterMAT.value = ""; filterSection.value = "";
-    renderTable(dataLembarKerja);
-  });
+  if (resetBtn) {
+    resetBtn.addEventListener("click", () => {
+      if (filterRoom) filterRoom.value = "";
+      if (filterOrder) filterOrder.value = "";
+      if (filterCPH) filterCPH.value = "";
+      if (filterMAT) filterMAT.value = "";
+      if (filterSection) filterSection.value = "";
+      renderTable(dataLembarKerja);
+    });
+  }
 
   // ---------- Save / Load ----------
   function saveDataToLocalStorage() {
@@ -588,23 +627,27 @@ window.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  saveBtn.addEventListener("click", () => {
-    saveDataToLocalStorage();
-    alert("Data disimpan di browser.");
-  });
+  if (saveBtn) {
+    saveBtn.addEventListener("click", () => {
+      saveDataToLocalStorage();
+      alert("Data disimpan di browser.");
+    });
+  }
 
-  loadBtn.addEventListener("click", () => {
-    const saved = localStorage.getItem("lembarKerjaData");
-    if (!saved) { alert("Tidak ada data tersimpan."); return; }
-    try {
-      dataLembarKerja = JSON.parse(saved).map(r => ({ ...r, Order: safeStr(r.Order) }));
-      buildDataLembarKerja();
-      renderTable(dataLembarKerja);
-      alert("Data dimuat.");
-    } catch (e) {
-      alert("Gagal muat data: " + e.message);
-    }
-  });
+  if (loadBtn) {
+    loadBtn.addEventListener("click", () => {
+      const saved = localStorage.getItem("lembarKerjaData");
+      if (!saved) { alert("Tidak ada data tersimpan."); return; }
+      try {
+        dataLembarKerja = JSON.parse(saved).map(r => ({ ...r, Order: safeStr(r.Order) }));
+        buildDataLembarKerja();
+        renderTable(dataLembarKerja);
+        alert("Data dimuat.");
+      } catch (e) {
+        alert("Gagal muat data: " + e.message);
+      }
+    });
+  }
 
   // ---------- Validation ----------
   function isValidOrder(order) {
