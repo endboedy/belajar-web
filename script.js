@@ -25,10 +25,8 @@ window.addEventListener("DOMContentLoaded", () => {
     // If numeric -> treat as Excel serial possibly
     if (isNumeric(val)) {
       const d = excelDateToJS(Number(val));
-}
       if (d && !isNaN(d.getTime())) {
         return `${String(d.getDate()).padStart(2,'0')}-${monthAbbr[d.getMonth()]}-${d.getFullYear()}`;
-}
       }
       // fallback to raw
       return String(val);
@@ -37,7 +35,6 @@ window.addEventListener("DOMContentLoaded", () => {
     const tryDate = new Date(val);
     if (!isNaN(tryDate.getTime())) {
       return `${String(tryDate.getDate()).padStart(2,'0')}-${monthAbbr[tryDate.getMonth()]}-${tryDate.getFullYear()}`;
-}
     }
     // fallback: return original
     return String(val);
@@ -83,18 +80,14 @@ window.addEventListener("DOMContentLoaded", () => {
   const fileSelect = document.getElementById("file-select");
   const fileInput = document.getElementById("file-input");
   const uploadBtn = document.getElementById("upload-btn");
-if (uploadBtn) {
   const progressContainer = document.getElementById("progress-container");
-}
   const uploadProgress = document.getElementById("upload-progress");
   const progressText = document.getElementById("progress-text");
   const uploadStatus = document.getElementById("upload-status");
 
   const addOrderInput = document.getElementById("add-order-input");
   const addOrderBtn = document.getElementById("add-order-btn");
-if (addOrderBtn) {
   const addOrderStatus = document.getElementById("add-order-status");
-}
 
   const filterRoom = document.getElementById("filter-room");
   const filterOrder = document.getElementById("filter-order");
@@ -102,19 +95,11 @@ if (addOrderBtn) {
   const filterMAT = document.getElementById("filter-mat");
   const filterSection = document.getElementById("filter-section");
   const filterBtn = document.getElementById("filter-btn");
-if (filterBtn) {
   const resetBtn = document.getElementById("reset-btn");
-}
-if (resetBtn) {
 
-}
   const saveBtn = document.getElementById("save-btn");
-if (saveBtn) {
   const loadBtn = document.getElementById("load-btn");
-}
-if (loadBtn) {
 
-}
   const outputTableBody = document.querySelector("#output-table tbody");
 
   // ---------- Excel parsing ----------
@@ -145,7 +130,6 @@ if (loadBtn) {
 
     if (!file) {
       alert("Pilih file dulu bro!");
-}
       return;
     }
 
@@ -161,7 +145,6 @@ if (loadBtn) {
       // If Budget sheet selected or sheetName includes "budget", skip gracefully
       if (selectedType.toLowerCase() === "budget" || sheetName.toLowerCase().includes("budget")) {
         uploadProgress.value = 100;
-}
         progressText.textContent = "100%";
         uploadStatus.style.color = "green";
         uploadStatus.textContent = `File "${file.name}" (Budget) di-skip (tidak digunakan).`;
@@ -179,7 +162,6 @@ if (loadBtn) {
         // Build IW39 array with canonical keys
         IW39 = normalized.map(r => ({
           Order: safeStr(r.Order),
-}
           Room: safeStr(r.Room),
           OrderType: safeStr(r.OrderType),
           Description: safeStr(r.Description),
@@ -193,7 +175,6 @@ if (loadBtn) {
         if (dataLembarKerja.length === 0) {
           dataLembarKerja = IW39.map(i => ({
             Order: safeStr(i.Order),
-}
             Room: i.Room || "",
             OrderType: i.OrderType || "",
             Description: i.Description || "",
@@ -219,7 +200,6 @@ if (loadBtn) {
             if (match) {
               return {
                 ...row,
-}
                 Room: match.Room || row.Room,
                 OrderType: match.OrderType || row.OrderType,
                 Description: match.Description || row.Description,
@@ -233,25 +213,21 @@ if (loadBtn) {
         }
       } else if (selectedType === "Data1") {
         Data1 = {};
-}
         normalized.forEach(r => {
           if (r.Order) Data1[safeStr(r.Order)] = safeStr(r.Section || r.Section || "");
         });
       } else if (selectedType === "Data2") {
         Data2 = {};
-}
         normalized.forEach(r => {
           if (r.MAT) Data2[safeStr(r.MAT)] = safeStr(r.CPH || "");
         });
       } else if (selectedType === "SUM57") {
         SUM57 = {};
-}
         normalized.forEach(r => {
           if (r.Order) SUM57[safeStr(r.Order)] = { StatusPart: safeStr(r.StatusPart), Aging: safeStr(r.Aging) };
         });
       } else if (selectedType === "Planning") {
         Planning = {};
-}
         normalized.forEach(r => {
           if (r.Order) Planning[safeStr(r.Order)] = { Planning: r.Planning || "", StatusAMT: r.StatusAMT || "" };
         });
@@ -299,7 +275,6 @@ if (loadBtn) {
       // CPH logic
       if (safeLower((row.Description || "").substring(0,2)) === "jr") {
         row.CPH = "JR";
-}
       } else {
         row.CPH = Data2[row.MAT] || row.CPH || "";
       }
@@ -310,7 +285,6 @@ if (loadBtn) {
       // SUM57
       if (SUM57[row.Order]) {
         row.StatusPart = SUM57[row.Order].StatusPart || "";
-}
         row.Aging = SUM57[row.Order].Aging || "";
       } else {
         row.StatusPart = row.StatusPart || "";
@@ -320,7 +294,6 @@ if (loadBtn) {
       // Cost calc
       if (iw.TotalPlan !== undefined && iw.TotalActual !== undefined && isFinite(iw.TotalPlan) && isFinite(iw.TotalActual)) {
         const costCalc = (Number(iw.TotalPlan) - Number(iw.TotalActual)) / 16500;
-}
         row.Cost = costCalc < 0 ? "-" : Number(costCalc);
       } else {
         row.Cost = row.Cost || "-";
@@ -329,7 +302,6 @@ if (loadBtn) {
       // Include
       if (safeLower(row.Reman) === "reman") {
         row.Include = (typeof row.Cost === "number") ? Number(row.Cost * 0.25) : "-";
-}
       } else {
         row.Include = row.Cost;
       }
@@ -337,7 +309,6 @@ if (loadBtn) {
       // Exclude
       if (safeLower(row.OrderType) === "pm38") {
         row.Exclude = "-";
-}
       } else {
         row.Exclude = row.Include;
       }
@@ -345,7 +316,6 @@ if (loadBtn) {
       // Planning
       if (Planning[row.Order]) {
         row.Planning = Planning[row.Order].Planning || "";
-}
         row.StatusAMT = Planning[row.Order].StatusAMT || "";
       } else {
         row.Planning = row.Planning || "";
@@ -366,7 +336,6 @@ if (loadBtn) {
 
     if (!dt.length) {
       outputTableBody.innerHTML = `<tr><td colspan="19" style="text-align:center;color:#666;">Tidak ada data.</td></tr>`;
-}
       return;
     }
 
@@ -374,7 +343,6 @@ if (loadBtn) {
       const tr = document.createElement("tr");
       if (duplicates.includes(safeLower(row.Order))) {
         tr.classList.add("duplicate");
-}
       }
 
       function mkCell(val) { const td = document.createElement("td"); td.textContent = val ?? ""; return td; }
@@ -452,7 +420,6 @@ if (loadBtn) {
       btnDelete.addEventListener("click", () => {
         if (confirm(`Hapus order ${row.Order}?`)) {
           dataLembarKerja = dataLembarKerja.filter(d => safeLower(d.Order) !== safeLower(row.Order));
-}
           buildDataLembarKerja();
           renderTable(dataLembarKerja);
           saveDataToLocalStorage();
@@ -491,13 +458,11 @@ if (loadBtn) {
     inp.addEventListener("keydown", e => {
       if (e.key === "Enter") {
         row.Reman = inp.value.trim();
-}
         buildDataLembarKerja();
         renderTable(dataLembarKerja);
         saveDataToLocalStorage();
       } else if (e.key === "Escape") {
         renderTable(dataLembarKerja);
-}
       }
     });
     inp.addEventListener("blur", () => {
@@ -518,7 +483,6 @@ if (loadBtn) {
     inp.addEventListener("keydown", e => {
       if (e.key === "Enter") {
         const v = inp.value.trim();
-}
         row.Cost = v === "" ? "-" : Number(v);
         // recalc include/exclude
         if (safeLower(row.Reman) === "reman" && typeof row.Cost === "number") row.Include = Number(row.Cost * 0.25);
@@ -529,7 +493,6 @@ if (loadBtn) {
         saveDataToLocalStorage();
       } else if (e.key === "Escape") {
         renderTable(dataLembarKerja);
-}
       }
     });
     inp.addEventListener("blur", () => {
@@ -554,7 +517,6 @@ if (loadBtn) {
       if (orderCell && safeLower(orderCell.textContent) === safeLower(row.Order)) {
         // month index: 11 (0-based as built)
         const monthTd = tr.children[11];
-}
         const costTd = tr.children[12];
         const remanTd = tr.children[13];
         editMonth(monthTd, row);
@@ -570,7 +532,6 @@ if (loadBtn) {
     const raw = addOrderInput.value.trim();
     if (!raw) {
       addOrderStatus.style.color = "red";
-}
       addOrderStatus.textContent = "Masukkan minimal 1 order.";
       return;
     }
@@ -672,7 +633,6 @@ if (loadBtn) {
     if (saved) {
       try {
         dataLembarKerja = JSON.parse(saved).map(r => ({ ...r, Order: safeStr(r.Order) }));
-}
       } catch (e) { dataLembarKerja = []; }
     }
     buildDataLembarKerja();
