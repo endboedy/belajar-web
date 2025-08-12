@@ -1,5 +1,4 @@
-/* script.js - FINAL (merged)
-   Features:
+/* script.js - FINAL Revised
    - Upload & parse XLSX: IW39, SUM57, Planning, Data1, Data2, Budget
    - mergeData() with lookups:
        Section <- Data1 by Room
@@ -7,10 +6,9 @@
        CPH <- Data2 (JR rule + lookup by MAT)
        Cost = (TotalPlan - TotalActual)/16500 -> "-" if <0 or missing
    - Format dates dd-MMM-yyyy for Created On & Planning
-   - Render table with Edit (Month, Reman) & Delete
-   - Add Orders (manual), Filter, Reset, Refresh
-   - Export merged to Excel, Import/Export JSON backup
-   - Store only small UI edit state in localStorage (UI_LS_KEY)
+   - Render table (Menu 2) with Edit (Month, Reman) & Delete
+   - Add Orders, Filter, Reset, Refresh, Export XLSX, JSON backup
+   - Persist only small UI edits (Month/Reman) in localStorage (UI_LS_KEY)
 */
 
 // ---------------- Global stores ----------------
@@ -21,11 +19,11 @@ let data1Data = [];
 let data2Data = [];
 let budgetData = [];
 
-let mergedData = []; // merged result to render
+let mergedData = []; // merged result used for rendering
 
-const UI_LS_KEY = "ndarboe_ui_state_v1"; // store only small user edits
+const UI_LS_KEY = "ndarboe_ui_state_v1"; // small persisted edits
 
-// ---------------- Helpers ----------------
+// ---------------- Utility helpers ----------------
 function getVal(row, candidates) {
   if (!row) return undefined;
   for (const c of candidates) {
@@ -46,14 +44,12 @@ function safeNum(v) {
   const n = Number(s);
   return isNaN(n) ? NaN : n;
 }
-// Excel serial date to JS Date (handles Excel integer dates)
+// Excel date serial to JS Date (approx)
 function excelDateToJS(serial) {
-  // Excel incorrectly considers 1900 as leap year; use standard conversion for most files
   if (typeof serial === "number") {
     const utc_days = Math.floor(serial - 25569);
     const utc_value = utc_days * 86400;
     const date_info = new Date(utc_value * 1000);
-    // handle fractional day
     const fractional = serial - Math.floor(serial);
     if (fractional > 0) {
       const seconds = Math.round(fractional * 86400);
@@ -61,32 +57,21 @@ function excelDateToJS(serial) {
     }
     return date_info;
   }
-  // fallback parse
   const d = new Date(serial);
   if (!isNaN(d)) return d;
   return null;
 }
 function formatDateDDMMMYYYY(input) {
-  if (!input && input !== 0) return "";
-  // if number, try excel conversion
-  let d;
-  if (typeof input === "number") {
-    d = excelDateToJS(input);
-  } else if (typeof input === "string") {
-    // try ISO-like or other parse
-    const tryNum = Number(input);
-    if (!isNaN(tryNum) && String(input).length <= 7 && tryNum > 2000) { // unlikely but safe
-      d = new Date(tryNum);
-    } else {
-      d = new Date(input);
-      if (isNaN(d)) {
-        // try replace `/` to `-`
-        const alt = new Date(input.replace(/\//g, "-"));
-        d = isNaN(alt) ? null : alt;
-      }
+  if (input === undefined || input === null || input === "") return "";
+  let d = null;
+  if (typeof input === "number") d = excelDateToJS(input);
+  else {
+    // try parse ISO or other
+    d = new Date(input);
+    if (isNaN(d)) {
+      const alt = new Date(String(input).replace(/\//g, "-"));
+      d = isNaN(alt) ? null : alt;
     }
-  } else {
-    d = null;
   }
   if (!d || isNaN(d)) return "";
   const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
@@ -107,16 +92,16 @@ function downloadFile(filename, content, mime) {
   URL.revokeObjectURL(url);
 }
 
-// ---------------- XLSX parse ----------------
-function parseFile(file) {
+// ---------------- Parse XLSX ----------------
+function parseFileToJson(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
         const data = e.target.result;
-        const workbook = XLSX.read(data, { type: "binary" });
-        const firstSheet = workbook.SheetNames[0];
-        const ws = workbook.Sheets[firstSheet];
+        const wb = XLSX.read(data, { type: "binary" });
+        const first = wb.SheetNames[0];
+        const ws = wb.Sheets[first];
         const json = XLSX.utils.sheet_to_json(ws, { defval: "" });
         resolve(json);
       } catch (err) {
@@ -128,7 +113,7 @@ function parseFile(file) {
   });
 }
 
-// ---------------- Merge Logic ----------------
+// ---------------- Merge logic ----------------
 function mergeData() {
   mergedData = [];
 
@@ -137,7 +122,7 @@ function mergeData() {
     return;
   }
 
-  // build lookups
+  // Build quick lookup maps
   const sum57ByOrder = new Map();
   sum57Data.forEach(r => {
     const k = String(getVal(r, ["Order","Order No","Order_No","Key","No"]) || "").trim();
@@ -146,7 +131,7 @@ function mergeData() {
 
   const data1ByRoom = new Map();
   data1Data.forEach(r => {
-    const k = String(getVal(r, ["Room","ROOM","Lokasi","Location","Location Name","Lokasi"]) || "").trim();
+    const k = String(getVal(r, ["Room","ROOM","Lokasi","Location"]) || "").trim();
     if (k) data1ByRoom.set(k, r);
   });
 
@@ -162,7 +147,7 @@ function mergeData() {
     if (ord) planningByOrder.set(ord, r);
   });
 
-  // iterate IW39
+  // Iterate IW39 rows and create merged rows
   iw39Data.forEach(row => {
     const order = String(getVal(row, ["Order","Order No","Order_No","ORD","Key"]) || "").trim();
     const room = getVal(row, ["Room","ROOM","Location","Lokasi"]) || "";
@@ -184,24 +169,20 @@ function mergeData() {
       cost = "-";
     }
 
-    // CPH rule: MAT starts with JR => "JR" else lookup data2 by MAT
+    // CPH
     let cph = "";
-    if (mat && mat.toUpperCase().startsWith("JR")) {
-      cph = "JR";
-    } else if (mat && data2ByMat.has(mat)) {
-      cph = getVal(data2ByMat.get(mat), ["CPH","Cph","cph","CPH Code","Code"]) || "";
-    } else {
-      cph = "";
-    }
+    if (mat && mat.toUpperCase().startsWith("JR")) cph = "JR";
+    else if (mat && data2ByMat.has(mat)) cph = getVal(data2ByMat.get(mat), ["CPH","Cph","cph","CPH Code","Code"]) || "";
+    else cph = "";
 
-    // Section via Data1 by Room
+    // Section by Room from Data1
     let section = "-";
     if (room && data1ByRoom.has(String(room).trim())) {
       section = getVal(data1ByRoom.get(String(room).trim()), ["Section","Section Name","SectionName","SECTION"]) || "-";
     } else {
-      // fallback try direct match in Data1 raw rows
+      // fallback search
       const f = data1Data.find(r => {
-        const k = String(getVal(r, ["Room","ROOM","Lokasi","Location"]) || "").trim();
+        const k = String(getVal(r, ["Room","ROOM","Location","Lokasi"]) || "").trim();
         return k && String(k) === String(room).trim();
       });
       if (f) section = getVal(f, ["Section","Section Name","SectionName","SECTION"]) || "-";
@@ -211,36 +192,35 @@ function mergeData() {
     let statusPart = "-";
     let aging = "-";
     if (order && sum57ByOrder.has(order)) {
-      const srow = sum57ByOrder.get(order);
-      statusPart = getVal(srow, ["Status Part","StatusPart","Part Status","Status"]) || "-";
-      aging = getVal(srow, ["Aging","Age","Aging Days"]) || "-";
+      const s = sum57ByOrder.get(order);
+      statusPart = getVal(s, ["Status Part","StatusPart","Part Status","Status"]) || "-";
+      aging = getVal(s, ["Aging","Age","Aging Days"]) || "-";
     }
 
-    // Planning & Status AMT from planningByOrder
+    // Planning & Status AMT
     let planning = "";
     let statusAMT = "";
     if (order && planningByOrder.has(order)) {
-      const prow = planningByOrder.get(order);
-      planning = getVal(prow, ["Event Start","Planning","Start","EventStart","Start Date","Start_Date"]) || "";
-      statusAMT = getVal(prow, ["Status AMT","StatusAMT","AMT Status","Status"]) || "";
+      const p = planningByOrder.get(order);
+      planning = getVal(p, ["Event Start","Planning","Start","EventStart","Start Date","Start_Date"]) || "";
+      statusAMT = getVal(p, ["Status AMT","StatusAMT","AMT Status","Status"]) || "";
     }
 
-    // Month & Reman defaults (empty)
+    // Month & Reman defaults (from IW39 if present)
     let month = getVal(row, ["Month"]) || "";
     let reman = getVal(row, ["Reman"]) || "";
 
-    // Include calculation
+    // Include
     let include = "-";
     if (cost === "-" || cost === undefined) include = "-";
     else {
-      const costNum = Number(cost);
-      include = (String(reman).toLowerCase() === "reman") ? (Math.round((costNum * 0.25 + Number.EPSILON) * 100) / 100).toFixed(2) : costNum.toFixed(2);
+      const cnum = Number(cost);
+      include = (String(reman).toLowerCase() === "reman") ? (Math.round((cnum * 0.25 + Number.EPSILON) * 100) / 100).toFixed(2) : cnum.toFixed(2);
     }
-
-    // Exclude calculation
+    // Exclude
     let exclude = (String(orderType).trim().toUpperCase() === "PM38") ? "-" : include;
 
-    const mergedRow = {
+    mergedData.push({
       Room: room || "",
       "Order Type": orderType || "",
       Order: order || "",
@@ -259,15 +239,12 @@ function mergeData() {
       Exclude: exclude,
       Planning: planning || "",
       "Status AMT": statusAMT || "",
-      // keep original totals if needed for export later
       _IW39_totalPlan: isNaN(totalPlan) ? "" : totalPlan,
       _IW39_totalActual: isNaN(totalActual) ? "" : totalActual
-    };
-
-    mergedData.push(mergedRow);
+    });
   });
 
-  // reapply small saved user edits (Month, Reman) from UI_LS_KEY
+  // Reapply small UI edits (Month/Reman) from localStorage
   try {
     const raw = localStorage.getItem(UI_LS_KEY);
     if (raw) {
@@ -293,11 +270,11 @@ function mergeData() {
       }
     }
   } catch (e) {
-    console.warn("Failed to reapply UI edits:", e);
+    console.warn("UI reapply failed:", e);
   }
 }
 
-// ---------------- Render Table ----------------
+// ---------------- Render table ----------------
 function renderTable(dataToRender) {
   const tbody = document.querySelector("#output-table tbody");
   if (!tbody) {
@@ -307,7 +284,6 @@ function renderTable(dataToRender) {
   tbody.innerHTML = "";
 
   const rows = Array.isArray(dataToRender) ? dataToRender : mergedData;
-
   if (!rows || rows.length === 0) {
     const tr = document.createElement("tr");
     const td = document.createElement("td");
@@ -328,7 +304,6 @@ function renderTable(dataToRender) {
       return td;
     }
 
-    // Format Created On & Planning to dd-MMM-yyyy for display
     const createdDisplay = row["Created On"] ? formatDateDDMMMYYYY(row["Created On"]) : "";
     const planningDisplay = row.Planning ? formatDateDDMMMYYYY(row.Planning) : "";
 
@@ -351,7 +326,7 @@ function renderTable(dataToRender) {
     tr.appendChild(tdMonth);
 
     tr.appendChild(addCell(row.Cost));
-    // Reman editable
+    // Reman (editable)
     const tdReman = document.createElement("td");
     tdReman.textContent = row.Reman || "";
     tdReman.dataset.col = "Reman";
@@ -362,8 +337,9 @@ function renderTable(dataToRender) {
     tr.appendChild(addCell(planningDisplay));
     tr.appendChild(addCell(row["Status AMT"]));
 
-    // Action buttons
+    // Actions
     const tdAction = document.createElement("td");
+
     const editBtn = document.createElement("button");
     editBtn.textContent = "Edit";
     editBtn.className = "action-btn edit-btn";
@@ -375,7 +351,6 @@ function renderTable(dataToRender) {
     delBtn.className = "action-btn delete-btn";
     delBtn.addEventListener("click", () => {
       if (confirm("Hapus baris order " + (row.Order || "") + " ?")) {
-        // remove global mergedData by Order key
         const gi = mergedData.findIndex(r => r.Order === row.Order);
         if (gi !== -1) mergedData.splice(gi, 1);
         removeUserEdit(row.Order);
@@ -389,7 +364,7 @@ function renderTable(dataToRender) {
   });
 }
 
-// ---------------- Edit row inline ----------------
+// ---------------- Edit inline ----------------
 function startEditRow(index, trElement) {
   const row = mergedData[index];
   if (!row) return;
@@ -417,7 +392,7 @@ function startEditRow(index, trElement) {
   remanTd.innerHTML = "";
   remanTd.appendChild(remInput);
 
-  // replace action cell with Save/Cancel
+  // action cell save/cancel
   const actionTd = trElement.querySelector("td:last-child");
   actionTd.innerHTML = "";
 
@@ -437,7 +412,7 @@ function startEditRow(index, trElement) {
     }
     row.Exclude = (String(row["Order Type"]).trim().toUpperCase() === "PM38") ? "-" : row.Include;
 
-    // persist small user edit
+    // persist small edit
     saveUserEdit(row.Order, { Order: row.Order, Month: row.Month, Reman: row.Reman });
 
     renderTable(mergedData);
@@ -451,19 +426,19 @@ function startEditRow(index, trElement) {
   actionTd.appendChild(cancelBtn);
 }
 
-// ---------------- Small UI edits persistence ----------------
+// ---------------- small UI edits persistence ----------------
 function saveUserEdit(orderKey, editObj) {
-  let uiState = { userEdits: [] };
+  let ui = { userEdits: [] };
   try {
     const raw = localStorage.getItem(UI_LS_KEY);
-    if (raw) uiState = JSON.parse(raw);
-  } catch (e) { uiState = { userEdits: [] }; }
-  uiState.userEdits = uiState.userEdits.filter(r => r.Order !== orderKey);
-  uiState.userEdits.push(editObj);
+    if (raw) ui = JSON.parse(raw);
+  } catch (e) { ui = { userEdits: [] }; }
+  ui.userEdits = ui.userEdits.filter(r => r.Order !== orderKey);
+  ui.userEdits.push(editObj);
   try {
-    localStorage.setItem(UI_LS_KEY, JSON.stringify(uiState));
+    localStorage.setItem(UI_LS_KEY, JSON.stringify(ui));
   } catch (e) {
-    console.warn("Could not save UI edits (storage):", e);
+    console.warn("Could not save UI edits:", e);
   }
 }
 function removeUserEdit(orderKey) {
@@ -476,7 +451,7 @@ function removeUserEdit(orderKey) {
   } catch (e) {}
 }
 
-// ---------------- Filter & Reset ----------------
+// ---------------- Filter / Reset ----------------
 function filterData() {
   let filtered = mergedData.slice();
   const room = document.getElementById("filter-room").value.trim().toLowerCase();
@@ -513,14 +488,14 @@ function addOrders() {
   let added = 0;
   orders.forEach(o => {
     if (mergedData.find(r => r.Order === o)) return;
-    // try to find IW39 row for data
+    // try find IW39 row
     const iw = iw39Data.find(r => {
-      const val = String(getVal(r, ["Order","Order No","Order_No","Key"]) || "").trim();
-      return val === o;
+      const v = String(getVal(r, ["Order","Order No","Order_No","Key"]) || "").trim();
+      return v === o;
     });
     if (iw) {
-      // create merged row from IW row (use merge logic partially)
-      const minimal = {
+      // push minimal merged record; user can Refresh later to rebuild full merged
+      mergedData.push({
         Room: getVal(iw, ["Room","ROOM","Location"]) || "",
         "Order Type": getVal(iw, ["Order Type","OrderType"]) || "",
         Order: (getVal(iw, ["Order","Order No","Key"]) || "").toString().trim(),
@@ -539,10 +514,8 @@ function addOrders() {
         Exclude: "-",
         Planning: "",
         "Status AMT": ""
-      };
-      mergedData.push(minimal);
+      });
     } else {
-      // minimal empty row
       mergedData.push({
         Room: "",
         "Order Type": "",
@@ -566,23 +539,21 @@ function addOrders() {
     }
     added++;
   });
-
   if (statusEl) { statusEl.textContent = `${added} order berhasil ditambahkan.`; statusEl.style.color = "green"; }
   document.getElementById("add-order-input").value = "";
   renderTable(mergedData);
 }
 
-// ---------------- Export mergedData to Excel ----------------
+// ---------------- Export to Excel ----------------
 function exportMergedToExcel() {
   if (!mergedData || mergedData.length === 0) { alert("Tidak ada data untuk diexport."); return; }
-  const exportRows = mergedData.map(r => {
-    const copy = Object.assign({}, r);
-    // remove internal keys
-    delete copy._IW39_totalPlan;
-    delete copy._IW39_totalActual;
-    return copy;
+  const rows = mergedData.map(r => {
+    const c = Object.assign({}, r);
+    delete c._IW39_totalPlan;
+    delete c._IW39_totalActual;
+    return c;
   });
-  const ws = XLSX.utils.json_to_sheet(exportRows);
+  const ws = XLSX.utils.json_to_sheet(rows);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "Merged");
   const wbout = XLSX.write(wb, { bookType: "xlsx", type: "binary" });
@@ -621,9 +592,9 @@ function loadJSONBackupFile(file) {
   reader.readAsText(file);
 }
 
-// ---------------- UI wire up ----------------
+// ---------------- UI wiring ----------------
 function wireUp() {
-  // menu switching
+  // menu
   document.querySelectorAll(".menu-item").forEach(it => {
     it.addEventListener("click", () => {
       document.querySelectorAll(".menu-item").forEach(i => i.classList.remove("active"));
@@ -635,29 +606,32 @@ function wireUp() {
     });
   });
 
-  // upload
-  document.getElementById("upload-btn").addEventListener("click", async () => {
-    const sel = document.getElementById("file-select").value;
-    const f = document.getElementById("file-input").files[0];
-    if (!f) { alert("Pilih file terlebih dahulu"); return; }
-    document.getElementById("upload-status").textContent = `Parsing ${f.name} ...`;
-    try {
-      const json = await parseFile(f);
-      switch (sel) {
-        case "IW39": iw39Data = json; break;
-        case "SUM57": sum57Data = json; break;
-        case "Planning": planningData = json; break;
-        case "Data1": data1Data = json; break;
-        case "Data2": data2Data = json; break;
-        case "Budget": budgetData = json; break;
+  // upload button
+  const uploadBtn = document.getElementById("upload-btn");
+  if (uploadBtn) {
+    uploadBtn.addEventListener("click", async () => {
+      const sel = document.getElementById("file-select").value;
+      const f = document.getElementById("file-input").files[0];
+      if (!f) { alert("Pilih file terlebih dahulu"); return; }
+      document.getElementById("upload-status").textContent = `Parsing ${f.name} ...`;
+      try {
+        const json = await parseFileToJson(f);
+        switch (sel) {
+          case "IW39": iw39Data = json; break;
+          case "SUM57": sum57Data = json; break;
+          case "Planning": planningData = json; break;
+          case "Data1": data1Data = json; break;
+          case "Data2": data2Data = json; break;
+          case "Budget": budgetData = json; break;
+        }
+        document.getElementById("upload-status").textContent = `${sel} loaded (${json.length} rows)`;
+        document.getElementById("file-input").value = "";
+      } catch (err) {
+        console.error(err);
+        alert("Gagal parsing file: " + err.message);
       }
-      document.getElementById("upload-status").textContent = `${sel} loaded (${json.length} rows)`;
-      document.getElementById("file-input").value = "";
-    } catch (err) {
-      console.error(err);
-      alert("Gagal parsing file: " + err.message);
-    }
-  });
+    });
+  }
 
   // clear files memory
   const clearBtn = document.getElementById("clear-files-btn");
@@ -670,7 +644,8 @@ function wireUp() {
   });
 
   // refresh (merge)
-  document.getElementById("refresh-btn").addEventListener("click", () => {
+  const refreshBtn = document.getElementById("refresh-btn");
+  if (refreshBtn) refreshBtn.addEventListener("click", () => {
     if (!iw39Data || iw39Data.length === 0) { alert("Upload IW39 dulu sebelum Refresh."); return; }
     mergeData();
     renderTable(mergedData);
@@ -679,19 +654,22 @@ function wireUp() {
   });
 
   // add orders
-  document.getElementById("add-order-btn").addEventListener("click", addOrders);
+  const addBtn = document.getElementById("add-order-btn");
+  if (addBtn) addBtn.addEventListener("click", addOrders);
 
-  // filter/reset
-  document.getElementById("filter-btn").addEventListener("click", filterData);
-  document.getElementById("reset-btn").addEventListener("click", resetFilter);
+  // filter / reset
+  const filterBtn = document.getElementById("filter-btn");
+  if (filterBtn) filterBtn.addEventListener("click", filterData);
+  const resetBtn = document.getElementById("reset-btn");
+  if (resetBtn) resetBtn.addEventListener("click", resetFilter);
 
-  // export to excel (save button)
-  document.getElementById("save-btn").addEventListener("click", () => {
-    exportMergedToExcel();
-  });
+  // save (export) button
+  const saveBtn = document.getElementById("save-btn");
+  if (saveBtn) saveBtn.addEventListener("click", () => exportMergedToExcel());
 
-  // load backup (load button opens file selector)
-  document.getElementById("load-btn").addEventListener("click", () => {
+  // load (backup JSON) button
+  const loadBtn = document.getElementById("load-btn");
+  if (loadBtn) loadBtn.addEventListener("click", () => {
     const inpf = document.createElement("input");
     inpf.type = "file";
     inpf.accept = ".json";
@@ -702,11 +680,11 @@ function wireUp() {
     inpf.click();
   });
 
-  // on initial load, show empty table
+  // initial empty render
   renderTable([]);
 }
 
-// ---------------- init ----------------
+// ---------------- Init ----------------
 window.addEventListener("DOMContentLoaded", () => {
   wireUp();
 });
