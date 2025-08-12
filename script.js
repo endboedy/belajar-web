@@ -1,17 +1,21 @@
-/* script.js - FINAL Revised
-   - Upload & parse XLSX: IW39, SUM57, Planning, Data1, Data2, Budget
-   - mergeData() with lookups:
-       Section <- Data1 by Room
-       Status Part, Aging <- SUM57 by Order
-       CPH <- Data2 (JR rule + lookup by MAT)
-       Cost = (TotalPlan - TotalActual)/16500 -> "-" if <0 or missing
-   - Format dates dd-MMM-yyyy for Created On & Planning
-   - Render table (Menu 2) with Edit (Month, Reman) & Delete
-   - Add Orders, Filter, Reset, Refresh, Export XLSX, JSON backup
-   - Persist only small UI edits (Month/Reman) in localStorage (UI_LS_KEY)
+/* script.js - FINAL (GitHub load + merge + admin save)
+   - Load Excel from GitHub raw URLs (or upload local via input)
+   - Merge logic (Section by Room from Data1, Status Part/Aging from SUM57 by Order,
+     CPH: if Description starts "JR" => "External Job", else lookup Data2 by Order/MAT)
+   - Cost = (TotalPlan - TotalActual) / 16500  (columns auto-detected)
+   - Format Created On & Planning -> dd-MMM-yyyy
+   - Edit row inline (Month dropdown, Reman free text), Delete row
+   - Add Orders, Filter, Reset, Refresh
+   - Export merged to Excel; backup to/from JSON
+   - Admin Save -> commit data.json to GitHub (PUT) (requires PAT)
 */
 
-// ---------------- Global stores ----------------
+// ----------------- Config / Globals -----------------
+const GITHUB_RAW_BASE = "https://raw.githubusercontent.com"; // used when fetching public raw files
+// session admin info stored in sessionStorage keys:
+const SESSION_ADMIN_KEY = "ndarboe_admin_info_v1";
+const UI_LS_KEY = "ndarboe_ui_state_v1"; // small user edits persisted
+
 let iw39Data = [];
 let sum57Data = [];
 let planningData = [];
@@ -19,11 +23,16 @@ let data1Data = [];
 let data2Data = [];
 let budgetData = [];
 
-let mergedData = []; // merged result used for rendering
+let mergedData = [];
 
-const UI_LS_KEY = "ndarboe_ui_state_v1"; // small persisted edits
-
-// ---------------- Utility helpers ----------------
+// ----------------- Utility helpers -----------------
+function safeNum(v) {
+  if (v === undefined || v === null || v === "") return NaN;
+  if (typeof v === "number") return v;
+  const s = String(v).replace(/[^0-9\.\-]/g, "");
+  const n = Number(s);
+  return isNaN(n) ? NaN : n;
+}
 function getVal(row, candidates) {
   if (!row) return undefined;
   for (const c of candidates) {
@@ -37,14 +46,6 @@ function getVal(row, candidates) {
   }
   return undefined;
 }
-function safeNum(v) {
-  if (v === undefined || v === null || v === "") return NaN;
-  if (typeof v === "number") return v;
-  const s = String(v).replace(/[^0-9\.\-]/g, "");
-  const n = Number(s);
-  return isNaN(n) ? NaN : n;
-}
-// Excel date serial to JS Date (approx)
 function excelDateToJS(serial) {
   if (typeof serial === "number") {
     const utc_days = Math.floor(serial - 25569);
@@ -66,7 +67,6 @@ function formatDateDDMMMYYYY(input) {
   let d = null;
   if (typeof input === "number") d = excelDateToJS(input);
   else {
-    // try parse ISO or other
     d = new Date(input);
     if (isNaN(d)) {
       const alt = new Date(String(input).replace(/\//g, "-"));
@@ -91,9 +91,23 @@ function downloadFile(filename, content, mime) {
   a.remove();
   URL.revokeObjectURL(url);
 }
+function textToBase64Uint8(str) {
+  // convert binary string to Uint8Array
+  const buf = new ArrayBuffer(str.length);
+  const view = new Uint8Array(buf);
+  for (let i=0;i<str.length;i++) view[i] = str.charCodeAt(i) & 0xFF;
+  return view;
+}
+function arrayBufferToBase64(buffer) {
+  let binary = '';
+  const bytes = new Uint8Array(buffer);
+  const len = bytes.byteLength;
+  for (let i = 0; i < len; i++) binary += String.fromCharCode(bytes[i]);
+  return btoa(binary);
+}
 
-// ---------------- Parse XLSX ----------------
-function parseFileToJson(file) {
+// ----------------- Parse XLSX (from File input) -----------------
+function parseFile(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -108,21 +122,36 @@ function parseFileToJson(file) {
         reject(err);
       }
     };
-    reader.onerror = (err) => reject(err);
+    reader.onerror = reject;
     reader.readAsBinaryString(file);
   });
 }
 
-// ---------------- Merge logic ----------------
+// ----------------- Fetch Excel from GitHub raw (public) -----------------
+async function fetchExcelFromGitHubRaw(owner, repo, branch, pathInRepo) {
+  // raw url: https://raw.githubusercontent.com/{owner}/{repo}/{branch}/{path}
+  const rawUrl = `${GITHUB_RAW_BASE}/${owner}/${repo}/${branch}/${pathInRepo}`;
+  // fetch as arrayBuffer then parse with XLSX
+  const resp = await fetch(rawUrl);
+  if (!resp.ok) throw new Error(`Failed to fetch ${rawUrl}: ${resp.statusText}`);
+  const buffer = await resp.arrayBuffer();
+  // parse buffer via XLSX
+  const wb = XLSX.read(new Uint8Array(buffer), { type: "array" });
+  const first = wb.SheetNames[0];
+  const ws = wb.Sheets[first];
+  const json = XLSX.utils.sheet_to_json(ws, { defval: "" });
+  return json;
+}
+
+// ----------------- Merge Logic (updated rules) -----------------
 function mergeData() {
   mergedData = [];
-
   if (!iw39Data || iw39Data.length === 0) {
-    alert("IW39 belum di-upload. Upload IW39 lalu klik Refresh.");
+    alert("IW39 belum di-upload / dimuat. Upload atau load IW39 lalu klik Refresh.");
     return;
   }
 
-  // Build quick lookup maps
+  // Build lookup maps
   const sum57ByOrder = new Map();
   sum57Data.forEach(r => {
     const k = String(getVal(r, ["Order","Order No","Order_No","Key","No"]) || "").trim();
@@ -135,10 +164,13 @@ function mergeData() {
     if (k) data1ByRoom.set(k, r);
   });
 
+  const data2ByOrder = new Map();
   const data2ByMat = new Map();
   data2Data.forEach(r => {
-    const mk = String(getVal(r, ["MAT","Mat","Material","Key"]) || "").trim();
-    if (mk) data2ByMat.set(mk, r);
+    const ord = String(getVal(r, ["Order","Order No","Order_No","Key"]) || "").trim();
+    const mat = String(getVal(r, ["MAT","Mat","Material","Key"]) || "").trim();
+    if (ord) data2ByOrder.set(ord, r);
+    if (mat) data2ByMat.set(mat, r);
   });
 
   const planningByOrder = new Map();
@@ -147,7 +179,10 @@ function mergeData() {
     if (ord) planningByOrder.set(ord, r);
   });
 
-  // Iterate IW39 rows and create merged rows
+  // For cost calculation: we look for columns that match "Total sum (plan)" and "Total sum (actual)" (or variants)
+  const planCandidates = ["Total sum (plan)","TotalPlan","Total Plan","Total_Sum_Plan","Total sum plan","Total Plan (sum)"];
+  const actualCandidates = ["Total sum (actual)","TotalActual","Total Actual","Total_Sum_Actual","Total actual"];
+
   iw39Data.forEach(row => {
     const order = String(getVal(row, ["Order","Order No","Order_No","ORD","Key"]) || "").trim();
     const room = getVal(row, ["Room","ROOM","Location","Lokasi"]) || "";
@@ -157,30 +192,48 @@ function mergeData() {
     const userStatus = getVal(row, ["User Status","UserStatus","Status User","Status"]) || "";
     const mat = String(getVal(row, ["MAT","Mat","Material"]) || "").trim();
 
-    const totalPlan = safeNum(getVal(row, ["TotalPlan","Total Plan","Plan","Total_Plan","TotalPlan."]));
-    const totalActual = safeNum(getVal(row, ["TotalActual","Total Actual","Actual","Total_Actual"]));
-
-    // Cost calculation
-    let cost;
-    if (!isNaN(totalPlan) && !isNaN(totalActual)) {
-      const calc = (totalPlan - totalActual) / 16500;
-      cost = (isNaN(calc) || calc === null) ? "-" : (calc < 0 ? "-" : (Math.round((calc + Number.EPSILON) * 100) / 100).toFixed(2));
-    } else {
-      cost = "-";
+    // find plan & actual (try candidate column names in iw39 row)
+    let totalPlan = NaN, totalActual = NaN;
+    for (const c of planCandidates) {
+      const v = getVal(row, [c]);
+      if (v !== undefined && v !== "") { totalPlan = safeNum(v); break; }
+    }
+    for (const c of actualCandidates) {
+      const v = getVal(row, [c]);
+      if (v !== undefined && v !== "") { totalActual = safeNum(v); break; }
     }
 
-    // CPH
-    let cph = "";
-    if (mat && mat.toUpperCase().startsWith("JR")) cph = "JR";
-    else if (mat && data2ByMat.has(mat)) cph = getVal(data2ByMat.get(mat), ["CPH","Cph","cph","CPH Code","Code"]) || "";
-    else cph = "";
+    // cost formula
+    let cost = "-";
+    if (!isNaN(totalPlan) && !isNaN(totalActual)) {
+      const calc = (totalPlan - totalActual) / 16500;
+      if (!isNaN(calc) && calc >= 0) cost = (Math.round((calc + Number.EPSILON) * 100) / 100).toFixed(2);
+      else cost = "-";
+    }
 
-    // Section by Room from Data1
+    // CPH rule:
+    // if first 2 chars of Description are "JR" (case-insensitive) => "External Job"
+    // else try lookup Data2: first by Order, then by MAT
+    let cph = "";
+    const descPrefix = (String(description || "").trim().substr(0,2) || "").toUpperCase();
+    if (descPrefix === "JR") {
+      cph = "External Job";
+    } else {
+      // try by Order in Data2
+      if (order && data2ByOrder.has(order)) {
+        cph = getVal(data2ByOrder.get(order), ["CPH","Cph","cph","CPH Code","Code","Result"]) || "";
+      } else if (mat && data2ByMat.has(mat)) {
+        cph = getVal(data2ByMat.get(mat), ["CPH","Cph","cph","CPH Code","Code","Result"]) || "";
+      } else {
+        cph = "";
+      }
+    }
+
+    // Section from Data1 by Room
     let section = "-";
     if (room && data1ByRoom.has(String(room).trim())) {
       section = getVal(data1ByRoom.get(String(room).trim()), ["Section","Section Name","SectionName","SECTION"]) || "-";
     } else {
-      // fallback search
       const f = data1Data.find(r => {
         const k = String(getVal(r, ["Room","ROOM","Location","Lokasi"]) || "").trim();
         return k && String(k) === String(room).trim();
@@ -193,11 +246,12 @@ function mergeData() {
     let aging = "-";
     if (order && sum57ByOrder.has(order)) {
       const s = sum57ByOrder.get(order);
-      statusPart = getVal(s, ["Status Part","StatusPart","Part Status","Status"]) || "-";
-      aging = getVal(s, ["Aging","Age","Aging Days"]) || "-";
+      // user said status part is "Part Complete" column in SUM57
+      statusPart = getVal(s, ["Part Complete","PartComplete","Part_Complete","Status Part","Status"]) || "-";
+      aging = getVal(s, ["Aging","Age","Aging Days","Age Days"]) || "-";
     }
 
-    // Planning & Status AMT
+    // Planning & Status AMT from planningByOrder
     let planning = "";
     let statusAMT = "";
     if (order && planningByOrder.has(order)) {
@@ -206,21 +260,20 @@ function mergeData() {
       statusAMT = getVal(p, ["Status AMT","StatusAMT","AMT Status","Status"]) || "";
     }
 
-    // Month & Reman defaults (from IW39 if present)
-    let month = getVal(row, ["Month"]) || "";
-    let reman = getVal(row, ["Reman"]) || "";
+    // Month & Reman defaults
+    const month = getVal(row, ["Month"]) || "";
+    const reman = getVal(row, ["Reman"]) || "";
 
-    // Include
+    // Include / Exclude
     let include = "-";
     if (cost === "-" || cost === undefined) include = "-";
     else {
-      const cnum = Number(cost);
-      include = (String(reman).toLowerCase() === "reman") ? (Math.round((cnum * 0.25 + Number.EPSILON) * 100) / 100).toFixed(2) : cnum.toFixed(2);
+      const costNum = Number(cost);
+      include = (String(reman).toLowerCase() === "reman") ? (Math.round((costNum * 0.25 + Number.EPSILON) * 100) / 100).toFixed(2) : costNum.toFixed(2);
     }
-    // Exclude
     let exclude = (String(orderType).trim().toUpperCase() === "PM38") ? "-" : include;
 
-    mergedData.push({
+    const mergedRow = {
       Room: room || "",
       "Order Type": orderType || "",
       Order: order || "",
@@ -241,10 +294,12 @@ function mergeData() {
       "Status AMT": statusAMT || "",
       _IW39_totalPlan: isNaN(totalPlan) ? "" : totalPlan,
       _IW39_totalActual: isNaN(totalActual) ? "" : totalActual
-    });
+    };
+
+    mergedData.push(mergedRow);
   });
 
-  // Reapply small UI edits (Month/Reman) from localStorage
+  // reapply UI small edits (Month/Reman)
   try {
     const raw = localStorage.getItem(UI_LS_KEY);
     if (raw) {
@@ -256,13 +311,10 @@ function mergeData() {
           if (s) {
             if (s.Month !== undefined) r.Month = s.Month;
             if (s.Reman !== undefined) r.Reman = s.Reman;
-            // recalc include/exclude
             if (r.Cost !== "-" && !isNaN(Number(r.Cost))) {
               const costNum = Number(r.Cost);
               r.Include = (String(r.Reman).toLowerCase() === "reman") ? (Math.round((costNum * 0.25 + Number.EPSILON) * 100) / 100).toFixed(2) : costNum.toFixed(2);
-            } else {
-              r.Include = "-";
-            }
+            } else r.Include = "-";
             r.Exclude = (String(r["Order Type"]).trim().toUpperCase() === "PM38") ? "-" : r.Include;
           }
           return r;
@@ -270,11 +322,11 @@ function mergeData() {
       }
     }
   } catch (e) {
-    console.warn("UI reapply failed:", e);
+    console.warn("Failed reapply UI edits:", e);
   }
 }
 
-// ---------------- Render table ----------------
+// ----------------- Render Table (Menu 2) -----------------
 function renderTable(dataToRender) {
   const tbody = document.querySelector("#output-table tbody");
   if (!tbody) {
@@ -304,14 +356,14 @@ function renderTable(dataToRender) {
       return td;
     }
 
-    const createdDisplay = row["Created On"] ? formatDateDDMMMYYYY(row["Created On"]) : "";
-    const planningDisplay = row.Planning ? formatDateDDMMMYYYY(row.Planning) : "";
+    const createdDisp = row["Created On"] ? formatDateDDMMMYYYY(row["Created On"]) : "";
+    const planningDisp = row.Planning ? formatDateDDMMMYYYY(row.Planning) : "";
 
     tr.appendChild(addCell(row.Room));
     tr.appendChild(addCell(row["Order Type"]));
     tr.appendChild(addCell(row.Order));
     tr.appendChild(addCell(row.Description));
-    tr.appendChild(addCell(createdDisplay));
+    tr.appendChild(addCell(createdDisp));
     tr.appendChild(addCell(row["User Status"]));
     tr.appendChild(addCell(row.MAT));
     tr.appendChild(addCell(row.CPH));
@@ -319,14 +371,14 @@ function renderTable(dataToRender) {
     tr.appendChild(addCell(row["Status Part"]));
     tr.appendChild(addCell(row.Aging));
 
-    // Month (editable)
+    // month editable cell
     const tdMonth = document.createElement("td");
     tdMonth.textContent = row.Month || "";
     tdMonth.dataset.col = "Month";
     tr.appendChild(tdMonth);
 
     tr.appendChild(addCell(row.Cost));
-    // Reman (editable)
+    // reman editable
     const tdReman = document.createElement("td");
     tdReman.textContent = row.Reman || "";
     tdReman.dataset.col = "Reman";
@@ -334,12 +386,11 @@ function renderTable(dataToRender) {
 
     tr.appendChild(addCell(row.Include));
     tr.appendChild(addCell(row.Exclude));
-    tr.appendChild(addCell(planningDisplay));
+    tr.appendChild(addCell(planningDisp));
     tr.appendChild(addCell(row["Status AMT"]));
 
-    // Actions
+    // actions
     const tdAction = document.createElement("td");
-
     const editBtn = document.createElement("button");
     editBtn.textContent = "Edit";
     editBtn.className = "action-btn edit-btn";
@@ -364,11 +415,10 @@ function renderTable(dataToRender) {
   });
 }
 
-// ---------------- Edit inline ----------------
+// ----------------- Edit row inline (Month, Reman) -----------------
 function startEditRow(index, trElement) {
   const row = mergedData[index];
   if (!row) return;
-
   const monthTd = trElement.querySelector('td[data-col="Month"]');
   const remanTd = trElement.querySelector('td[data-col="Reman"]');
   if (!monthTd || !remanTd) return;
@@ -392,7 +442,6 @@ function startEditRow(index, trElement) {
   remanTd.innerHTML = "";
   remanTd.appendChild(remInput);
 
-  // action cell save/cancel
   const actionTd = trElement.querySelector("td:last-child");
   actionTd.innerHTML = "";
 
@@ -402,19 +451,14 @@ function startEditRow(index, trElement) {
   saveBtn.addEventListener("click", () => {
     row.Month = sel.value;
     row.Reman = remInput.value;
-
     // recalc include/exclude
     if (row.Cost !== "-" && !isNaN(Number(row.Cost))) {
       const costNum = Number(row.Cost);
       row.Include = (String(row.Reman).toLowerCase() === "reman") ? (Math.round((costNum * 0.25 + Number.EPSILON) * 100) / 100).toFixed(2) : costNum.toFixed(2);
-    } else {
-      row.Include = "-";
-    }
+    } else row.Include = "-";
     row.Exclude = (String(row["Order Type"]).trim().toUpperCase() === "PM38") ? "-" : row.Include;
 
-    // persist small edit
     saveUserEdit(row.Order, { Order: row.Order, Month: row.Month, Reman: row.Reman });
-
     renderTable(mergedData);
   });
   actionTd.appendChild(saveBtn);
@@ -426,7 +470,7 @@ function startEditRow(index, trElement) {
   actionTd.appendChild(cancelBtn);
 }
 
-// ---------------- small UI edits persistence ----------------
+// ---------------- small UI edits persistence -----------------
 function saveUserEdit(orderKey, editObj) {
   let ui = { userEdits: [] };
   try {
@@ -451,14 +495,14 @@ function removeUserEdit(orderKey) {
   } catch (e) {}
 }
 
-// ---------------- Filter / Reset ----------------
+// ---------------- Filter / Reset -----------------
 function filterData() {
   let filtered = mergedData.slice();
-  const room = document.getElementById("filter-room").value.trim().toLowerCase();
-  const order = document.getElementById("filter-order").value.trim().toLowerCase();
-  const cph = document.getElementById("filter-cph").value.trim().toLowerCase();
-  const mat = document.getElementById("filter-mat").value.trim().toLowerCase();
-  const section = document.getElementById("filter-section").value.trim().toLowerCase();
+  const room = (document.getElementById("filter-room").value || "").trim().toLowerCase();
+  const order = (document.getElementById("filter-order").value || "").trim().toLowerCase();
+  const cph = (document.getElementById("filter-cph").value || "").trim().toLowerCase();
+  const mat = (document.getElementById("filter-mat").value || "").trim().toLowerCase();
+  const section = (document.getElementById("filter-section").value || "").trim().toLowerCase();
 
   if (room) filtered = filtered.filter(d => (d.Room || "").toString().toLowerCase().includes(room));
   if (order) filtered = filtered.filter(d => (d.Order || "").toString().toLowerCase().includes(order));
@@ -476,9 +520,9 @@ function resetFilter() {
   renderTable(mergedData);
 }
 
-// ---------------- Add Orders manual ----------------
+// ---------------- Add Orders manual -----------------
 function addOrders() {
-  const input = document.getElementById("add-order-input").value.trim();
+  const input = (document.getElementById("add-order-input").value || "").trim();
   const statusEl = document.getElementById("add-order-status");
   if (!input) {
     if (statusEl) { statusEl.textContent = "Masukkan order dulu ya bro!"; statusEl.style.color = "red"; }
@@ -488,13 +532,11 @@ function addOrders() {
   let added = 0;
   orders.forEach(o => {
     if (mergedData.find(r => r.Order === o)) return;
-    // try find IW39 row
     const iw = iw39Data.find(r => {
       const v = String(getVal(r, ["Order","Order No","Order_No","Key"]) || "").trim();
       return v === o;
     });
     if (iw) {
-      // push minimal merged record; user can Refresh later to rebuild full merged
       mergedData.push({
         Room: getVal(iw, ["Room","ROOM","Location"]) || "",
         "Order Type": getVal(iw, ["Order Type","OrderType"]) || "",
@@ -544,7 +586,7 @@ function addOrders() {
   renderTable(mergedData);
 }
 
-// ---------------- Export to Excel ----------------
+// ---------------- Export merged to XLSX -----------------
 function exportMergedToExcel() {
   if (!mergedData || mergedData.length === 0) { alert("Tidak ada data untuk diexport."); return; }
   const rows = mergedData.map(r => {
@@ -566,7 +608,7 @@ function exportMergedToExcel() {
   downloadFile("Lembar_Kerja_merged.xlsx", s2ab(wbout), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
 }
 
-// ---------------- JSON backup ----------------
+// ---------------- JSON backup -----------------
 function downloadJSONBackup() {
   const payload = { iw39Data, sum57Data, planningData, data1Data, data2Data, budgetData, mergedData, timestamp: new Date().toISOString() };
   downloadFile("ndarboe_backup.json", JSON.stringify(payload, null, 2), "application/json");
@@ -592,9 +634,77 @@ function loadJSONBackupFile(file) {
   reader.readAsText(file);
 }
 
-// ---------------- UI wiring ----------------
+// ---------------- GitHub save (admin) -----------------
+// Admin info stored in sessionStorage: { owner, repo, branch, token }
+function setAdminSession(info) {
+  sessionStorage.setItem(SESSION_ADMIN_KEY, JSON.stringify(info));
+}
+function getAdminSession() {
+  try {
+    const raw = sessionStorage.getItem(SESSION_ADMIN_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch (e) { return null; }
+}
+async function githubGetFileSha(owner, repo, path, branch, token) {
+  const url = `https://api.github.com/repos/${owner}/${repo}/contents/${encodeURIComponent(path)}?ref=${encodeURIComponent(branch)}`;
+  const res = await fetch(url, {
+    headers: { Authorization: `token ${token}`, Accept: 'application/vnd.github.v3+json' }
+  });
+  if (!res.ok) throw new Error(`GET SHA failed: ${res.status} ${res.statusText}`);
+  const js = await res.json();
+  return js.sha;
+}
+async function githubPutFile(owner, repo, path, branch, token, contentBase64, message, sha) {
+  const url = `https://api.github.com/repos/${owner}/${repo}/contents/${encodeURIComponent(path)}`;
+  const body = { message, content: contentBase64, branch };
+  if (sha) body.sha = sha;
+  const res = await fetch(url, {
+    method: 'PUT',
+    headers: { Authorization: `token ${token}`, Accept: 'application/vnd.github.v3+json', 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  if (!res.ok) {
+    const txt = await res.text();
+    throw new Error(`PUT failed ${res.status}: ${txt}`);
+  }
+  return await res.json();
+}
+async function saveMergedDataToGitHub(pathInRepo="data/data.json") {
+  const admin = getAdminSession();
+  if (!admin || !admin.token) { alert("Admin token belum di-set. Klik Admin Login."); return; }
+  // prepare payload
+  const payload = { mergedData, timestamp: new Date().toISOString() };
+  const contentStr = JSON.stringify(payload, null, 2);
+  const contentBase64 = btoa(unescape(encodeURIComponent(contentStr)));
+  try {
+    // try get sha (if exists)
+    let sha;
+    try { sha = await githubGetFileSha(admin.owner, admin.repo, pathInRepo, admin.branch, admin.token); } catch(e) { sha = undefined; }
+    const msg = `Update data.json via web by admin at ${new Date().toISOString()}`;
+    const res = await githubPutFile(admin.owner, admin.repo, pathInRepo, admin.branch, admin.token, contentBase64, msg, sha);
+    alert("Saved to GitHub: " + res.content.path);
+  } catch (err) {
+    console.error("GitHub save failed:", err);
+    alert("GitHub save failed: " + err.message);
+  }
+}
+
+// ---------------- Load Excel files either via upload or GitHub raw -----------------
+async function loadFromGitHubExcel(owner, repo, branch, pathInRepo, targetArray) {
+  try {
+    const json = await fetchExcelFromGitHubRaw(owner, repo, branch, pathInRepo);
+    targetArray.length = 0;
+    targetArray.push(...json);
+    return json.length;
+  } catch (e) {
+    throw e;
+  }
+}
+
+// ---------------- UI wiring -----------------
 function wireUp() {
-  // menu
+  // menu switching
   document.querySelectorAll(".menu-item").forEach(it => {
     it.addEventListener("click", () => {
       document.querySelectorAll(".menu-item").forEach(i => i.classList.remove("active"));
@@ -606,7 +716,7 @@ function wireUp() {
     });
   });
 
-  // upload button
+  // Upload local file (existing upload control)
   const uploadBtn = document.getElementById("upload-btn");
   if (uploadBtn) {
     uploadBtn.addEventListener("click", async () => {
@@ -615,7 +725,7 @@ function wireUp() {
       if (!f) { alert("Pilih file terlebih dahulu"); return; }
       document.getElementById("upload-status").textContent = `Parsing ${f.name} ...`;
       try {
-        const json = await parseFileToJson(f);
+        const json = await parseFile(f);
         switch (sel) {
           case "IW39": iw39Data = json; break;
           case "SUM57": sum57Data = json; break;
@@ -633,17 +743,45 @@ function wireUp() {
     });
   }
 
-  // clear files memory
+  // GitHub load buttons (you can make a small UI to call these)
+  // For convenience, add a simple handler for "Load from GitHub" if you want:
+  const ghLoadBtn = document.getElementById("gh-load-btn");
+  if (ghLoadBtn) {
+    ghLoadBtn.addEventListener("click", async () => {
+      const owner = prompt("GitHub owner (username/org):");
+      const repo = prompt("Repo name:");
+      const branch = prompt("Branch (default: main):", "main");
+      if (!owner || !repo) return alert("Owner & repo required");
+      try {
+        document.getElementById("upload-status").textContent = "Loading IW39 from GitHub...";
+        await loadFromGitHubExcel(owner, repo, branch, "excel/IW39.xlsx", iw39Data);
+        document.getElementById("upload-status").textContent = "Loading Data1...";
+        await loadFromGitHubExcel(owner, repo, branch, "excel/Data1.xlsx", data1Data);
+        document.getElementById("upload-status").textContent = "Loading SUM57...";
+        await loadFromGitHubExcel(owner, repo, branch, "excel/SUM57.xlsx", sum57Data);
+        try { await loadFromGitHubExcel(owner, repo, branch, "excel/Planning.xlsx", planningData); } catch(e){}
+        try { await loadFromGitHubExcel(owner, repo, branch, "excel/Data2.xlsx", data2Data); } catch(e){}
+        document.getElementById("upload-status").textContent = "All loaded from GitHub.";
+        mergeData();
+        renderTable(mergedData);
+      } catch(e) {
+        console.error(e);
+        alert("GitHub load error: " + e.message);
+      }
+    });
+  }
+
+  // Clear memory
   const clearBtn = document.getElementById("clear-files-btn");
   if (clearBtn) clearBtn.addEventListener("click", () => {
-    if (!confirm("Clear semua data yang sudah di-upload di memory?")) return;
+    if (!confirm("Clear uploaded data in memory?")) return;
     iw39Data=[]; sum57Data=[]; planningData=[]; data1Data=[]; data2Data=[]; budgetData=[];
     mergedData=[];
     document.getElementById("upload-status").textContent = "Data cleared";
     renderTable([]);
   });
 
-  // refresh (merge)
+  // Refresh -> merge & render
   const refreshBtn = document.getElementById("refresh-btn");
   if (refreshBtn) refreshBtn.addEventListener("click", () => {
     if (!iw39Data || iw39Data.length === 0) { alert("Upload IW39 dulu sebelum Refresh."); return; }
@@ -653,21 +791,21 @@ function wireUp() {
     if (s) s.textContent = "";
   });
 
-  // add orders
+  // Add orders
   const addBtn = document.getElementById("add-order-btn");
   if (addBtn) addBtn.addEventListener("click", addOrders);
 
-  // filter / reset
+  // Filter / Reset
   const filterBtn = document.getElementById("filter-btn");
   if (filterBtn) filterBtn.addEventListener("click", filterData);
   const resetBtn = document.getElementById("reset-btn");
   if (resetBtn) resetBtn.addEventListener("click", resetFilter);
 
-  // save (export) button
+  // Save (export) - downloads XLSX
   const saveBtn = document.getElementById("save-btn");
-  if (saveBtn) saveBtn.addEventListener("click", () => exportMergedToExcel());
+  if (saveBtn) saveBtn.addEventListener("click", exportMergedToExcel);
 
-  // load (backup JSON) button
+  // Load (backup JSON)
   const loadBtn = document.getElementById("load-btn");
   if (loadBtn) loadBtn.addEventListener("click", () => {
     const inpf = document.createElement("input");
@@ -680,11 +818,32 @@ function wireUp() {
     inpf.click();
   });
 
-  // initial empty render
+  // Admin login (for save to GitHub)
+  const adminBtn = document.getElementById("admin-login-btn");
+  if (adminBtn) adminBtn.addEventListener("click", () => {
+    const owner = prompt("GitHub owner (username/org):");
+    if (!owner) return;
+    const repo = prompt("Repo name:");
+    if (!repo) return;
+    const branch = prompt("Branch:", "main") || "main";
+    const token = prompt("Personal Access Token (will be kept in session only):");
+    if (!token) return;
+    setAdminSession({ owner, repo, branch, token });
+    alert("Admin session set for this tab. Save to GitHub will be enabled.");
+  });
+
+  // Admin save to GitHub (save JSON)
+  const ghSaveBtn = document.getElementById("gh-save-btn");
+  if (ghSaveBtn) ghSaveBtn.addEventListener("click", async () => {
+    // default path: data/data.json
+    await saveMergedDataToGitHub("data/data.json");
+  });
+
+  // initial render empty
   renderTable([]);
 }
 
-// ---------------- Init ----------------
+// ---------------- Init -----------------
 window.addEventListener("DOMContentLoaded", () => {
   wireUp();
 });
