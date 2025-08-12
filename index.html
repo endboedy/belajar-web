@@ -1,100 +1,197 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Order Management</title>
-<style>
-  body { font-family: Arial, sans-serif; margin: 20px; }
-  label { margin-right: 5px; }
-  select, input[type="text"] { margin-right: 15px; padding: 5px; }
-  table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-  th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
-  th { background-color: #eee; }
-  button.action-btn { margin-right: 5px; padding: 5px 10px; cursor: pointer; }
-  button.edit-btn { background-color: #4CAF50; color: white; border: none; }
-  button.delete-btn { background-color: #f44336; color: white; border: none; }
-  button.save-btn { background-color: #2196F3; color: white; border: none; }
-  button.cancel-btn { background-color: #777; color: white; border: none; }
-  #filter-bar { margin-bottom: 15px; }
-  #add-order-input { width: 300px; }
-  #add-order-status { margin-left: 10px; font-weight: bold; }
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Ndarboe.net</title>
+  <link rel="stylesheet" href="style.css" />
+  <!-- XLSX -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <style>
+    /* Simple styling mirip screenshot */
+    :root{
+      --blue:#2f8be6;
+      --dark-blue:#1763b1;
+      --sidebar:#1f73c9;
+      --muted:#777;
+      --card-bg:#fff;
+      font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+    body{ margin:0; background:#f3f6f9; color:#222; }
+    header{
+      background:var(--blue);
+      color:#fff;
+      padding:18px 24px;
+      text-align:center;
+      font-size:34px;
+      font-weight:700;
+    }
+    .container{ display:flex; min-height:calc(100vh - 80px); }
+    .sidebar{
+      width:200px;
+      background:var(--sidebar);
+      color:#fff;
+      padding-top:20px;
+      box-shadow: 2px 0 6px rgba(0,0,0,0.06);
+    }
+    .sidebar ul{ list-style:none; padding:0; margin:0; }
+    .sidebar .menu-item{
+      padding:12px 18px;
+      cursor:pointer;
+      color:#fff;
+      border-left:4px solid transparent;
+    }
+    .sidebar .menu-item.active{ background: rgba(0,0,0,0.08); border-left-color:#0b4f85; }
+    .content{
+      flex:1; padding:22px 28px;
+    }
+    h2{ margin-top:4px; color:#222; }
+    .content-section{ display:none; }
+    .content-section.active{ display:block; }
+    textarea{ width:100%; box-sizing:border-box; padding:10px; border:1px solid #ddd; border-radius:4px; }
+    .add-order-section{ background:#fff; padding:12px; border-radius:6px; box-shadow:0 1px 2px rgba(0,0,0,0.03); margin-bottom:12px; }
+    .status-message{ margin-top:8px; font-style:italic; }
+    .filter-group{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:12px; }
+    .filter-group label{ display:flex; flex-direction:column; font-size:13px; color:var(--muted); }
+    .filter-group input{ padding:6px 8px; width:120px; border-radius:4px; border:1px solid #ddd; }
+    .filter-group button{ background:var(--blue); color:#fff; border:0; padding:6px 10px; border-radius:6px; cursor:pointer; }
+    table{ width:100%; border-collapse:collapse; background:#fff; border-radius:6px; overflow:hidden; box-shadow:0 1px 2px rgba(0,0,0,0.04); }
+    th{ background:var(--dark-blue); color:#fff; padding:8px; text-align:left; font-size:13px; }
+    td{ padding:8px; border-bottom:1px solid #eee; font-size:13px; vertical-align:middle; }
+    .action-btn{ margin-right:6px; padding:4px 8px; border-radius:4px; border:0; cursor:pointer; font-size:12px; }
+    .edit-btn{ background:#4da6ff; color:#fff; }
+    .save-btn{ background:#28a745; color:#fff; }
+    .cancel-btn{ background:#777; color:#fff; }
+    .delete-btn{ background:#e04b4b; color:#fff; }
+    .small{ font-size:12px; color:var(--muted); }
+    .hidden{ display:none; }
+    @media (max-width:900px){ .filter-group input{ width:100px; } }
+  </style>
 </head>
 <body>
+  <header>Ndarboe.net</header>
 
-<h2>Order Management</h2>
+  <div class="container">
+    <nav class="sidebar">
+      <ul>
+        <li class="menu-item active" data-menu="upload">Upload File</li>
+        <li class="menu-item" data-menu="lembar">Lembar Kerja</li>
+        <li class="menu-item" data-menu="summary">Summary CRM</li>
+        <li class="menu-item" data-menu="download">Download Excel</li>
+      </ul>
+    </nav>
 
-<div id="filter-bar">
-  <label for="filter-room">Room:</label>
-  <input type="text" id="filter-room" placeholder="Filter Room" />
+    <main class="content">
+      <!-- Upload -->
+      <section id="upload" class="content-section active">
+        <h2>Upload File</h2>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px;">
+          <label>
+            <div class="small">Pilih Jenis File</div>
+            <select id="file-select">
+              <option value="IW39">IW39</option>
+              <option value="SUM57">SUM57</option>
+              <option value="Planning">Planning</option>
+              <option value="Budget">Budget</option>
+              <option value="Data1">Data1</option>
+              <option value="Data2">Data2</option>
+            </select>
+          </label>
 
-  <label for="filter-order">Order:</label>
-  <input type="text" id="filter-order" placeholder="Filter Order" />
+          <label>
+            <div class="small">Pilih File (.xlsx)</div>
+            <input type="file" id="file-input" accept=".xlsx,.xls" />
+          </label>
 
-  <label for="filter-cph">CPH:</label>
-  <input type="text" id="filter-cph" placeholder="Filter CPH" />
+          <div style="display:flex;gap:8px;">
+            <button id="upload-btn">Upload</button>
+            <button id="clear-files-btn" style="background:#777;color:#fff;border:0;padding:6px 10px;border-radius:6px;cursor:pointer">Clear</button>
+          </div>
+        </div>
 
-  <label for="filter-mat">MAT:</label>
-  <input type="text" id="filter-mat" placeholder="Filter MAT" />
+        <div id="upload-status" class="small"></div>
+        <div class="small" style="margin-top:10px;color:var(--muted)">
+          Catatan: Upload semua file sumber (IW39, SUM57, Planning, Data1, Data2) sebelum klik <strong>Lembar Kerja → Refresh</strong>.
+        </div>
+      </section>
 
-  <label for="filter-section">Section:</label>
-  <input type="text" id="filter-section" placeholder="Filter Section" />
+      <!-- Lembar Kerja -->
+      <section id="lembar" class="content-section">
+        <h2>Lembar Kerja</h2>
 
-  <label for="filter-month">Month:</label>
-  <select id="filter-month">
-    <option value="">-- All --</option>
-  </select>
+        <div class="add-order-section">
+          <label for="add-order-input">Masukkan Order (pisah dengan koma atau enter):</label><br />
+          <textarea id="add-order-input" rows="3" placeholder="Contoh: ORD004 ORD005 ORD006"></textarea>
+          <br />
+          <button id="add-order-btn" style="margin-top:8px">Add Orders</button>
+          <div id="add-order-status" class="status-message"></div>
+        </div>
 
-  <button id="filter-btn">Filter</button>
-  <button id="reset-btn">Reset</button>
-</div>
+        <div class="filter-group">
+          <label>Room: <input type="text" id="filter-room" placeholder="Filter Room" /></label>
+          <label>Order: <input type="text" id="filter-order" placeholder="Filter Order" /></label>
+          <label>CPH: <input type="text" id="filter-cph" placeholder="Filter CPH" /></label>
+          <label>MAT: <input type="text" id="filter-mat" placeholder="Filter MAT" /></label>
+          <label>Section: <input type="text" id="filter-section" placeholder="Filter Section" /></label>
+          <label>Month:
+            <select id="filter-month" style="width:100px; padding:4px; border-radius:4px; border:1px solid #ddd;">
+              <option value="">-- All --</option>
+            </select>
+          </label>
 
-<div>
-  <input type="text" id="add-order-input" placeholder="Add orders (comma or space separated)" />
-  <button id="add-order-btn">Add Orders</button>
-  <span id="add-order-status"></span>
-</div>
+          <div style="margin-left:auto;display:flex;gap:8px;">
+            <button id="filter-btn">Filter</button>
+            <button id="reset-btn">Reset</button>
+            <button id="refresh-btn">Refresh</button>
+            <button id="save-btn">Save</button>
+            <button id="load-btn">Load</button>
+          </div>
+        </div>
 
-<table id="output-table">
-  <thead>
-    <tr>
-      <th>Room</th>
-      <th>Order Type</th>
-      <th>Order</th>
-      <th>Description</th>
-      <th>Created On</th>
-      <th>User Status</th>
-      <th>MAT</th>
-      <th>CPH</th>
-      <th>Section</th>
-      <th>Status Part</th>
-      <th>Aging</th>
-      <th>Month</th>
-      <th>Cost</th>
-      <th>Reman</th>
-      <th>Include</th>
-      <th>Exclude</th>
-      <th>Planning</th>
-      <th>Status AMT</th>
-      <th>Actions</th>
-    </tr>
-  </thead>
-  <tbody>
-    <!-- Table rows will be rendered here by script.js -->
-  </tbody>
-</table>
+        <div style="overflow:auto;max-height:520px;">
+          <table id="output-table">
+            <thead>
+              <tr>
+                <th>Room</th>
+                <th>Order Type</th>
+                <th>Order</th>
+                <th>Description</th>
+                <th>Created On</th>
+                <th>User Status</th>
+                <th>MAT</th>
+                <th>CPH</th>
+                <th>Section</th>
+                <th>Status Part</th>
+                <th>Aging</th>
+                <th>Month</th>
+                <th>Cost</th>
+                <th>Reman</th>
+                <th>Include</th>
+                <th>Exclude</th>
+                <th>Planning</th>
+                <th>Status AMT</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- rows -->
+            </tbody>
+          </table>
+        </div>
+      </section>
 
-<div style="margin-top: 20px;">
-  <button id="save-btn">Save to Excel</button>
-  <button id="save-json-btn">Save to JSON</button>
-  <button id="load-btn">Load JSON Backup</button>
-</div>
+      <section id="summary" class="content-section">
+        <h2>Summary CRM</h2>
+        <p class="small">(Kosong dulu, nanti kita isi)</p>
+      </section>
 
-<div id="upload-status" style="margin-top: 10px; font-weight: bold;"></div>
+      <section id="download" class="content-section">
+        <h2>Download Excel</h2>
+        <p class="small">(Nanti kita tambahin fitur export)</p>
+      </section>
+    </main>
+  </div>
 
-<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
-<script src="script.js"></script>
-
+  <script src="script.js"></script>
 </body>
 </html>
