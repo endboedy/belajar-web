@@ -1,29 +1,27 @@
-/* script.js
- - Upload / parse Excel files (XLSX)
- - Merge IW39 + lookups (Data1, Data2, SUM57, Planning)
- - Render table, filter, edit Month/Reman, delete rows
-*/
+// script.js - Ndarboe.net (FINAL for client-side merging & Lembar Kerja)
+// Dependencies: XLSX (already included in index.html)
 
-// --------- Global data stores ----------
-let iw39Data = [];      // array of objects from IW39
-let sum57Data = [];     // array from SUM57
-let planningData = [];  // array from Planning
-let data1Data = [];     // Data1
-let data2Data = [];     // Data2
-let budgetData = [];    // Budget (unused currently)
+// ---------------------- Global stores ----------------------
+let iw39Data = [];      // rows from IW39
+let sum57Data = [];     // rows from SUM57
+let planningData = [];  // rows from Planning
+let data1Data = [];     // rows from Data1
+let data2Data = [];     // rows from Data2
+let budgetData = [];    // rows from Budget (optional)
 
-let mergedData = [];    // result of mergeData()
-// localStorage keys
-const LS_KEY = "ndarboe_lembar_data_v1";
+let mergedData = [];    // result after mergeData()
 
-// helpful utilities to read flexible column names
+// small UI state saved in localStorage (only tiny settings)
+const UI_LS_KEY = "ndarboe_ui_state_v1";
+
+// ---------------------- Utilities ----------------------
 function getVal(row, candidates){
   if(!row) return undefined;
   for(const c of candidates){
-    if(c in row && row[c] !== undefined && row[c] !== null) return row[c];
-    // also try trimmed lowercase match
+    if(c in row && row[c] !== undefined && row[c] !== null && row[c] !== "") return row[c];
+    // try case-insensitive match
     for(const k of Object.keys(row)){
-      if(k.toLowerCase() === c.toLowerCase()){
+      if(k.toLowerCase() === c.toLowerCase() && row[k] !== "" && row[k] !== null && row[k] !== undefined) {
         return row[k];
       }
     }
@@ -32,21 +30,33 @@ function getVal(row, candidates){
 }
 function safeNum(v){
   if(v === undefined || v === null || v === "" ) return NaN;
-  const n = Number(String(v).toString().replace(/[^0-9\.\-]/g,""));
+  // remove non-numeric except dot and minus
+  const n = Number(String(v).replace(/[^0-9\.\-]/g,""));
   return isNaN(n)? NaN : n;
 }
+function downloadFile(filename, content, mime){
+  const blob = new Blob([content], { type: mime || 'application/octet-stream' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
 
-// ---------- XLSX parsing ----------
-function parseFile(file, destKey){
+// ---------------------- XLSX parse ----------------------
+function parseFileToJson(file){
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = (e) => {
       try{
-        const data = e.target.result;
-        const workbook = XLSX.read(data, { type: 'binary' });
-        const firstSheetName = workbook.SheetNames[0];
-        const sheet = workbook.Sheets[firstSheetName];
-        const json = XLSX.utils.sheet_to_json(sheet, { defval: "" });
+        const bin = e.target.result;
+        const wb = XLSX.read(bin, { type: 'binary' });
+        const firstSheet = wb.SheetNames[0];
+        const ws = wb.Sheets[firstSheet];
+        const json = XLSX.utils.sheet_to_json(ws, { defval: "" });
         resolve(json);
       } catch(err){
         reject(err);
@@ -57,19 +67,19 @@ function parseFile(file, destKey){
   });
 }
 
-// ---------- Merge logic ----------
+// ---------------------- Merge Logic (core) ----------------------
 function mergeData(){
   mergedData = [];
 
   if(!iw39Data || iw39Data.length === 0){
-    alert("IW39 belum di-upload atau kosong. Upload IW39 dulu.");
+    alert("IW39 belum di-upload. Upload IW39 dulu lalu klik Refresh.");
     return;
   }
 
-  // create lookup maps for faster search (keyed by Order or MAT depending)
+  // prepare lookup maps
   const sum57ByKey = new Map();
   sum57Data.forEach(r => {
-    const k = (getVal(r, ["Order","Order No","Order_No","OrderID","Key"]) || "").toString().trim();
+    const k = (getVal(r, ["Order","Order No","Order_No","Key","No"]) || "").toString().trim();
     if(k) sum57ByKey.set(k, r);
   });
 
@@ -81,8 +91,8 @@ function mergeData(){
 
   const data2ByMat = new Map();
   data2Data.forEach(r => {
-    const matKey = (getVal(r, ["MAT","Mat","Material","Key"]) || "").toString().trim();
-    if(matKey) data2ByMat.set(matKey, r);
+    const mk = (getVal(r, ["MAT","Mat","Material","Key"]) || "").toString().trim();
+    if(mk) data2ByMat.set(mk, r);
   });
 
   const planningByOrder = new Map();
@@ -91,7 +101,7 @@ function mergeData(){
     if(ord) planningByOrder.set(ord, r);
   });
 
-  // iterate IW39 rows
+  // iterate IW39 rows and build merged rows
   iw39Data.forEach(row => {
     const order = (getVal(row, ["Order","Order No","Order_No","ORD","Key"]) || "").toString().trim();
     const room = getVal(row, ["Room","ROOM","Location","Lokasi"]) || "";
@@ -101,50 +111,45 @@ function mergeData(){
     const userStatus = getVal(row, ["User Status","UserStatus","Status User"]) || "";
     const mat = (getVal(row, ["MAT","Mat","Material"]) || "").toString().trim();
 
-    // Cost formula uses TotalPlan & TotalActual in IW39
+    // Cost uses TotalPlan & TotalActual
     const totalPlan = safeNum(getVal(row, ["TotalPlan","Total Plan","Plan","Total_Plan","TotalPlan."]));
     const totalActual = safeNum(getVal(row, ["TotalActual","Total Actual","Actual","Total_Actual"]));
-    let cost = NaN;
+    let cost;
     if(!isNaN(totalPlan) && !isNaN(totalActual)){
-      cost = (totalPlan - totalActual) / 16500;
-      if(cost < 0) cost = "-";
-      else cost = Math.round((cost + Number.EPSILON) * 100) / 100; // 2 decimals
+      const calc = (totalPlan - totalActual) / 16500;
+      cost = (calc < 0) ? "-" : Number(Math.round((calc + Number.EPSILON) * 100) / 100).toFixed(2);
     } else {
       cost = "-";
     }
 
-    // CPH: if MAT starts with JR => "JR" else lookup in data2 by MAT, field named CPH or similar
+    // CPH lookup rule
     let cph = "";
     if(mat && mat.toUpperCase().startsWith("JR")) {
       cph = "JR";
+    } else if(mat && data2ByMat.has(mat)){
+      cph = getVal(data2ByMat.get(mat), ["CPH","Cph","cph","CPH Code","Code"]) || "";
     } else {
-      const d2 = data2ByMat.get(mat);
-      if(d2){
-        cph = getVal(d2, ["CPH","Cph","cph","CPH Code","Code"]) || "";
-      } else {
-        cph = "";
-      }
+      cph = "";
     }
 
-    // Section: lookup in Data1 by key (we try by Order OR MAT)
+    // Section from Data1 by Order or MAT
     let section = "";
-    let secSource = null;
-    if(order && data1ByKey.has(order)) {
-      secSource = data1ByKey.get(order);
+    if(order && data1ByKey.has(order)){
+      section = getVal(data1ByKey.get(order), ["Section","Section Name","SectionName","SECTION"]) || "";
     } else if(mat && data1ByKey.has(mat)){
-      secSource = data1ByKey.get(mat);
+      section = getVal(data1ByKey.get(mat), ["Section","Section Name","SectionName","SECTION"]) || "";
     } else {
-      // try fuzzy by some column in Data1 that matches Room or other
+      // fallback: try to find a match where some column equals order
       for(const v of data1Data){
-        const k = (getVal(v, ["Key","Order","MAT","Equipment"]) || "").toString();
-        if(k && k === order){ secSource = v; break; }
+        const k = (getVal(v, ["Key","Order","MAT","Equipment"]) || "").toString().trim();
+        if(k === order || k === mat){
+          section = getVal(v, ["Section","Section Name","SectionName","SECTION"]) || "";
+          break;
+        }
       }
     }
-    if(secSource){
-      section = getVal(secSource, ["Section","Section Name","SectionName","SECTION"]) || "";
-    }
 
-    // Status Part & Aging: lookup in SUM57 by Order or MAT
+    // Status Part & Aging from SUM57 (by Order or MAT)
     let statusPart = "";
     let aging = "";
     const sumRow = sum57ByKey.get(order) || sum57ByKey.get(mat);
@@ -153,7 +158,7 @@ function mergeData(){
       aging = getVal(sumRow, ["Aging","Age"]) || "";
     }
 
-    // Planning & Status AMT from Planning lookup by Order
+    // Planning & Status AMT
     let planning = "";
     let statusAMT = "";
     const pRow = planningByOrder.get(order);
@@ -162,30 +167,24 @@ function mergeData(){
       statusAMT = getVal(pRow, ["Status AMT","StatusAMT","AMT Status","Status"]) || "";
     }
 
-    // Default month & reman if previously saved? We'll default to "".
+    // Month & Reman defaults (may be empty)
     let month = getVal(row, ["Month"]) || "";
     let reman = getVal(row, ["Reman"]) || "";
 
-    // Include calculation
-    let include = "-";
-    if(cost === "-") {
+    // Include calculation (depends on reman & cost)
+    let include;
+    if(cost === "-" || cost === undefined) {
       include = "-";
     } else {
       const costNum = Number(cost);
-      if(String(reman).toLowerCase() === "reman".toLowerCase()){
-        include = Math.round((costNum * 0.25 + Number.EPSILON) * 100) / 100;
-      } else {
-        include = costNum;
-      }
+      if(String(reman).toLowerCase() === "reman") include = Number(Math.round((costNum * 0.25 + Number.EPSILON) * 100) / 100).toFixed(2);
+      else include = Number(costNum).toFixed(2);
     }
 
-    // Exclude calculation
-    let exclude = "";
-    if(String(orderType).trim().toUpperCase() === "PM38") {
-      exclude = "-";
-    } else {
-      exclude = include;
-    }
+    // Exclude
+    let exclude;
+    if(String(orderType).trim().toUpperCase() === "PM38") exclude = "-";
+    else exclude = include;
 
     const mergedRow = {
       Room: room,
@@ -205,44 +204,53 @@ function mergeData(){
       Include: include,
       Exclude: exclude,
       Planning: planning,
-      "Status AMT": statusAMT
+      "Status AMT": statusAMT,
+      // Keep original IW39 totals in case user wants to export full data
+      _IW39_totalPlan: isNaN(totalPlan) ? "" : totalPlan,
+      _IW39_totalActual: isNaN(totalActual) ? "" : totalActual
     };
 
     mergedData.push(mergedRow);
   });
 
-  // if we previously saved user edits in localStorage, re-apply Month/Reman edits
-  const saved = loadFromLocal();
-  if(saved && Array.isArray(saved.mergedData)){
-    // match by Order and reapply month/reman
-    const savedMap = new Map(saved.mergedData.map(r => [r.Order, r]));
-    mergedData = mergedData.map(r => {
-      const s = savedMap.get(r.Order);
-      if(s){
-        if(s.Month !== undefined) r.Month = s.Month;
-        if(s.Reman !== undefined) r.Reman = s.Reman;
-        // recalc include/exclude based on possibly updated Reman
-        if(r.Cost !== "-" && !isNaN(Number(r.Cost))){
-          const costNum = Number(r.Cost);
-          r.Include = (String(r.Reman).toLowerCase() === "reman") ? Math.round((costNum*0.25+Number.EPSILON)*100)/100 : costNum;
-        } else {
-          r.Include = "-";
-        }
-        r.Exclude = (String(r["Order Type"]).trim().toUpperCase() === "PM38") ? "-" : r.Include;
+  // Re-apply any previously user-edits saved in small UI state (if present)
+  // (We do not store full mergedData to localStorage to avoid quota)
+  const uiStateRaw = localStorage.getItem(UI_LS_KEY);
+  if(uiStateRaw){
+    try {
+      const ui = JSON.parse(uiStateRaw);
+      if(ui && Array.isArray(ui.userEdits)){
+        const editMap = new Map(ui.userEdits.map(r => [r.Order, r]));
+        mergedData = mergedData.map(r => {
+          const s = editMap.get(r.Order);
+          if(s){
+            if(s.Month !== undefined) r.Month = s.Month;
+            if(s.Reman !== undefined) r.Reman = s.Reman;
+            // recalc include/exclude
+            if(r.Cost !== "-" && !isNaN(Number(r.Cost))){
+              const costNum = Number(r.Cost);
+              r.Include = (String(r.Reman).toLowerCase() === "reman") ? Number(Math.round((costNum*0.25+Number.EPSILON)*100)/100).toFixed(2) : Number(costNum).toFixed(2);
+            } else {
+              r.Include = "-";
+            }
+            r.Exclude = (String(r["Order Type"]).trim().toUpperCase() === "PM38") ? "-" : r.Include;
+          }
+          return r;
+        });
       }
-      return r;
-    });
+    } catch(e){
+      console.warn("UI state parse failed:", e);
+    }
   }
-
-  // finished
 }
 
-// ---------- Render table ----------
+// ---------------------- Render table ----------------------
 function renderTable(data){
   const tbody = document.querySelector("#output-table tbody");
   tbody.innerHTML = "";
 
-  if(!data || data.length === 0){
+  const rows = Array.isArray(data) ? data : mergedData;
+  if(!rows || rows.length === 0){
     const tr = document.createElement("tr");
     const td = document.createElement("td");
     td.colSpan = 19;
@@ -253,7 +261,7 @@ function renderTable(data){
     return;
   }
 
-  data.forEach((row, idx) => {
+  rows.forEach((row, idx) => {
     const tr = document.createElement("tr");
 
     const addCell = (val) => {
@@ -273,7 +281,8 @@ function renderTable(data){
     tr.appendChild(addCell(row.Section));
     tr.appendChild(addCell(row["Status Part"]));
     tr.appendChild(addCell(row.Aging));
-    // Month (editable)
+
+    // Month cell (editable)
     const tdMonth = document.createElement("td");
     tdMonth.textContent = row.Month || "";
     tdMonth.dataset.col = "Month";
@@ -291,9 +300,8 @@ function renderTable(data){
     tr.appendChild(addCell(row.Planning));
     tr.appendChild(addCell(row["Status AMT"]));
 
-    // Actions
+    // Action cell
     const tdAction = document.createElement("td");
-
     const editBtn = document.createElement("button");
     editBtn.textContent = "Edit";
     editBtn.className = "action-btn edit-btn";
@@ -304,27 +312,29 @@ function renderTable(data){
     delBtn.textContent = "Delete";
     delBtn.className = "action-btn delete-btn";
     delBtn.addEventListener("click", () => {
-      if(confirm("Hapus baris order " + row.Order + " ?")){
-        mergedData.splice(idx,1);
-        saveToLocal(); // persist
+      if(confirm("Hapus baris order " + (row.Order || "") + " ?")){
+        // remove from mergedData by matching Order (safe if table filtered)
+        const globalIndex = mergedData.findIndex(r => r.Order === row.Order);
+        if(globalIndex !== -1) mergedData.splice(globalIndex, 1);
+        // also remove any saved UI edit for this order
+        removeUserEdit(row.Order);
         renderTable(mergedData);
       }
     });
     tdAction.appendChild(delBtn);
 
     tr.appendChild(tdAction);
-
     tbody.appendChild(tr);
   });
 }
 
-// ---------- Edit row inline ----------
+// ---------------------- Edit row inline ----------------------
 function startEditRow(index, trElement){
-  // replace Month cell with select and Reman cell with input, change Edit -> Save/Cancel
+  // index is index w.r.t. the currently shown set used in renderTable
+  // but renderTable uses mergedData by default, so idx is global index in mergedData
   const row = mergedData[index];
   if(!row) return;
 
-  // get Month td (12th cell: index 11)
   const monthTd = trElement.querySelector('td[data-col="Month"]');
   const remanTd = trElement.querySelector('td[data-col="Reman"]');
   if(!monthTd || !remanTd) return;
@@ -349,7 +359,7 @@ function startEditRow(index, trElement){
   remanTd.innerHTML = "";
   remanTd.appendChild(remInput);
 
-  // action cell buttons
+  // action cell: replace with Save & Cancel
   const actionTd = trElement.querySelector('td:last-child');
   actionTd.innerHTML = "";
 
@@ -357,20 +367,22 @@ function startEditRow(index, trElement){
   saveBtn.textContent = "Save";
   saveBtn.className = "action-btn save-btn";
   saveBtn.addEventListener("click", () => {
-    // apply edits
+    // apply changes to mergedData
     row.Month = sel.value;
     row.Reman = remInput.value;
 
-    // recalc include/exclude
+    // recalc Include & Exclude
     if(row.Cost !== "-" && !isNaN(Number(row.Cost))){
       const costNum = Number(row.Cost);
-      row.Include = (String(row.Reman).toLowerCase() === "reman") ? Math.round((costNum*0.25+Number.EPSILON)*100)/100 : costNum;
+      row.Include = (String(row.Reman).toLowerCase() === "reman") ? Number(Math.round((costNum*0.25+Number.EPSILON)*100)/100).toFixed(2) : Number(costNum).toFixed(2);
     } else {
       row.Include = "-";
     }
     row.Exclude = (String(row["Order Type"]).trim().toUpperCase() === "PM38") ? "-" : row.Include;
 
-    saveToLocal();
+    // persist edit to small UI state
+    saveUserEdit(row.Order, { Order: row.Order, Month: row.Month, Reman: row.Reman });
+
     renderTable(mergedData);
   });
   actionTd.appendChild(saveBtn);
@@ -384,9 +396,37 @@ function startEditRow(index, trElement){
   actionTd.appendChild(cancelBtn);
 }
 
-// ---------- Filter & Reset ----------
+// ---------------------- User edit persistence (small) ----------------------
+function saveUserEdit(orderKey, editObj){
+  // only keep small array of edits in localStorage to reapply after merge (not full dataset)
+  let uiState = { userEdits: [] };
+  try {
+    const raw = localStorage.getItem(UI_LS_KEY);
+    if(raw) uiState = JSON.parse(raw);
+  } catch(e){}
+  // remove existing for same key
+  uiState.userEdits = uiState.userEdits.filter(r => r.Order !== orderKey);
+  uiState.userEdits.push(editObj);
+  try {
+    localStorage.setItem(UI_LS_KEY, JSON.stringify(uiState));
+  } catch(e){
+    console.warn("Gagal menyimpan UI state:", e);
+  }
+}
+function removeUserEdit(orderKey){
+  try {
+    const raw = localStorage.getItem(UI_LS_KEY);
+    if(!raw) return;
+    const uiState = JSON.parse(raw);
+    uiState.userEdits = uiState.userEdits.filter(r => r.Order !== orderKey);
+    localStorage.setItem(UI_LS_KEY, JSON.stringify(uiState));
+  } catch(e){}
+}
+
+// ---------------------- Filter / Reset ----------------------
 function filterData(){
   let filtered = mergedData.slice();
+
   const room = document.getElementById("filter-room").value.trim().toLowerCase();
   const order = document.getElementById("filter-order").value.trim().toLowerCase();
   const cph = document.getElementById("filter-cph").value.trim().toLowerCase();
@@ -403,12 +443,13 @@ function filterData(){
 }
 function resetFilter(){
   ["filter-room","filter-order","filter-cph","filter-mat","filter-section"].forEach(id => {
-    document.getElementById(id).value = "";
+    const el = document.getElementById(id);
+    if(el) el.value = "";
   });
   renderTable(mergedData);
 }
 
-// ---------- Add Orders (manual) ----------
+// ---------------------- Add Orders manual ----------------------
 function addOrders(){
   const input = document.getElementById("add-order-input").value.trim();
   const status = document.getElementById("add-order-status");
@@ -420,22 +461,17 @@ function addOrders(){
   const orders = input.split(/[\s,]+/).filter(o => o.length>0);
   let added = 0;
   orders.forEach(o => {
-    // check if already exists
-    if(mergedData.find(r => r.Order === o)) return;
-    // try to find IW39 row for that order
+    if(mergedData.find(r => r.Order === o)) return; // skip duplicates
+    // try find full IW39 row
     const iw = iw39Data.find(r => {
       const val = (getVal(r, ["Order","Order No","Order_No","Key"]) || "").toString().trim();
       return val === o;
     });
     if(iw){
-      // rebuild single merged row from iw
-      iw39Data = iw39Data; // no-op
-      // run mergeData for all then push? For simplicity, push one built row by using merge approach
-      const tempIw = [iw];
-      const prevIw = iw39Data;
-      // quick local merge for this one:
-      // reuse mergeData logic by temporarily assigning iw39Data to [iw], but better to reconstruct this row:
-      // We'll just push object with core fields; user can refresh to get full lookup
+      // build merged row for this single IW row using same logic (re-using mergeData approach)
+      const tempIw39 = [iw];
+      // quick single-row merge function - reuse code path: easier to just call mergeData after adding nothing
+      // For simplicity we'll push minimal row (user can click Refresh to rebuild full mergedData)
       mergedData.push({
         Room: getVal(iw, ["Room","ROOM","Location"]) || "",
         "Order Type": getVal(iw, ["Order Type","OrderType"]) || "",
@@ -458,7 +494,6 @@ function addOrders(){
       });
       added++;
     } else {
-      // create minimal row if IW39 doesn't have it
       mergedData.push({
         Room: "",
         "Order Type": "",
@@ -486,133 +521,166 @@ function addOrders(){
   document.getElementById("add-order-status").textContent = `${added} order berhasil ditambahkan.`;
   document.getElementById("add-order-status").style.color = "green";
   document.getElementById("add-order-input").value = "";
-  saveToLocal();
   renderTable(mergedData);
 }
 
-// ---------- Save / Load local ----------
-function saveToLocal(){
-  const payload = {
-    timestamp: Date.now(),
-    iw39Data, sum57Data, planningData, data1Data, data2Data, budgetData,
-    mergedData
-  };
-  localStorage.setItem(LS_KEY, JSON.stringify(payload));
-  console.log("Disimpan ke localStorage");
-}
-function loadFromLocal(){
-  const raw = localStorage.getItem(LS_KEY);
-  if(!raw) return null;
-  try{
-    return JSON.parse(raw);
-  }catch(e){
-    return null;
+// ---------------------- Export mergedData to Excel ----------------------
+function exportMergedToExcel(){
+  if(!mergedData || mergedData.length === 0){
+    alert("Tidak ada data untuk diexport.");
+    return;
   }
+  // Prepare sheet rows (remove _IW39 keys)
+  const exportRows = mergedData.map(r => {
+    const o = Object.assign({}, r);
+    delete o._IW39_totalPlan;
+    delete o._IW39_totalActual;
+    return o;
+  });
+
+  const ws = XLSX.utils.json_to_sheet(exportRows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Merged");
+  const wbout = XLSX.write(wb, { bookType:'xlsx', type:'binary' });
+
+  // binary string to ArrayBuffer
+  function s2ab(s) {
+    const buf = new ArrayBuffer(s.length);
+    const view = new Uint8Array(buf);
+    for (let i=0; i<s.length; i++) view[i] = s.charCodeAt(i) & 0xFF;
+    return buf;
+  }
+  downloadFile("merged_ndarboe.xlsx", s2ab(wbout), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
 }
 
-// ---------- UI handlers ----------
+// ---------------------- Import/Export JSON (backup) ----------------------
+function downloadJSONBackup(){
+  const payload = { iw39Data, sum57Data, planningData, data1Data, data2Data, budgetData, mergedData, timestamp: new Date().toISOString() };
+  downloadFile("ndarboe_backup.json", JSON.stringify(payload, null, 2), "application/json");
+}
+function loadJSONBackupFile(file){
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const obj = JSON.parse(e.target.result);
+      iw39Data = obj.iw39Data || [];
+      sum57Data = obj.sum57Data || [];
+      planningData = obj.planningData || [];
+      data1Data = obj.data1Data || [];
+      data2Data = obj.data2Data || [];
+      budgetData = obj.budgetData || [];
+      mergedData = obj.mergedData || [];
+      renderTable(mergedData);
+      alert("Backup JSON dimuat.");
+    } catch(err){
+      alert("Gagal memuat JSON: " + err.message);
+    }
+  };
+  reader.readAsText(file);
+}
+
+// ---------------------- UI wiring ----------------------
 function wireUp(){
-  // menu
-  document.querySelectorAll(".menu-item").forEach(it => {
-    it.addEventListener("click", () => {
-      document.querySelectorAll(".menu-item").forEach(i=>i.classList.remove("active"));
-      document.querySelectorAll(".content-section").forEach(s=>s.classList.remove("active"));
-      it.classList.add("active");
-      const m = it.dataset.menu;
-      const sec = document.getElementById(m);
+  // Sidebar menu switching
+  document.querySelectorAll(".menu-item").forEach(item => {
+    item.addEventListener("click", () => {
+      document.querySelectorAll(".menu-item").forEach(i => i.classList.remove("active"));
+      document.querySelectorAll(".content-section").forEach(s => s.classList.remove("active"));
+      item.classList.add("active");
+      const menu = item.getAttribute("data-menu");
+      const sec = document.getElementById(menu);
       if(sec) sec.classList.add("active");
     });
   });
 
-  // upload
+  // Upload button
   document.getElementById("upload-btn").addEventListener("click", async () => {
     const sel = document.getElementById("file-select").value;
     const f = document.getElementById("file-input").files[0];
     if(!f){ alert("Pilih file terlebih dahulu"); return; }
     document.getElementById("upload-status").textContent = `Parsing ${f.name} ...`;
-    try{
-      const json = await parseFile(f, sel);
-      if(sel === "IW39") iw39Data = json;
-      else if(sel === "SUM57") sum57Data = json;
-      else if(sel === "Planning") planningData = json;
-      else if(sel === "Data1") data1Data = json;
-      else if(sel === "Data2") data2Data = json;
-      else if(sel === "Budget") budgetData = json;
+    try {
+      const json = await parseFileToJson(f);
+      switch(sel){
+        case "IW39": iw39Data = json; break;
+        case "SUM57": sum57Data = json; break;
+        case "Planning": planningData = json; break;
+        case "Data1": data1Data = json; break;
+        case "Data2": data2Data = json; break;
+        case "Budget": budgetData = json; break;
+      }
       document.getElementById("upload-status").textContent = `${sel} loaded (${json.length} rows)`;
-      // keep file input empty for next
       document.getElementById("file-input").value = "";
-      saveToLocal();
-    }catch(err){
+    } catch(err){
       console.error(err);
       alert("Gagal parsing file: " + err.message);
     }
   });
 
+  // Clear files (memory)
   document.getElementById("clear-files-btn").addEventListener("click", () => {
-    if(confirm("Clear semua data yang di-upload (data di memory) ?")){
-      iw39Data=[]; sum57Data=[]; planningData=[]; data1Data=[]; data2Data=[]; budgetData=[];
-      mergedData=[];
-      localStorage.removeItem(LS_KEY);
-      document.getElementById("upload-status").textContent = "Data cleared";
-      renderTable(mergedData);
-    }
+    if(!confirm("Clear semua data yang sudah di-upload di memory?")) return;
+    iw39Data=[]; sum57Data=[]; planningData=[]; data1Data=[]; data2Data=[]; budgetData=[];
+    mergedData=[];
+    document.getElementById("upload-status").textContent = "Data cleared";
+    renderTable([]);
   });
 
-  // Lembar kerja controls
-  document.getElementById("filter-btn").addEventListener("click", filterData);
-  document.getElementById("reset-btn").addEventListener("click", resetFilter);
+  // Refresh (merge)
   document.getElementById("refresh-btn").addEventListener("click", () => {
-    // require IW39
     if(!iw39Data || iw39Data.length === 0){
       alert("Upload IW39 dulu sebelum Refresh.");
       return;
     }
     mergeData();
-    saveToLocal();
     renderTable(mergedData);
     document.getElementById("add-order-status").textContent = "";
   });
 
+  // Add orders
   document.getElementById("add-order-btn").addEventListener("click", addOrders);
 
+  // Filter / Reset
+  document.getElementById("filter-btn").addEventListener("click", filterData);
+  document.getElementById("reset-btn").addEventListener("click", resetFilter);
+
+  // Save (export) merged to Excel
   document.getElementById("save-btn").addEventListener("click", () => {
-    saveToLocal();
-    alert("Tersimpan ke localStorage.");
-  });
-  document.getElementById("load-btn").addEventListener("click", () => {
-    const saved = loadFromLocal();
-    if(saved){
-      iw39Data = saved.iw39Data || [];
-      sum57Data = saved.sum57Data || [];
-      planningData = saved.planningData || [];
-      data1Data = saved.data1Data || [];
-      data2Data = saved.data2Data || [];
-      budgetData = saved.budgetData || [];
-      mergedData = saved.mergedData || [];
-      renderTable(mergedData);
-      alert("Data dimuat dari localStorage.");
-    } else {
-      alert("Tidak ada data di localStorage.");
-    }
+    exportMergedToExcel();
   });
 
-  // try to auto-load previously saved
-  const prev = loadFromLocal();
-  if(prev){
-    iw39Data = prev.iw39Data || [];
-    sum57Data = prev.sum57Data || [];
-    planningData = prev.planningData || [];
-    data1Data = prev.data1Data || [];
-    data2Data = prev.data2Data || [];
-    budgetData = prev.budgetData || [];
-    mergedData = prev.mergedData || [];
-    renderTable(mergedData);
-  } else {
-    renderTable([]);
-  }
+  // Load (backup JSON) - open file input
+  document.getElementById("load-btn").addEventListener("click", () => {
+    // open native file selector
+    const inpf = document.createElement("input");
+    inpf.type = "file";
+    inpf.accept = ".json";
+    inpf.addEventListener("change", (e) => {
+      const f = e.target.files[0];
+      if(f) loadJSONBackupFile(f);
+    });
+    inpf.click();
+  });
+
+  // Export/Import backup JSON buttons (optional quick links)
+  // If you want add explicit buttons for backup in UI, wire them here:
+  // document.getElementById("export-json-btn").addEventListener("click", downloadJSONBackup);
+
+  // Try to load UI state small settings
+  try {
+    const raw = localStorage.getItem(UI_LS_KEY);
+    if(raw){
+      // no heavy data - maybe last active menu etc. (not required)
+      const ui = JSON.parse(raw);
+      // (optional) apply ui settings
+    }
+  } catch(e){}
+
+  // initial render
+  renderTable([]);
 }
 
-// ---------- init ----------
+// ---------------------- Init ----------------------
 window.addEventListener("DOMContentLoaded", () => {
   wireUp();
 });
