@@ -300,57 +300,64 @@ function mergeData() {
 }
 
 /* ===================== RENDER TABLE ===================== */
-function renderTable(data) {
-  const tbody = document.querySelector("#output-table tbody");
-  tbody.innerHTML = "";
-  const rows = Array.isArray(data) ? data : mergedData;
+function attachTableEvents() {
+  document.querySelectorAll(".edit-btn").forEach(btn => {
+    btn.addEventListener("click", function () {
+      const tr = this.closest("tr");
+      const tds = tr.querySelectorAll("td");
 
-  if (!rows.length) {
-    tbody.innerHTML = `<tr><td colspan="19" style="text-align:center;color:#999">Tidak ada data</td></tr>`;
-    return;
-  }
+      // Ambil nilai lama
+      const currentMonth = this.dataset.month;
+      const currentCost  = this.dataset.cost;
+      const currentReman = this.dataset.reman;
 
-  rows.forEach((row, idx) => {
-    const tr = document.createElement("tr");
+      // Buat dropdown Month
+      const monthOptions = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+        .map(m => `<option value="${m}" ${m === currentMonth ? "selected" : ""}>${m}</option>`)
+        .join("");
 
-    const createdOnFmt = formatDateDDMMMYYYY(row["Created On"]);
-    const planningFmt  = formatDateDDMMMYYYY(row.Planning);
+      // Kolom Month (index 11)
+      tds[11].innerHTML = `<select class="edit-month">${monthOptions}</select>`;
 
-    tr.innerHTML = `
-      <td>${safe(row.Room)}</td>
-      <td>${safe(row["Order Type"])}</td>
-      <td>${safe(row.Order)}</td>
-      <td>${safe(row.Description)}</td>
-      <td>${createdOnFmt}</td>
-      <td>${asColoredStatusUser(row["User Status"])}</td>
-      <td>${safe(row.MAT)}</td>
-      <td>${safe(row.CPH)}</td>
-      <td>${safe(row.Section)}</td>
-      <td>${asColoredStatusPart(row["Status Part"])}</td>
-      <td>${safe(row.Aging)}</td>
-      <td>${safe(row.Month)}</td>
-      <td style="text-align:right;">${safe(row.Cost)}</td>
-      <td>${safe(row.Reman)}</td>
-      <td style="text-align:right;">${safe(row.Include)}</td>
-      <td style="text-align:right;">${safe(row.Exclude)}</td>
-      <td>${planningFmt}</td>
-      <td>${asColoredStatusAMT(row["Status AMT"])}</td>
-      <td>
-        <button class="action-btn edit-btn" data-order="${safe(row.Order)}" 
-          data-month="${safe(row.Month)}"
-          data-cost="${safe(row.Cost)}"
-          data-reman="${safe(row.Reman)}">Edit</button>
-        <button class="action-btn delete-btn" data-order="${safe(row.Order)}">Delete</button>
-      </td>
-    `;
-    tbody.appendChild(tr);
+      // Kolom Cost (index 12)
+      tds[12].innerHTML = `<input type="number" class="edit-cost" value="${currentCost}" style="width:80px;text-align:right;">`;
+
+      // Kolom Reman (index 13)
+      tds[13].innerHTML = `
+        <select class="edit-reman">
+          <option value="Yes" ${currentReman === "Yes" ? "selected" : ""}>Yes</option>
+          <option value="No" ${currentReman === "No" ? "selected" : ""}>No</option>
+        </select>`;
+
+      // Ganti tombol Edit jadi Save/Cancel
+      this.outerHTML = `<button class="action-btn save-btn" data-order="${this.dataset.order}">Save</button>
+                        <button class="action-btn cancel-btn">Cancel</button>`;
+
+      // Save action
+      tr.querySelector(".save-btn").addEventListener("click", function () {
+        const order = this.dataset.order;
+        const newMonth = tr.querySelector(".edit-month").value;
+        const newCost = tr.querySelector(".edit-cost").value;
+        const newReman = tr.querySelector(".edit-reman").value;
+
+        // TODO: update data ke array/DB sesuai kebutuhan
+        console.log("Update:", order, newMonth, newCost, newReman);
+      });
+
+      // Cancel action
+      tr.querySelector(".cancel-btn").addEventListener("click", function () {
+        renderTable(); // render ulang tabel biar balik seperti semula
+      });
+    });
   });
 
-  attachTableEvents();
-}
-
-function safe(v) {
-  return (v == null) ? "" : String(v);
+  document.querySelectorAll(".delete-btn").forEach(btn => {
+    btn.addEventListener("click", function () {
+      const orderId = this.dataset.order;
+      console.log("Delete:", orderId);
+      // TODO: hapus data sesuai kebutuhan
+    });
+  });
 }
 
 /* ===================== CELL COLORING ===================== */
@@ -680,4 +687,5 @@ function setupButtons() {
   const addOrderBtn = document.getElementById("add-order-btn");
   if (addOrderBtn) addOrderBtn.onclick = addOrders;
 }
+
 
