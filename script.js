@@ -492,7 +492,7 @@ function addOrders() {
 // -------- Init event listeners ----------
 function init() {
   document.getElementById("upload-btn").onclick = handleUpload;
-  document.getElementById("clear-btn").onclick = clearAllData;
+  document.getElementById("clear-files-btn").onclick = clearAllData;  // sesuai HTML kamu
   document.getElementById("refresh-btn").onclick = refreshData;
   document.getElementById("add-order-btn").onclick = addOrders;
   document.getElementById("filter-room").oninput = filterData;
@@ -501,19 +501,23 @@ function init() {
   document.getElementById("filter-mat").oninput = filterData;
   document.getElementById("filter-section").oninput = filterData;
   document.getElementById("filter-month").onchange = filterData;
-  document.getElementById("reset-filter-btn").onclick = resetFilters;
-  document.getElementById("save-json-btn").onclick = saveToJSON;
-
-  const jsonLoadInput = document.getElementById("load-json-input");
-  jsonLoadInput.onchange = async () => {
-    if (jsonLoadInput.files.length) {
-      await loadFromJSON(jsonLoadInput.files[0]);
-      jsonLoadInput.value = "";
-    }
+  document.getElementById("filter-btn").onclick = filterData;         // tombol Filter manual
+  document.getElementById("reset-btn").onclick = resetFilters;       // tombol Reset sesuai HTML
+  document.getElementById("save-btn").onclick = saveToJSON;
+  document.getElementById("load-btn").onclick = () => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "application/json";
+    input.onchange = () => {
+      if (input.files.length) {
+        loadFromJSON(input.files[0]);
+      }
+    };
+    input.click();
   };
 
   renderTable([]);
 }
-
 // -------- Run init on page load ----------
 window.onload = init;
+
