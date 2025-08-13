@@ -35,14 +35,12 @@ function formatDateDDMMMYYYY(dt) {
   if (!dt) return "";
 
   let d;
+
   if (dt instanceof Date) {
     d = dt;
   } else if (typeof dt === "string" || typeof dt === "number") {
+    // Coba parsing string ke Date
     d = new Date(dt);
-  } else if (typeof dt === "object" && dt !== null) {
-    if (dt.$date) d = new Date(dt.$date);
-    else if (dt.date) d = new Date(dt.date);
-    else return "";
   } else {
     return "";
   }
@@ -187,13 +185,17 @@ function renderTable(data) {
     return;
   }
   data.forEach(row => {
+    // Parsing tanggal Created On dan Planning dengan fallback string
+    const createdOnDate = parseExcelDate(row["Created On"]);
+    const planningDate = parseExcelDate(row.Planning);
+
     tbody.insertAdjacentHTML("beforeend", `
       <tr>
         <td>${row.Room}</td>
         <td>${row["Order Type"]}</td>
         <td>${row.Order}</td>
         <td>${row.Description}</td>
-        <td>${formatDateDDMMMYYYY(row["Created On"])}</td>
+        <td>${formatDateDDMMMYYYY(createdOnDate)}</td>
         <td>${row["User Status"]}</td>
         <td>${row.MAT}</td>
         <td>${row.CPH}</td>
@@ -201,11 +203,11 @@ function renderTable(data) {
         <td>${row["Status Part"]}</td>
         <td>${row.Aging}</td>
         <td>${row.Month}</td>
-        <td>${row.Cost}</td>
+        <td style="text-align:right;">${row.Cost}</td>
         <td>${row.Reman}</td>
-        <td>${row.Include}</td>
-        <td>${row.Exclude}</td>
-        <td>${row.Planning}</td>
+        <td style="text-align:right;">${row.Include}</td>
+        <td style="text-align:right;">${row.Exclude}</td>
+        <td>${formatDateDDMMMYYYY(planningDate)}</td>
         <td>${row["Status AMT"]}</td>
         <td>
           <button class="action-btn edit-btn" data-order="${row.Order}">Edit</button>
@@ -215,6 +217,39 @@ function renderTable(data) {
     `);
   });
   attachTableEvents();
+}
+// Parsing tanggal Excel MM/DD/YYYY atau MM/DD/YYYY hh:mm:ss AM/PM menjadi Date object
+function parseExcelDate(value) {
+  if (!value) return null;
+  if (value instanceof Date) return value;
+
+  // Jika value sudah Date valid
+  const dt = new Date(value);
+  if (!isNaN(dt.getTime())) return dt;
+
+  // Jika string, coba regex format umum (MM/DD/YYYY[ hh:mm:ss AM/PM])
+  const regex = /^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+(\d{1,2}):(\d{2}):(\d{2})\s*(AM|PM)?)?$/i;
+  const m = regex.exec(value.trim());
+  if (m) {
+    let month = parseInt(m[1],10)-1; // zero based
+    let day = parseInt(m[2],10);
+    let year = parseInt(m[3],10);
+    let hour = m[4] ? parseInt(m[4],10) : 0;
+    let minute = m[5] ? parseInt(m[5],10) : 0;
+    let second = m[6] ? parseInt(m[6],10) : 0;
+    const ampm = m[7];
+
+    if (ampm && ampm.toUpperCase() === "PM" && hour < 12) {
+      hour += 12;
+    }
+    if (ampm && ampm.toUpperCase() === "AM" && hour === 12) {
+      hour = 0;
+    }
+    return new Date(year, month, day, hour, minute, second);
+  }
+
+  // Kalau ga match, return null
+  return null;
 }
 
 // -------- Pasang event tombol Edit/Delete ----------
@@ -358,7 +393,6 @@ function deleteOrder(order) {
   const idx = mergedData.findIndex(r => r.Order === order);
   if (idx === -1) return;
   if (!confirm(`Hapus data order ${order} ?`)) return;
-
   mergedData.splice(idx, 1);
   saveUserEdits();
   renderTable(mergedData);
@@ -376,7 +410,7 @@ function filterData() {
   const filtered = mergedData.filter(item => {
     return (
       (!roomFilter || (item.Room && item.Room.toLowerCase().includes(roomFilter))) &&
-      (!orderFilter || (item.Order && item.Order.toLowerCase().includes(orderFilter))) &&
+      (!orderFilter || (item.Order && item.Order.toString().toLowerCase().includes(orderFilter))) &&
       (!cphFilter || (item.CPH && item.CPH.toLowerCase().includes(cphFilter))) &&
       (!matFilter || (item.MAT && item.MAT.toLowerCase().includes(matFilter))) &&
       (!sectionFilter || (item.Section && item.Section.toLowerCase().includes(sectionFilter))) &&
@@ -604,3 +638,4 @@ function init() {
 }
 
 window.onload = init;
+
