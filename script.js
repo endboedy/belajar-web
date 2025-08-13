@@ -47,7 +47,7 @@ function formatDateDDMMMYYYY(dt) {
     return "";
   }
 
-  if (isNaN(d)) return "";
+  if (isNaN(d.getTime())) return "";
 
   const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
   return `${d.getDate().toString().padStart(2,"0")} ${monthNames[d.getMonth()]} ${d.getFullYear()}`;
@@ -57,7 +57,7 @@ function formatDateDDMMMYYYY(dt) {
 function formatDateISO(dateStr) {
   if (!dateStr) return "";
   const d = new Date(dateStr);
-  if (isNaN(d)) return "";
+  if (isNaN(d.getTime())) return "";
   return d.toISOString().split("T")[0];
 }
 
@@ -77,45 +77,78 @@ function mergeData() {
     "Created On": item["Created On"] || "",
     "User Status": item["User Status"] || "",
     MAT: item.MAT || "",
-    CPH: "",
+    CPH: "", // nanti isi di bawah
     Section: "",
     "Status Part": "",
     Aging: "",
     Month: item.Month || "",
     Cost: "",
-    Reman: "",
+    Reman: item.Reman || "",
     Include: "",
     Exclude: "",
     Planning: "",
     "Status AMT": ""
   }));
 
-  // Merge CPH from data2Data by matching MAT (trimmed)
+  // Merge CPH kolom
   mergedData.forEach(md => {
-    const d2 = data2Data.find(d => d.MAT && d.MAT.trim() === md.MAT.trim());
-    md.CPH = d2 ? (d2.CPH || "") : "";
+    if (md.Description && md.Description.substring(0,2).toUpperCase() === "JR") {
+      md.CPH = "External Job";
+    } else {
+      // Lookup dari Data2 berdasarkan MAT
+      const d2 = data2Data.find(d => d.MAT && d.MAT.trim() === md.MAT.trim());
+      md.CPH = d2 ? (d2.CPH || "") : "";
+    }
   });
 
-  // Merge Section from data1Data by matching Room (trimmed)
+  // Merge Section dari data1Data berdasar Room
   mergedData.forEach(md => {
     const d1 = data1Data.find(d => d.Room && d.Room.trim() === md.Room.trim());
     md.Section = d1 ? (d1.Section || "") : "";
   });
 
-  // Merge Aging & Status Part from sum57Data by matching Order
+  // Merge Aging & Status Part dari sum57Data berdasar Order
   mergedData.forEach(md => {
     const s57 = sum57Data.find(s => s.Order === md.Order);
     if (s57) {
       md.Aging = s57.Aging || "";
       md["Status Part"] = s57["Part Complete"] || "";
-      // Asumsi Cost, Include, Exclude dari SUM57 juga ada?
-      if ('Cost' in s57) md.Cost = s57.Cost || "";
-      if ('Include' in s57) md.Include = s57.Include || "";
-      if ('Exclude' in s57) md.Exclude = s57.Exclude || "";
     }
   });
 
-  // Merge Planning data by matching Order
+  // Rumus Cost dari IW39: (Total sum (plan) - Total sum (actual))/16500, jika < 0 maka "-"
+  mergedData.forEach(md => {
+    const iw = iw39Data.find(i => i.Order === md.Order);
+    if (iw && typeof iw["Total sum (plan)"] !== "undefined" && typeof iw["Total sum (actual)"] !== "undefined") {
+      const plan = Number(iw["Total sum (plan)"]) || 0;
+      const actual = Number(iw["Total sum (actual)"]) || 0;
+      let costVal = (plan - actual) / 16500;
+      if (costVal < 0) md.Cost = "-";
+      else md.Cost = costVal.toFixed(2);
+    } else {
+      md.Cost = "";
+    }
+  });
+
+  // Kolom Include = jika Reman = "Reman" maka Cost*0.25, jika kosong sama dengan Cost
+  mergedData.forEach(md => {
+    if (md.Reman && md.Reman.toLowerCase() === "reman") {
+      md.Include = (isNaN(Number(md.Cost)) ? 0 : Number(md.Cost)*0.25).toFixed(2);
+    } else {
+      md.Include = md.Cost;
+    }
+  });
+
+  // Kolom Exclude = jika Order Type = "PM38" maka "-", jika bukan maka sama dengan Include
+  mergedData.forEach(md => {
+    if (md["Order Type"] && md["Order Type"].toUpperCase() === "PM38") {
+      md.Exclude = "-";
+    } else {
+      md.Exclude = md.Include;
+    }
+  });
+
+  // Merge Planning data berdasarkan Order
   mergedData.forEach(md => {
     const pl = planningData.find(p => p.Order === md.Order);
     if (pl) {
@@ -124,7 +157,7 @@ function mergeData() {
     }
   });
 
-  // Restore saved user edits from localStorage
+  // Restore user edits dari localStorage
   try {
     const raw = localStorage.getItem(UI_LS_KEY);
     if (raw) {
@@ -145,7 +178,7 @@ function mergeData() {
   updateMonthFilterOptions();
 }
 
-// -------- Render mergedData to table ----------
+// -------- Render mergedData ke tabel ----------
 function renderTable(data) {
   const tbody = document.querySelector("#output-table tbody");
   tbody.innerHTML = "";
@@ -154,37 +187,37 @@ function renderTable(data) {
     return;
   }
   data.forEach(row => {
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>${row.Room}</td>
-      <td>${row["Order Type"]}</td>
-      <td>${row.Order}</td>
-      <td>${row.Description}</td>
-      <td>${formatDateDDMMMYYYY(row["Created On"])}</td>
-      <td>${row["User Status"]}</td>
-      <td>${row.MAT}</td>
-      <td>${row.CPH}</td>
-      <td>${row.Section}</td>
-      <td>${row["Status Part"]}</td>
-      <td>${row.Aging}</td>
-      <td>${row.Month}</td>
-      <td>${row.Cost}</td>
-      <td>${row.Reman}</td>
-      <td>${row.Include}</td>
-      <td>${row.Exclude}</td>
-      <td>${row.Planning}</td>
-      <td>${row["Status AMT"]}</td>
-      <td>
-        <button class="action-btn edit-btn" data-order="${row.Order}">Edit</button>
-        <button class="action-btn delete-btn" data-order="${row.Order}">Delete</button>
-      </td>
-    `;
-    tbody.appendChild(tr);
+    tbody.insertAdjacentHTML("beforeend", `
+      <tr>
+        <td>${row.Room}</td>
+        <td>${row["Order Type"]}</td>
+        <td>${row.Order}</td>
+        <td>${row.Description}</td>
+        <td>${formatDateDDMMMYYYY(row["Created On"])}</td>
+        <td>${row["User Status"]}</td>
+        <td>${row.MAT}</td>
+        <td>${row.CPH}</td>
+        <td>${row.Section}</td>
+        <td>${row["Status Part"]}</td>
+        <td>${row.Aging}</td>
+        <td>${row.Month}</td>
+        <td>${row.Cost}</td>
+        <td>${row.Reman}</td>
+        <td>${row.Include}</td>
+        <td>${row.Exclude}</td>
+        <td>${row.Planning}</td>
+        <td>${row["Status AMT"]}</td>
+        <td>
+          <button class="action-btn edit-btn" data-order="${row.Order}">Edit</button>
+          <button class="action-btn delete-btn" data-order="${row.Order}">Delete</button>
+        </td>
+      </tr>
+    `);
   });
   attachTableEvents();
 }
 
-// -------- Attach event listeners for Edit/Delete buttons ----------
+// -------- Pasang event tombol Edit/Delete ----------
 function attachTableEvents() {
   document.querySelectorAll(".edit-btn").forEach(btn => {
     btn.onclick = () => startEdit(btn.dataset.order);
@@ -194,7 +227,7 @@ function attachTableEvents() {
   });
 }
 
-// -------- Start editing a row ----------
+// -------- Mulai Edit ----------
 function startEdit(order) {
   const rowIndex = mergedData.findIndex(r => r.Order === order);
   if (rowIndex === -1) return;
@@ -211,15 +244,15 @@ function startEdit(order) {
     <td><input type="date" value="${formatDateISO(rowData["Created On"])}" data-field="Created On" /></td>
     <td><input type="text" value="${rowData["User Status"]}" data-field="User Status" /></td>
     <td><input type="text" value="${rowData.MAT}" data-field="MAT" /></td>
-    <td><input type="text" value="${rowData.CPH}" data-field="CPH" /></td>
+    <td><input type="text" value="${rowData.CPH}" data-field="CPH" readonly /></td>
     <td><input type="text" value="${rowData.Section}" data-field="Section" /></td>
     <td><input type="text" value="${rowData["Status Part"]}" data-field="Status Part" /></td>
     <td><input type="text" value="${rowData.Aging}" data-field="Aging" /></td>
     <td><input type="text" value="${rowData.Month}" data-field="Month" /></td>
-    <td><input type="text" value="${rowData.Cost}" data-field="Cost" /></td>
+    <td><input type="text" value="${rowData.Cost}" data-field="Cost" readonly /></td>
     <td><input type="text" value="${rowData.Reman}" data-field="Reman" /></td>
-    <td><input type="text" value="${rowData.Include}" data-field="Include" /></td>
-    <td><input type="text" value="${rowData.Exclude}" data-field="Exclude" /></td>
+    <td><input type="text" value="${rowData.Include}" data-field="Include" readonly /></td>
+    <td><input type="text" value="${rowData.Exclude}" data-field="Exclude" readonly /></td>
     <td><input type="text" value="${rowData.Planning}" data-field="Planning" /></td>
     <td><input type="text" value="${rowData["Status AMT"]}" data-field="Status AMT" /></td>
     <td>
@@ -232,12 +265,12 @@ function startEdit(order) {
   tr.querySelector(".cancel-btn").onclick = () => cancelEdit(order);
 }
 
-// -------- Cancel editing, restore original row ----------
+// -------- Cancel edit ----------
 function cancelEdit(order) {
   renderTable(mergedData);
 }
 
-// -------- Save edited data ----------
+// -------- Save edit ----------
 function saveEdit(order) {
   const rowIndex = mergedData.findIndex(r => r.Order === order);
   if (rowIndex === -1) return;
@@ -248,8 +281,44 @@ function saveEdit(order) {
 
   inputs.forEach(input => {
     const field = input.dataset.field;
+    // Ignore readonly (CPH, Cost, Include, Exclude) karena hasil formula
+    if (input.hasAttribute("readonly")) return;
     mergedData[rowIndex][field] = input.value;
   });
+
+  // Setelah save, recalculate Cost, Include, Exclude dan CPH jika perlu
+  // CPH recalculated sama seperti sebelumnya
+  const md = mergedData[rowIndex];
+  if (md.Description && md.Description.substring(0,2).toUpperCase() === "JR") {
+    md.CPH = "External Job";
+  } else {
+    const d2 = data2Data.find(d => d.MAT && d.MAT.trim() === md.MAT.trim());
+    md.CPH = d2 ? (d2.CPH || "") : "";
+  }
+
+  // Cost recalculated dari iw39Data berdasar order
+  const iw = iw39Data.find(i => i.Order === md.Order);
+  if (iw && typeof iw["Total sum (plan)"] !== "undefined" && typeof iw["Total sum (actual)"] !== "undefined") {
+    const plan = Number(iw["Total sum (plan)"]) || 0;
+    const actual = Number(iw["Total sum (actual)"]) || 0;
+    let costVal = (plan - actual) / 16500;
+    if (costVal < 0) md.Cost = "-";
+    else md.Cost = costVal.toFixed(2);
+  } else {
+    md.Cost = "";
+  }
+
+  if (md.Reman && md.Reman.toLowerCase() === "reman") {
+    md.Include = (isNaN(Number(md.Cost)) ? 0 : Number(md.Cost)*0.25).toFixed(2);
+  } else {
+    md.Include = md.Cost;
+  }
+
+  if (md["Order Type"] && md["Order Type"].toUpperCase() === "PM38") {
+    md.Exclude = "-";
+  } else {
+    md.Exclude = md.Include;
+  }
 
   saveUserEdits();
   renderTable(mergedData);
@@ -347,82 +416,47 @@ function updateMonthFilterOptions() {
   });
 }
 
-// -------- Save mergedData to JSON file ----------
-function saveToJSON() {
-  if (!mergedData.length) {
-    alert("Tidak ada data untuk disimpan.");
-    return;
-  }
-  const dataStr = JSON.stringify({ mergedData, timestamp: new Date().toISOString() }, null, 2);
-  const blob = new Blob([dataStr], { type: "application/json" });
-  const url = URL.createObjectURL(blob);
-
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `ndarboe_data_${new Date().toISOString().slice(0,10)}.json`;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
-}
-
-// -------- Load JSON file and update mergedData ----------
-async function loadFromJSON(file) {
-  try {
-    const text = await file.text();
-    const obj = JSON.parse(text);
-    if (obj.mergedData && Array.isArray(obj.mergedData)) {
-      mergedData = obj.mergedData;
-      renderTable(mergedData);
-      updateMonthFilterOptions();
-      alert("Data berhasil dimuat dari JSON.");
-    } else {
-      alert("File JSON tidak valid.");
-    }
-  } catch (e) {
-    alert("Gagal membaca file JSON: " + e.message);
-  }
-}
-
-// -------- Upload button handler ----------
+// -------- Handle Upload File ----------
 async function handleUpload() {
-  const fileSelect = document.getElementById("file-select");
   const fileInput = document.getElementById("file-input");
-  const status = document.getElementById("upload-status");
+  const fileSelect = document.getElementById("file-select");
+  const uploadStatus = document.getElementById("upload-status");
 
   if (!fileInput.files.length) {
-    alert("Pilih file terlebih dahulu.");
+    alert("Pilih file dulu!");
     return;
   }
 
   const file = fileInput.files[0];
   const jenis = fileSelect.value;
 
-  status.textContent = `Memproses file ${file.name} sebagai ${jenis}...`;
+  uploadStatus.textContent = `Uploading ${jenis}...`;
 
   try {
-    const json = await parseFile(file);
+    const data = await parseFile(file);
 
-    switch(jenis) {
-      case "IW39": iw39Data = json; break;
-      case "SUM57": sum57Data = json; break;
-      case "Planning": planningData = json; break;
-      case "Data1": data1Data = json; break;
-      case "Data2": data2Data = json; break;
-      case "Budget": budgetData = json; break;
+    switch (jenis) {
+      case "IW39": iw39Data = data; break;
+      case "SUM57": sum57Data = data; break;
+      case "Planning": planningData = data; break;
+      case "Data1": data1Data = data; break;
+      case "Data2": data2Data = data; break;
+      case "Budget": budgetData = data; break;
+      default: alert("Jenis file tidak dikenal!"); return;
     }
 
-    status.textContent = `File ${file.name} berhasil diupload sebagai ${jenis}.`;
-
+    uploadStatus.textContent = `${jenis} berhasil diupload.`;
     fileInput.value = "";
+
   } catch (e) {
-    status.textContent = `Error saat membaca file: ${e.message}`;
+    uploadStatus.textContent = `Error upload: ${e.message || e}`;
   }
 }
 
-// -------- Clear all uploaded data ----------
+// -------- Clear all data ----------
 function clearAllData() {
-  if (!confirm("Yakin ingin menghapus semua data upload?")) return;
+  if (!confirm("Yakin hapus semua data dan reset?")) return;
+
   iw39Data = [];
   sum57Data = [];
   planningData = [];
@@ -431,6 +465,7 @@ function clearAllData() {
   budgetData = [];
   mergedData = [];
   localStorage.removeItem(UI_LS_KEY);
+
   document.getElementById("upload-status").textContent = "";
   renderTable([]);
   updateMonthFilterOptions();
@@ -521,7 +556,14 @@ function setupEvents() {
   document.getElementById("add-order-btn").onclick = addOrders;
   document.getElementById("filter-btn").onclick = filterData;
   document.getElementById("reset-btn").onclick = resetFilters;
-  document.getElementById("save-btn").onclick = saveToJSON;
+  document.getElementById("save-btn").onclick = () => {
+    const dataStr = JSON.stringify(mergedData, null, 2);
+    const blob = new Blob([dataStr], { type: "application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "ndarboe_data.json";
+    a.click();
+  };
 
   document.getElementById("load-btn").onclick = () => {
     const input = document.createElement("input");
@@ -533,6 +575,25 @@ function setupEvents() {
     };
     input.click();
   };
+}
+
+// -------- Load data from JSON file ----------
+function loadFromJSON(file) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (!Array.isArray(data)) throw new Error("JSON tidak valid");
+      mergedData = data;
+      saveUserEdits();
+      renderTable(mergedData);
+      updateMonthFilterOptions();
+      alert("Data berhasil dimuat dari JSON.");
+    } catch (err) {
+      alert("Gagal load JSON: " + err.message);
+    }
+  };
+  reader.readAsText(file);
 }
 
 // -------- Init ----------
