@@ -256,6 +256,28 @@ function startEdit(order) {
   tr.querySelector(".cancel-btn").onclick = () => cancelEdit(order);
 }
 
+// Fungsi setupMenu untuk navigasi sidebar
+function setupMenu() {
+  const menuItems = document.querySelectorAll(".sidebar .menu-item");
+  const contentSections = document.querySelectorAll(".content-section");
+
+  menuItems.forEach(item => {
+    item.addEventListener("click", () => {
+      // Hapus active dari semua menu item
+      menuItems.forEach(i => i.classList.remove("active"));
+      // Set active menu yang diklik
+      item.classList.add("active");
+
+      // Tampilkan content sesuai menu yang dipilih
+      const menuId = item.dataset.menu;
+      contentSections.forEach(sec => {
+        if (sec.id === menuId) sec.classList.add("active");
+        else sec.classList.remove("active");
+      });
+    });
+  });
+}
+
 // Cancel editing: just re-render table
 function cancelEdit(order) {
   renderTable(mergedData);
@@ -444,4 +466,5 @@ document.getElementById("save-btn").addEventListener("click", saveUserEdits);
 window.onload = () => {
   renderTable([]);
 };
+
 
