@@ -34,13 +34,21 @@ async function parseFile(file) {
 function formatDateDDMMMYYYY(dt) {
   if (!dt) return "";
   let d;
-  if (typeof dt === "string") d = new Date(dt);
-  else d = dt;
-  if (isNaN(d)) return dt;
+
+  if (dt instanceof Date) {
+    d = dt;
+  } else if (typeof dt === "string") {
+    // coba parse string ke Date
+    d = new Date(dt);
+  } else {
+    return "";
+  }
+
+  if (isNaN(d)) return "";
+
   const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
   return `${d.getDate().toString().padStart(2,"0")} ${monthNames[d.getMonth()]} ${d.getFullYear()}`;
 }
-
 // -------- Format date to yyyy-mm-dd for input type=date ----------
 function formatDateISO(dateStr) {
   if (!dateStr) return "";
@@ -527,4 +535,5 @@ function init() {
 }
 
 window.onload = init;
+
 
