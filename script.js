@@ -307,55 +307,42 @@ function attachTableEvents() {
       const tds = tr.querySelectorAll("td");
 
       // Ambil nilai lama
-      const currentMonth = this.dataset.month;
-      const currentCost  = this.dataset.cost;
-      const currentReman = this.dataset.reman;
+      const currentMonth = tds[11].textContent.trim();
+      const currentCost  = tds[12].textContent.trim();
+      const currentReman = tds[13].textContent.trim();
 
-      // Buat dropdown Month
-      const monthOptions = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
-        .map(m => `<option value="${m}" ${m === currentMonth ? "selected" : ""}>${m}</option>`)
-        .join("");
-
-      // Kolom Month (index 11)
+      // Dropdown month
+      const monthOptions = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
+        .map(m => `<option value="${m}" ${m===currentMonth?"selected":""}>${m}</option>`).join("");
       tds[11].innerHTML = `<select class="edit-month">${monthOptions}</select>`;
 
-      // Kolom Cost (index 12)
+      // Input cost
       tds[12].innerHTML = `<input type="number" class="edit-cost" value="${currentCost}" style="width:80px;text-align:right;">`;
 
-      // Kolom Reman (index 13)
+      // Dropdown reman
       tds[13].innerHTML = `
         <select class="edit-reman">
-          <option value="Yes" ${currentReman === "Yes" ? "selected" : ""}>Yes</option>
-          <option value="No" ${currentReman === "No" ? "selected" : ""}>No</option>
+          <option value="Reman" ${currentReman==="Reman"?"selected":""}>Reman</option>
+          <option value="-" ${currentReman==="-"?"selected":""}>-</option>
         </select>`;
 
-      // Ganti tombol Edit jadi Save/Cancel
-      this.outerHTML = `<button class="action-btn save-btn" data-order="${this.dataset.order}">Save</button>
+      // Ganti tombol jadi Save & Cancel
+      this.outerHTML = `<button class="action-btn save-btn">Save</button>
                         <button class="action-btn cancel-btn">Cancel</button>`;
 
-      // Save action
+      // Handler Save
       tr.querySelector(".save-btn").addEventListener("click", function () {
-        const order = this.dataset.order;
         const newMonth = tr.querySelector(".edit-month").value;
         const newCost = tr.querySelector(".edit-cost").value;
         const newReman = tr.querySelector(".edit-reman").value;
-
-        // TODO: update data ke array/DB sesuai kebutuhan
-        console.log("Update:", order, newMonth, newCost, newReman);
+        console.log("Update:", newMonth, newCost, newReman);
+        // TODO: update ke data utama lalu render ulang
       });
 
-      // Cancel action
+      // Handler Cancel
       tr.querySelector(".cancel-btn").addEventListener("click", function () {
-        renderTable(); // render ulang tabel biar balik seperti semula
+        renderTable();
       });
-    });
-  });
-
-  document.querySelectorAll(".delete-btn").forEach(btn => {
-    btn.addEventListener("click", function () {
-      const orderId = this.dataset.order;
-      console.log("Delete:", orderId);
-      // TODO: hapus data sesuai kebutuhan
     });
   });
 }
@@ -687,5 +674,6 @@ function setupButtons() {
   const addOrderBtn = document.getElementById("add-order-btn");
   if (addOrderBtn) addOrderBtn.onclick = addOrders;
 }
+
 
 
