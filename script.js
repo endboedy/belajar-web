@@ -33,19 +33,16 @@ async function parseFile(file) {
 // -------- Format date DD MMM YYYY ----------
 function formatDateDDMMMYYYY(dt) {
   if (!dt) return "";
-  
+
   let d;
-  // Jika sudah Date instance, gunakan langsung
   if (dt instanceof Date) {
     d = dt;
   } else if (typeof dt === "string" || typeof dt === "number") {
-    // Jika string atau number, coba konversi ke Date
     d = new Date(dt);
   } else if (typeof dt === "object" && dt !== null) {
-    // Coba ambil properti yang mungkin tanggal, misal dt.$date atau dt.date (jika dari JSON khusus)
     if (dt.$date) d = new Date(dt.$date);
     else if (dt.date) d = new Date(dt.date);
-    else return ""; // tidak bisa parse, return kosong
+    else return "";
   } else {
     return "";
   }
@@ -56,7 +53,7 @@ function formatDateDDMMMYYYY(dt) {
   return `${d.getDate().toString().padStart(2,"0")} ${monthNames[d.getMonth()]} ${d.getFullYear()}`;
 }
 
-// -------- Format date to yyyy-mm-dd for input type=date ----------
+// -------- Format date ISO yyyy-mm-dd for input[type=date] ----------
 function formatDateISO(dateStr) {
   if (!dateStr) return "";
   const d = new Date(dateStr);
@@ -66,7 +63,12 @@ function formatDateISO(dateStr) {
 
 // -------- Merge function to combine data from multiple sheets --------
 function mergeData() {
-  // map iw39Data order as base
+  if (!iw39Data.length) {
+    alert("Upload data IW39 dulu sebelum refresh.");
+    return;
+  }
+
+  // Start with iw39Data as base
   mergedData = iw39Data.map(item => ({
     Room: item.Room || "",
     "Order Type": item["Order Type"] || "",
@@ -80,24 +82,24 @@ function mergeData() {
     "Status Part": "",
     Aging: "",
     Month: item.Month || "",
-    Cost: "-",
+    Cost: "",
     Reman: "",
-    Include: "-",
-    Exclude: "-",
+    Include: "",
+    Exclude: "",
     Planning: "",
     "Status AMT": ""
   }));
 
-  // Merge CPH from data2Data by matching MAT
+  // Merge CPH from data2Data by matching MAT (trimmed)
   mergedData.forEach(md => {
     const d2 = data2Data.find(d => d.MAT && d.MAT.trim() === md.MAT.trim());
-    md.CPH = d2 ? d2.CPH || "" : "";
+    md.CPH = d2 ? (d2.CPH || "") : "";
   });
 
-  // Merge Section from data1Data by matching Room
+  // Merge Section from data1Data by matching Room (trimmed)
   mergedData.forEach(md => {
     const d1 = data1Data.find(d => d.Room && d.Room.trim() === md.Room.trim());
-    md.Section = d1 ? d1.Section || "" : "";
+    md.Section = d1 ? (d1.Section || "") : "";
   });
 
   // Merge Aging & Status Part from sum57Data by matching Order
@@ -106,14 +108,19 @@ function mergeData() {
     if (s57) {
       md.Aging = s57.Aging || "";
       md["Status Part"] = s57["Part Complete"] || "";
+      // Asumsi Cost, Include, Exclude dari SUM57 juga ada?
+      if ('Cost' in s57) md.Cost = s57.Cost || "";
+      if ('Include' in s57) md.Include = s57.Include || "";
+      if ('Exclude' in s57) md.Exclude = s57.Exclude || "";
     }
   });
 
-  // Merge Planning data by matching Order and picking Event Start or Status
+  // Merge Planning data by matching Order
   mergedData.forEach(md => {
     const pl = planningData.find(p => p.Order === md.Order);
     if (pl) {
-      md.Planning = pl["Event Start"] || pl.Status || "";
+      md.Planning = pl["Event Start"] ? formatDateDDMMMYYYY(pl["Event Start"]) : "";
+      md["Status AMT"] = pl.Status || "";
     }
   });
 
@@ -122,16 +129,19 @@ function mergeData() {
     const raw = localStorage.getItem(UI_LS_KEY);
     if (raw) {
       const saved = JSON.parse(raw);
-      saved.userEdits.forEach(edit => {
-        const idx = mergedData.findIndex(r => r.Order === edit.Order);
-        if (idx !== -1) {
-          mergedData[idx] = { ...mergedData[idx], ...edit };
-        }
-      });
+      if (saved.userEdits && Array.isArray(saved.userEdits)) {
+        saved.userEdits.forEach(edit => {
+          const idx = mergedData.findIndex(r => r.Order === edit.Order);
+          if (idx !== -1) {
+            mergedData[idx] = { ...mergedData[idx], ...edit };
+          }
+        });
+      }
     }
-  } catch {}
+  } catch (e) {
+    console.warn("Gagal load user edits:", e);
+  }
 
-  // Update filter month dropdown options based on mergedData
   updateMonthFilterOptions();
 }
 
@@ -231,10 +241,11 @@ function cancelEdit(order) {
 function saveEdit(order) {
   const rowIndex = mergedData.findIndex(r => r.Order === order);
   if (rowIndex === -1) return;
+
   const tbody = document.querySelector("#output-table tbody");
   const tr = tbody.children[rowIndex];
-
   const inputs = tr.querySelectorAll("input[data-field]");
+
   inputs.forEach(input => {
     const field = input.dataset.field;
     mergedData[rowIndex][field] = input.value;
@@ -268,19 +279,20 @@ function saveUserEdits() {
       "Status AMT": item["Status AMT"]
     }));
     localStorage.setItem(UI_LS_KEY, JSON.stringify({ userEdits }));
-  } catch {}
-
+  } catch (e) {
+    console.warn("Gagal simpan user edits:", e);
+  }
 }
 
 // -------- Delete order ----------
 function deleteOrder(order) {
   const idx = mergedData.findIndex(r => r.Order === order);
-  if (idx !== -1) {
-    if (!confirm(`Hapus data order ${order} ?`)) return;
-    mergedData.splice(idx, 1);
-    saveUserEdits();
-    renderTable(mergedData);
-  }
+  if (idx === -1) return;
+  if (!confirm(`Hapus data order ${order} ?`)) return;
+
+  mergedData.splice(idx, 1);
+  saveUserEdits();
+  renderTable(mergedData);
 }
 
 // -------- Filter function ----------
@@ -292,7 +304,7 @@ function filterData() {
   const sectionFilter = document.getElementById("filter-section").value.trim().toLowerCase();
   const monthFilter = document.getElementById("filter-month").value.trim().toLowerCase();
 
-  let filtered = mergedData.filter(item => {
+  const filtered = mergedData.filter(item => {
     return (
       (!roomFilter || (item.Room && item.Room.toLowerCase().includes(roomFilter))) &&
       (!orderFilter || (item.Order && item.Order.toLowerCase().includes(orderFilter))) &&
@@ -402,9 +414,7 @@ async function handleUpload() {
 
     status.textContent = `File ${file.name} berhasil diupload sebagai ${jenis}.`;
 
-    // Clear file input to allow same file upload again
     fileInput.value = "";
-
   } catch (e) {
     status.textContent = `Error saat membaca file: ${e.message}`;
   }
@@ -412,7 +422,7 @@ async function handleUpload() {
 
 // -------- Clear all uploaded data ----------
 function clearAllData() {
-  if (!confirm("Yakin ingin menghapus semua data yang telah diupload?")) return;
+  if (!confirm("Yakin ingin menghapus semua data upload?")) return;
   iw39Data = [];
   sum57Data = [];
   planningData = [];
@@ -420,33 +430,34 @@ function clearAllData() {
   data2Data = [];
   budgetData = [];
   mergedData = [];
+  localStorage.removeItem(UI_LS_KEY);
+  document.getElementById("upload-status").textContent = "";
   renderTable([]);
-  document.getElementById("upload-status").textContent = "Data dihapus.";
   updateMonthFilterOptions();
 }
 
-// -------- Refresh button handler: merge + render ----------
+// -------- Refresh data: merge dan render ----------
 function refreshData() {
-  if (!iw39Data.length) {
-    alert("Upload data IW39 dulu sebelum refresh.");
-    return;
-  }
   mergeData();
   renderTable(mergedData);
 }
 
-// -------- Add Order button handler (append new order) ----------
+// -------- Add Orders by input textarea ----------
 function addOrders() {
   const input = document.getElementById("add-order-input");
-  const text = input.value.trim();
-  if (!text) {
-    alert("Masukkan Order terlebih dahulu.");
+  const status = document.getElementById("add-order-status");
+  const raw = input.value.trim();
+
+  if (!raw) {
+    status.textContent = "Masukkan minimal 1 order.";
     return;
   }
 
-  // Split by comma, space or newline
-  const orders = text.split(/[\s,]+/).filter(o => o);
-  let added = 0;
+  // Pisah input per spasi atau koma atau newline
+  const orders = raw.split(/[\s,]+/).filter(o => o);
+
+  let addedCount = 0;
+
   orders.forEach(o => {
     if (!mergedData.find(r => r.Order === o)) {
       mergedData.push({
@@ -469,21 +480,21 @@ function addOrders() {
         Planning: "",
         "Status AMT": ""
       });
-      added++;
+      addedCount++;
     }
   });
 
-  if (added) {
+  if (addedCount) {
     saveUserEdits();
     renderTable(mergedData);
-    alert(`${added} Order berhasil ditambahkan.`);
+    status.textContent = `${addedCount} order berhasil ditambahkan.`;
+    input.value = "";
   } else {
-    alert("Order sudah ada di data.");
+    status.textContent = `Order sudah ada di tabel.`;
   }
-  input.value = "";
 }
 
-// -------- Setup menu click switching ----------
+// -------- Setup menu navigation ----------
 function setupMenu() {
   const menuItems = document.querySelectorAll(".sidebar .menu-item");
   const contentSections = document.querySelectorAll(".content-section");
@@ -502,46 +513,33 @@ function setupMenu() {
   });
 }
 
-window.onload = () => {
-  setupMenu();
-};
-
-// -------- Init main --------
-function init() {
-  setupMenu();
-
+// -------- Setup all event listeners ----------
+function setupEvents() {
   document.getElementById("upload-btn").onclick = handleUpload;
   document.getElementById("clear-files-btn").onclick = clearAllData;
   document.getElementById("refresh-btn").onclick = refreshData;
   document.getElementById("add-order-btn").onclick = addOrders;
-
-  // Filters
-  document.getElementById("filter-room").oninput = filterData;
-  document.getElementById("filter-order").oninput = filterData;
-  document.getElementById("filter-cph").oninput = filterData;
-  document.getElementById("filter-mat").oninput = filterData;
-  document.getElementById("filter-section").oninput = filterData;
-  document.getElementById("filter-month").onchange = filterData;
-
   document.getElementById("filter-btn").onclick = filterData;
   document.getElementById("reset-btn").onclick = resetFilters;
   document.getElementById("save-btn").onclick = saveToJSON;
+
   document.getElementById("load-btn").onclick = () => {
     const input = document.createElement("input");
     input.type = "file";
-    input.accept = "application/json";
-    input.onchange = () => {
-      if (input.files.length) {
-        loadFromJSON(input.files[0]);
-      }
+    input.accept = ".json";
+    input.onchange = e => {
+      const file = e.target.files[0];
+      if (file) loadFromJSON(file);
     };
     input.click();
   };
+}
 
-  renderTable([]);
+// -------- Init ----------
+function init() {
+  setupMenu();
+  setupEvents();
+  renderTable([]); // empty awal
 }
 
 window.onload = init;
-
-
-
