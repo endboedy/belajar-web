@@ -300,6 +300,28 @@ function mergeData() {
 }
 
 /* ===================== RENDER TABLE ===================== */
+function renderTable() {
+  const tbody = document.querySelector("#data-table tbody");
+  tbody.innerHTML = "";
+
+  data.forEach((row, index) => {
+    const tr = document.createElement("tr");
+    row.forEach((cell, cellIndex) => {
+      const td = document.createElement("td");
+      td.textContent = cell;
+      tr.appendChild(td);
+    });
+
+    // Tombol Edit
+    const actionTd = document.createElement("td");
+    actionTd.innerHTML = `<button class="action-btn edit-btn">Edit</button>`;
+    tr.appendChild(actionTd);
+    tbody.appendChild(tr);
+  });
+
+  attachTableEvents();
+}
+
 function attachTableEvents() {
   document.querySelectorAll(".edit-btn").forEach(btn => {
     btn.addEventListener("click", function () {
@@ -335,8 +357,14 @@ function attachTableEvents() {
         const newMonth = tr.querySelector(".edit-month").value;
         const newCost = tr.querySelector(".edit-cost").value;
         const newReman = tr.querySelector(".edit-reman").value;
-        console.log("Update:", newMonth, newCost, newReman);
-        // TODO: update ke data utama lalu render ulang
+
+        // Update data array
+        const rowIndex = tr.rowIndex - 1; // -1 karena header
+        data[rowIndex][11] = newMonth;
+        data[rowIndex][12] = newCost;
+        data[rowIndex][13] = newReman;
+
+        renderTable();
       });
 
       // Handler Cancel
@@ -346,6 +374,9 @@ function attachTableEvents() {
     });
   });
 }
+
+// Pastikan data sudah ada sebelum render
+document.addEventListener("DOMContentLoaded", renderTable);
 
 /* ===================== CELL COLORING ===================== */
 function asColoredStatusUser(val) {
@@ -674,6 +705,7 @@ function setupButtons() {
   const addOrderBtn = document.getElementById("add-order-btn");
   if (addOrderBtn) addOrderBtn.onclick = addOrders;
 }
+
 
 
 
