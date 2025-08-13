@@ -475,12 +475,9 @@ function setupMenu() {
 
   menuItems.forEach(item => {
     item.addEventListener("click", () => {
-      // Hapus active dari semua menu item
       menuItems.forEach(i => i.classList.remove("active"));
-      // Set active menu yang di klik
       item.classList.add("active");
 
-      // Tampilkan content sesuai menu yang dipilih
       const menuId = item.dataset.menu;
       contentSections.forEach(sec => {
         if (sec.id === menuId) sec.classList.add("active");
@@ -489,6 +486,10 @@ function setupMenu() {
     });
   });
 }
+
+window.onload = () => {
+  setupMenu();
+};
 
 // -------- Init main --------
 function init() {
@@ -526,3 +527,4 @@ function init() {
 }
 
 window.onload = init;
+
