@@ -306,23 +306,30 @@ function renderTable() {
 
   data.forEach((row, index) => {
     const tr = document.createElement("tr");
-    row.forEach((cell, cellIndex) => {
+
+    row.forEach((cell, i) => {
       const td = document.createElement("td");
       td.textContent = cell;
       tr.appendChild(td);
     });
 
-    // Tombol Edit
+    // Tambahkan kolom action
     const actionTd = document.createElement("td");
-    actionTd.innerHTML = `<button class="action-btn edit-btn">Edit</button>`;
+    actionTd.innerHTML = `
+      <button class="action-btn edit-btn" data-index="${index}">Edit</button>
+      <button class="action-btn delete-btn" data-index="${index}">Delete</button>
+    `;
     tr.appendChild(actionTd);
+
     tbody.appendChild(tr);
   });
 
   attachTableEvents();
 }
 
+/* ===================== ATTACH TABLE EVENTS ===================== */
 function attachTableEvents() {
+  // Tombol Edit
   document.querySelectorAll(".edit-btn").forEach(btn => {
     btn.addEventListener("click", function () {
       const tr = this.closest("tr");
@@ -354,15 +361,15 @@ function attachTableEvents() {
 
       // Handler Save
       tr.querySelector(".save-btn").addEventListener("click", function () {
+        const index = tr.querySelector(".edit-btn")?.dataset.index || btn.dataset.index;
         const newMonth = tr.querySelector(".edit-month").value;
         const newCost = tr.querySelector(".edit-cost").value;
         const newReman = tr.querySelector(".edit-reman").value;
 
-        // Update data array
-        const rowIndex = tr.rowIndex - 1; // -1 karena header
-        data[rowIndex][11] = newMonth;
-        data[rowIndex][12] = newCost;
-        data[rowIndex][13] = newReman;
+        // Update hanya 3 kolom di data array
+        data[index][11] = newMonth;
+        data[index][12] = newCost;
+        data[index][13] = newReman;
 
         renderTable();
       });
@@ -371,6 +378,17 @@ function attachTableEvents() {
       tr.querySelector(".cancel-btn").addEventListener("click", function () {
         renderTable();
       });
+    });
+  });
+
+  // Tombol Delete
+  document.querySelectorAll(".delete-btn").forEach(btn => {
+    btn.addEventListener("click", function () {
+      const index = this.dataset.index;
+      if (confirm("Yakin mau hapus data ini?")) {
+        data.splice(index, 1);
+        renderTable();
+      }
     });
   });
 }
@@ -705,6 +723,7 @@ function setupButtons() {
   const addOrderBtn = document.getElementById("add-order-btn");
   if (addOrderBtn) addOrderBtn.onclick = addOrders;
 }
+
 
 
 
