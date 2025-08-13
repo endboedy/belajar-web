@@ -302,18 +302,19 @@ function mergeData() {
 /* ===================== RENDER TABLE ===================== */
 function renderTable() {
   const tbody = document.querySelector("#data-table tbody");
+  if (!tbody) return; // kalau table belum ada, stop
   tbody.innerHTML = "";
 
   data.forEach((row, index) => {
     const tr = document.createElement("tr");
 
-    row.forEach((cell, i) => {
+    row.forEach(cell => {
       const td = document.createElement("td");
       td.textContent = cell;
       tr.appendChild(td);
     });
 
-    // Tambahkan kolom action
+    // Kolom action
     const actionTd = document.createElement("td");
     actionTd.innerHTML = `
       <button class="action-btn edit-btn" data-index="${index}">Edit</button>
@@ -329,59 +330,44 @@ function renderTable() {
 
 /* ===================== ATTACH TABLE EVENTS ===================== */
 function attachTableEvents() {
-  // Tombol Edit
   document.querySelectorAll(".edit-btn").forEach(btn => {
     btn.addEventListener("click", function () {
       const tr = this.closest("tr");
       const tds = tr.querySelectorAll("td");
 
-      // Ambil nilai lama
       const currentMonth = tds[11].textContent.trim();
       const currentCost  = tds[12].textContent.trim();
       const currentReman = tds[13].textContent.trim();
 
-      // Dropdown month
       const monthOptions = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
         .map(m => `<option value="${m}" ${m===currentMonth?"selected":""}>${m}</option>`).join("");
       tds[11].innerHTML = `<select class="edit-month">${monthOptions}</select>`;
 
-      // Input cost
       tds[12].innerHTML = `<input type="number" class="edit-cost" value="${currentCost}" style="width:80px;text-align:right;">`;
 
-      // Dropdown reman
       tds[13].innerHTML = `
         <select class="edit-reman">
           <option value="Reman" ${currentReman==="Reman"?"selected":""}>Reman</option>
           <option value="-" ${currentReman==="-"?"selected":""}>-</option>
         </select>`;
 
-      // Ganti tombol jadi Save & Cancel
-      this.outerHTML = `<button class="action-btn save-btn">Save</button>
+      this.outerHTML = `<button class="action-btn save-btn" data-index="${btn.dataset.index}">Save</button>
                         <button class="action-btn cancel-btn">Cancel</button>`;
 
-      // Handler Save
       tr.querySelector(".save-btn").addEventListener("click", function () {
-        const index = tr.querySelector(".edit-btn")?.dataset.index || btn.dataset.index;
-        const newMonth = tr.querySelector(".edit-month").value;
-        const newCost = tr.querySelector(".edit-cost").value;
-        const newReman = tr.querySelector(".edit-reman").value;
-
-        // Update hanya 3 kolom di data array
-        data[index][11] = newMonth;
-        data[index][12] = newCost;
-        data[index][13] = newReman;
-
+        const index = this.dataset.index;
+        data[index][11] = tr.querySelector(".edit-month").value;
+        data[index][12] = tr.querySelector(".edit-cost").value;
+        data[index][13] = tr.querySelector(".edit-reman").value;
         renderTable();
       });
 
-      // Handler Cancel
       tr.querySelector(".cancel-btn").addEventListener("click", function () {
         renderTable();
       });
     });
   });
 
-  // Tombol Delete
   document.querySelectorAll(".delete-btn").forEach(btn => {
     btn.addEventListener("click", function () {
       const index = this.dataset.index;
@@ -393,9 +379,10 @@ function attachTableEvents() {
   });
 }
 
-// Pastikan data sudah ada sebelum render
-document.addEventListener("DOMContentLoaded", renderTable);
-
+// Pastikan fungsi dipanggil setelah DOM siap
+document.addEventListener("DOMContentLoaded", () => {
+  renderTable();
+});
 /* ===================== CELL COLORING ===================== */
 function asColoredStatusUser(val) {
   const v = (val || "").toString().toUpperCase();
@@ -723,6 +710,7 @@ function setupButtons() {
   const addOrderBtn = document.getElementById("add-order-btn");
   if (addOrderBtn) addOrderBtn.onclick = addOrders;
 }
+
 
 
 
