@@ -9,136 +9,160 @@ let mergedData = [];
 
 const UI_LS_KEY = "ndarboe_ui_edits";
 
-// Parse Excel date string robustly (handles "MM/DD/YYYY" and "MM/DD/YYYY hh:mm:ss AM/PM")
-function parseExcelDate(value) {
-  if (!value) return null;
-
-  if (value instanceof Date) return value;
-
-  let d = new Date(value);
-  if (!isNaN(d.getTime())) return d;
-
-  const regex = /^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+(\d{1,2}):(\d{2}):(\d{2})\s*(AM|PM)?)?$/i;
-  const m = regex.exec(value.trim());
-  if (m) {
-    let month = parseInt(m[1], 10) - 1;
-    let day = parseInt(m[2], 10);
-    let year = parseInt(m[3], 10);
-    let hour = m[4] ? parseInt(m[4], 10) : 0;
-    let minute = m[5] ? parseInt(m[5], 10) : 0;
-    let second = m[6] ? parseInt(m[6], 10) : 0;
-    const ampm = m[7];
-
-    if (ampm && ampm.toUpperCase() === "PM" && hour < 12) hour += 12;
-    if (ampm && ampm.toUpperCase() === "AM" && hour === 12) hour = 0;
-
-    return new Date(year, month, day, hour, minute, second);
-  }
-
-  return null;
+// -------- Utility function to parse XLSX file to JSON ----------
+async function parseFile(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: "array" });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const json = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
+        resolve(json);
+      } catch (err) {
+        reject(err);
+      }
+    };
+    reader.onerror = (err) => reject(err);
+    reader.readAsArrayBuffer(file);
+  });
 }
 
-// Format date dd-MMM-yyyy
+// -------- Format date DD MMM YYYY ----------
 function formatDateDDMMMYYYY(dt) {
   if (!dt) return "";
-  if (!(dt instanceof Date)) return "";
-  const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-  return `${dt.getDate().toString().padStart(2, "0")}-${monthNames[dt.getMonth()]}-${dt.getFullYear()}`;
+  let d;
+  if (typeof dt === "string") {
+    // Try parse date from string in various formats
+    // Try Date parse directly first
+    d = new Date(dt);
+    if (isNaN(d)) {
+      // try manual parsing dd/mm/yyyy or mm/dd/yyyy
+      const parts = dt.split(/[\/\-\s:]+/);
+      if (parts.length >= 3) {
+        // detect format based on first part
+        // let's assume mm/dd/yyyy or dd/mm/yyyy - tricky, so try both
+        let mm = parseInt(parts[0], 10);
+        let dd = parseInt(parts[1], 10);
+        let yyyy = parseInt(parts[2], 10);
+        if (yyyy < 100) yyyy += 2000;
+        if (mm > 12) {
+          // swap if mm invalid
+          [mm, dd] = [dd, mm];
+        }
+        d = new Date(yyyy, mm - 1, dd);
+      } else {
+        return dt; // return original if cannot parse
+      }
+    }
+  } else if (dt instanceof Date) {
+    d = dt;
+  } else {
+    return dt;
+  }
+  if (isNaN(d)) return dt;
+  const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  return `${d.getDate().toString().padStart(2,"0")} ${monthNames[d.getMonth()]} ${d.getFullYear()}`;
 }
 
-// Format date ISO yyyy-mm-dd for input type=date
+// -------- Format date to yyyy-mm-dd for input type=date ----------
 function formatDateISO(dateStr) {
-  const d = parseExcelDate(dateStr);
-  if (!d) return "";
+  if (!dateStr) return "";
+  const d = new Date(dateStr);
+  if (isNaN(d)) return "";
   return d.toISOString().split("T")[0];
 }
 
-// Merge data from all sheets into mergedData array
+// -------- Merge function to combine data from multiple sheets --------
 function mergeData() {
   if (!iw39Data.length) {
     alert("Upload data IW39 dulu sebelum refresh.");
     return;
   }
-
-  mergedData = iw39Data.map(item => ({
-    Room: item.Room || "",
-    "Order Type": item["Order Type"] || "",
-    Order: item.Order || "",
-    Description: item.Description || "",
-    "Created On": item["Created On"] || "",
-    "User Status": item["User Status"] || "",
-    MAT: item.MAT || "",
-    CPH: "",
-    Section: "",
-    "Status Part": "",
-    Aging: "",
-    Month: item.Month || "",
-    Cost: "-",
-    Reman: item.Reman || "",
-    Include: "-",
-    Exclude: "-",
-    Planning: "",
-    "Status AMT": ""
-  }));
-
-  // CPH logic:
-  // If Description starts with "JR" => "External Job"
-  // Else lookup from Data2 by MAT
-  mergedData.forEach(md => {
-    if (md.Description && md.Description.trim().toUpperCase().startsWith("JR")) {
-      md.CPH = "External Job";
-    } else {
-      const d2 = data2Data.find(d => d.MAT && d.MAT.trim() === md.MAT.trim());
-      md.CPH = d2 ? d2.CPH || "" : "";
+  // map iw39Data order as base
+  mergedData = iw39Data.map(item => {
+    // Parse Create On date properly
+    let createdOn = item["Created On"];
+    if (createdOn) {
+      createdOn = formatDateDDMMMYYYY(createdOn);
     }
-  });
-
-  // Section from data1Data by matching Room
-  mergedData.forEach(md => {
-    const d1 = data1Data.find(d => d.Room && d.Room.trim() === md.Room.trim());
-    md.Section = d1 ? d1.Section || "" : "";
-  });
-
-  // Status Part & Aging from sum57Data by matching Order
-  mergedData.forEach(md => {
-    const s57 = sum57Data.find(s => s.Order === md.Order);
-    if (s57) {
-      md["Status Part"] = s57["Part Complete"] || "";
-      md.Aging = s57.Aging || "";
+    // Cost calculation (Total sum (plan) - Total sum (actual)) / 16500
+    // fields: "Total sum (plan)", "Total sum (actual)"
+    let costVal = "-";
+    if (item["Total sum (plan)"] !== undefined && item["Total sum (actual)"] !== undefined) {
+      const planNum = Number(item["Total sum (plan)"]) || 0;
+      const actualNum = Number(item["Total sum (actual)"]) || 0;
+      const costCalc = (planNum - actualNum) / 16500;
+      costVal = costCalc < 0 ? "-" : costCalc.toFixed(2);
     }
-  });
+    // Include calculation based on Reman
+    let includeVal = costVal;
+    if (item.Reman && item.Reman.toLowerCase().includes("reman")) {
+      if (costVal !== "-") includeVal = (parseFloat(costVal) * 0.25).toFixed(2);
+    }
+    // Exclude calculation based on Order Type
+    let excludeVal = includeVal;
+    if (item["Order Type"] && item["Order Type"].toUpperCase() === "PM38") {
+      excludeVal = "-";
+    }
 
-  // Planning and Status AMT from planningData by matching Order
-  mergedData.forEach(md => {
-    const pl = planningData.find(p => p.Order === md.Order);
+    // Planning lookup
+    let planningVal = "";
+    let statusAMTVal = "";
+    const pl = planningData.find(p => p.Order === item.Order);
     if (pl) {
-      md.Planning = pl["Event Start"] || "";
-      md["Status AMT"] = pl.Status || "";
+      planningVal = pl["Event Start"] ? formatDateDDMMMYYYY(pl["Event Start"]) : "";
+      statusAMTVal = pl["Status"] || "";
+    }
+
+    // CPH column: If Description starts with "JR" => "External Job" else lookup Data2 by MAT
+    let cphVal = "";
+    if (item.Description && item.Description.startsWith("JR")) {
+      cphVal = "External Job";
+    } else if (item.MAT && data2Data.length) {
+      const d2 = data2Data.find(d => d.MAT === item.MAT);
+      cphVal = d2 ? (d2.CPH || "") : "";
+    }
+
+    return {
+      Room: item.Room || "",
+      "Order Type": item["Order Type"] || "",
+      Order: item.Order || "",
+      Description: item.Description || "",
+      "Created On": createdOn || "",
+      "User Status": item["User Status"] || "",
+      MAT: item.MAT || "",
+      CPH: cphVal || "",
+      Section: "", // Will fill later
+      "Status Part": "", // Will fill later
+      Aging: "", // Will fill later
+      Month: item.Month || "",
+      Cost: costVal,
+      Reman: item.Reman || "",
+      Include: includeVal,
+      Exclude: excludeVal,
+      Planning: planningVal,
+      "Status AMT": statusAMTVal
+    };
+  });
+
+  // Fill Section from data1Data by Room match
+  mergedData.forEach(md => {
+    if (md.Room && data1Data.length) {
+      const d1 = data1Data.find(d => d.Room === md.Room);
+      if (d1) md.Section = d1.Section || "";
     }
   });
 
-  // Calculate Cost, Include, Exclude
+  // Fill Aging and Status Part from sum57Data by Order match
   mergedData.forEach(md => {
-    // Cost = (IW39.Total sum (plan) - IW39.Total sum (actual))/16500
-    const iw = iw39Data.find(i => i.Order === md.Order);
-    if (iw) {
-      const planVal = parseFloat(iw["Total sum (plan)"]) || 0;
-      const actualVal = parseFloat(iw["Total sum (actual)"]) || 0;
-      let costVal = (planVal - actualVal) / 16500;
-      if (costVal < 0) costVal = "-";
-      else costVal = costVal.toFixed(2);
-      md.Cost = costVal;
-
-      if (md.Reman && md.Reman.toLowerCase().includes("reman")) {
-        md.Include = (costVal === "-" ? "-" : (costVal * 0.25).toFixed(2));
-      } else {
-        md.Include = costVal;
-      }
-
-      if (md["Order Type"] === "PM38") {
-        md.Exclude = "-";
-      } else {
-        md.Exclude = md.Include;
+    if (md.Order && sum57Data.length) {
+      const s57 = sum57Data.find(s => s.Order === md.Order);
+      if (s57) {
+        md.Aging = s57.Aging || "";
+        md["Status Part"] = s57["Part Complete"] || "";
       }
     }
   });
@@ -160,7 +184,7 @@ function mergeData() {
   updateMonthFilterOptions();
 }
 
-// Render mergedData to table
+// -------- Render mergedData to table ----------
 function renderTable(data) {
   const tbody = document.querySelector("#output-table tbody");
   tbody.innerHTML = "";
@@ -169,56 +193,47 @@ function renderTable(data) {
     return;
   }
   data.forEach(row => {
-    const createdOnDate = parseExcelDate(row["Created On"]);
-    const planningDate = parseExcelDate(row.Planning);
-
-    tbody.insertAdjacentHTML("beforeend", `
-      <tr>
-        <td>${row.Room}</td>
-        <td>${row["Order Type"]}</td>
-        <td>${row.Order}</td>
-        <td>${row.Description}</td>
-        <td>${createdOnDate ? formatDateDDMMMYYYY(createdOnDate) : ""}</td>
-        <td>${row["User Status"]}</td>
-        <td>${row.MAT}</td>
-        <td>${row.CPH}</td>
-        <td>${row.Section}</td>
-        <td>${row["Status Part"]}</td>
-        <td>${row.Aging}</td>
-        <td>${row.Month}</td>
-        <td style="text-align:right;">${row.Cost}</td>
-        <td>${row.Reman}</td>
-        <td style="text-align:right;">${row.Include}</td>
-        <td style="text-align:right;">${row.Exclude}</td>
-        <td>${planningDate ? formatDateDDMMMYYYY(planningDate) : ""}</td>
-        <td>${row["Status AMT"]}</td>
-        <td>
-          <button class="action-btn edit-btn" data-order="${row.Order}">Edit</button>
-          <button class="action-btn delete-btn" data-order="${row.Order}">Delete</button>
-        </td>
-      </tr>
-    `);
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${row.Room}</td>
+      <td>${row["Order Type"]}</td>
+      <td>${row.Order}</td>
+      <td>${row.Description}</td>
+      <td>${row["Created On"]}</td>
+      <td>${row["User Status"]}</td>
+      <td>${row.MAT}</td>
+      <td>${row.CPH}</td>
+      <td>${row.Section}</td>
+      <td>${row["Status Part"]}</td>
+      <td>${row.Aging}</td>
+      <td>${row.Month}</td>
+      <td style="text-align:right;">${row.Cost}</td>
+      <td>${row.Reman}</td>
+      <td style="text-align:right;">${row.Include}</td>
+      <td style="text-align:right;">${row.Exclude}</td>
+      <td>${row.Planning}</td>
+      <td>${row["Status AMT"]}</td>
+      <td>
+        <button class="action-btn edit-btn" data-order="${row.Order}">Edit</button>
+        <button class="action-btn delete-btn" data-order="${row.Order}">Delete</button>
+      </td>
+    `;
+    tbody.appendChild(tr);
   });
   attachTableEvents();
 }
 
-// Attach event listeners to Edit/Delete buttons
+// -------- Attach event listeners for Edit/Delete buttons ----------
 function attachTableEvents() {
   document.querySelectorAll(".edit-btn").forEach(btn => {
-    btn.onclick = () => {
-      const order = btn.dataset.order;
-      startEdit(order);
-    };
+    btn.onclick = () => startEdit(btn.dataset.order);
   });
   document.querySelectorAll(".delete-btn").forEach(btn => {
-    btn.onclick = () => {
-      const order = btn.dataset.order;
-      deleteOrder(order);
-    };
+    btn.onclick = () => deleteOrder(btn.dataset.order);
   });
 }
 
-// Start inline editing a row
+// -------- Start editing a row ----------
 function startEdit(order) {
   const rowIndex = mergedData.findIndex(r => r.Order === order);
   if (rowIndex === -1) return;
@@ -240,10 +255,10 @@ function startEdit(order) {
     <td><input type="text" value="${rowData["Status Part"]}" data-field="Status Part" /></td>
     <td><input type="text" value="${rowData.Aging}" data-field="Aging" /></td>
     <td><input type="text" value="${rowData.Month}" data-field="Month" /></td>
-    <td><input type="text" style="text-align:right" value="${rowData.Cost}" data-field="Cost" /></td>
+    <td><input type="text" value="${rowData.Cost}" data-field="Cost" style="text-align:right;" /></td>
     <td><input type="text" value="${rowData.Reman}" data-field="Reman" /></td>
-    <td><input type="text" style="text-align:right" value="${rowData.Include}" data-field="Include" /></td>
-    <td><input type="text" style="text-align:right" value="${rowData.Exclude}" data-field="Exclude" /></td>
+    <td><input type="text" value="${rowData.Include}" data-field="Include" style="text-align:right;" /></td>
+    <td><input type="text" value="${rowData.Exclude}" data-field="Exclude" style="text-align:right;" /></td>
     <td><input type="text" value="${rowData.Planning}" data-field="Planning" /></td>
     <td><input type="text" value="${rowData["Status AMT"]}" data-field="Status AMT" /></td>
     <td>
@@ -256,46 +271,23 @@ function startEdit(order) {
   tr.querySelector(".cancel-btn").onclick = () => cancelEdit(order);
 }
 
-// Fungsi setupMenu untuk navigasi sidebar
-function setupMenu() {
-  const menuItems = document.querySelectorAll(".sidebar .menu-item");
-  const contentSections = document.querySelectorAll(".content-section");
-
-  menuItems.forEach(item => {
-    item.addEventListener("click", () => {
-      // Hapus active dari semua menu item
-      menuItems.forEach(i => i.classList.remove("active"));
-      // Set active menu yang diklik
-      item.classList.add("active");
-
-      // Tampilkan content sesuai menu yang dipilih
-      const menuId = item.dataset.menu;
-      contentSections.forEach(sec => {
-        if (sec.id === menuId) sec.classList.add("active");
-        else sec.classList.remove("active");
-      });
-    });
-  });
-}
-
-// Cancel editing: just re-render table
+// -------- Cancel editing, restore original row ----------
 function cancelEdit(order) {
   renderTable(mergedData);
 }
 
-// Save edited data
+// -------- Save edited data ----------
 function saveEdit(order) {
   const rowIndex = mergedData.findIndex(r => r.Order === order);
   if (rowIndex === -1) return;
-
   const tbody = document.querySelector("#output-table tbody");
   const tr = tbody.children[rowIndex];
-  const inputs = tr.querySelectorAll("input[data-field]");
 
+  const inputs = tr.querySelectorAll("input[data-field]");
   inputs.forEach(input => {
     const field = input.dataset.field;
     let val = input.value;
-    if (field === "Created On" || field === "Planning") val = val || "";
+    if (field === "Created On") val = formatDateDDMMMYYYY(val);
     mergedData[rowIndex][field] = val;
   });
 
@@ -303,7 +295,7 @@ function saveEdit(order) {
   renderTable(mergedData);
 }
 
-// Save user edits to localStorage
+// -------- Save user edits to localStorage ----------
 function saveUserEdits() {
   try {
     const userEdits = mergedData.map(item => ({
@@ -330,7 +322,7 @@ function saveUserEdits() {
   } catch {}
 }
 
-// Delete order row
+// -------- Delete order ----------
 function deleteOrder(order) {
   const idx = mergedData.findIndex(r => r.Order === order);
   if (idx !== -1) {
@@ -341,7 +333,7 @@ function deleteOrder(order) {
   }
 }
 
-// Filter data based on inputs
+// -------- Filter function ----------
 function filterData() {
   const roomFilter = document.getElementById("filter-room").value.trim().toLowerCase();
   const orderFilter = document.getElementById("filter-order").value.trim().toLowerCase();
@@ -364,7 +356,7 @@ function filterData() {
   renderTable(filtered);
 }
 
-// Reset filters to empty and show all data
+// -------- Reset filters ----------
 function resetFilters() {
   document.getElementById("filter-room").value = "";
   document.getElementById("filter-order").value = "";
@@ -375,96 +367,138 @@ function resetFilters() {
   renderTable(mergedData);
 }
 
-// Update Month filter dropdown options based on mergedData
+// -------- Update Month dropdown options ----------
 function updateMonthFilterOptions() {
   const monthSelect = document.getElementById("filter-month");
-  const months = new Set();
-  mergedData.forEach(row => {
-    if (row.Month) months.add(row.Month.trim());
+  const months = Array.from(new Set(mergedData.map(d => d.Month).filter(m => m && m.trim() !== "")));
+  months.sort();
+  while (monthSelect.options.length > 1) {
+    monthSelect.remove(1);
+  }
+  months.forEach(m => {
+    const opt = document.createElement("option");
+    opt.value = m.toLowerCase();
+    opt.textContent = m;
+    monthSelect.appendChild(opt);
   });
-  const prevVal = monthSelect.value;
-  monthSelect.innerHTML = `<option value="">-- All --</option>`;
-  [...months].sort().forEach(m => {
-    monthSelect.insertAdjacentHTML("beforeend", `<option value="${m.toLowerCase()}">${m}</option>`);
-  });
-  if ([...months].map(m => m.toLowerCase()).includes(prevVal)) {
-    monthSelect.value = prevVal;
+}
+
+// -------- Save mergedData to JSON file ----------
+function saveToJSON() {
+  if (!mergedData.length) {
+    alert("Tidak ada data untuk disimpan.");
+    return;
+  }
+  const dataStr = JSON.stringify({ mergedData, timestamp: new Date().toISOString() }, null, 2);
+  const blob = new Blob([dataStr], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `ndarboe_data_${new Date().toISOString().slice(0,10)}.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+// -------- Load JSON file and update mergedData ----------
+async function loadFromJSON(file) {
+  if (!file) return;
+  const text = await file.text();
+  try {
+    const json = JSON.parse(text);
+    if (!json.mergedData) throw new Error("Format JSON tidak sesuai");
+    mergedData = json.mergedData;
+    renderTable(mergedData);
+    updateMonthFilterOptions();
+  } catch (e) {
+    alert("File JSON tidak valid atau format salah");
   }
 }
 
-// File upload handlers
-document.getElementById("upload-btn").addEventListener("click", () => {
-  const fileInput = document.getElementById("file-input");
-  const fileType = document.getElementById("file-select").value;
-  const status = document.getElementById("upload-status");
-
-  if (!fileInput.files.length) {
-    alert("Pilih file terlebih dahulu.");
+// -------- Upload button handler ----------
+async function handleUpload(file, type) {
+  if (!file) {
+    alert("Pilih file terlebih dahulu");
     return;
   }
-
-  const file = fileInput.files[0];
-  const reader = new FileReader();
-
-  reader.onload = (e) => {
-    const data = new Uint8Array(e.target.result);
-    const workbook = XLSX.read(data, { type: "array" });
-
-    // Ambil sheet pertama saja
-    const sheetName = workbook.SheetNames[0];
-    const worksheet = workbook.Sheets[sheetName];
-    const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
-
-    switch (fileType) {
-      case "IW39":
-        iw39Data = jsonData;
-        status.textContent = `File IW39 berhasil diupload, ${jsonData.length} baris.`;
-        break;
-      case "SUM57":
-        sum57Data = jsonData;
-        status.textContent = `File SUM57 berhasil diupload, ${jsonData.length} baris.`;
-        break;
-      case "Planning":
-        planningData = jsonData;
-        status.textContent = `File Planning berhasil diupload, ${jsonData.length} baris.`;
-        break;
-      case "Data1":
-        data1Data = jsonData;
-        status.textContent = `File Data1 berhasil diupload, ${jsonData.length} baris.`;
-        break;
-      case "Data2":
-        data2Data = jsonData;
-        status.textContent = `File Data2 berhasil diupload, ${jsonData.length} baris.`;
-        break;
-      case "Budget":
-        budgetData = jsonData;
-        status.textContent = `File Budget berhasil diupload, ${jsonData.length} baris.`;
-        break;
-      default:
-        status.textContent = "Jenis file tidak dikenal.";
-        break;
+  try {
+    const jsonData = await parseFile(file);
+    switch(type) {
+      case "IW39": iw39Data = jsonData; break;
+      case "SUM57": sum57Data = jsonData; break;
+      case "Planning": planningData = jsonData; break;
+      case "Data1": data1Data = jsonData; break;
+      case "Data2": data2Data = jsonData; break;
+      case "Budget": budgetData = jsonData; break;
+      default: alert("Tipe file tidak dikenali"); return;
     }
+    alert(`${type} berhasil diupload, total baris: ${jsonData.length}`);
+  } catch (e) {
+    alert(`Gagal upload file ${type}: ${e.message}`);
+  }
+}
+
+// -------- Setup sidebar menu navigation ----------
+function setupMenu() {
+  const menuItems = document.querySelectorAll(".sidebar .menu-item");
+  const contentSections = document.querySelectorAll(".content-section");
+
+  menuItems.forEach(item => {
+    item.addEventListener("click", () => {
+      menuItems.forEach(i => i.classList.remove("active"));
+      item.classList.add("active");
+
+      const menuId = item.dataset.menu;
+      contentSections.forEach(sec => {
+        if (sec.id === menuId) sec.classList.add("active");
+        else sec.classList.remove("active");
+      });
+    });
+  });
+}
+
+// -------- Initialize UI, event listeners --------
+function init() {
+  // Upload handler
+  document.getElementById("upload-btn").onclick = async () => {
+    const fileInput = document.getElementById("file-input");
+    const fileType = document.getElementById("file-select").value;
+    const file = fileInput.files[0];
+    await handleUpload(file, fileType);
   };
 
-  reader.onerror = () => {
-    status.textContent = "Gagal membaca file.";
+  // Filter button
+  document.getElementById("filter-btn").onclick = filterData;
+  // Reset filter button
+  document.getElementById("reset-btn").onclick = resetFilters;
+
+  // Refresh data (merge + render)
+  document.getElementById("refresh-btn").onclick = () => {
+    mergeData();
+    renderTable(mergedData);
   };
 
-  reader.readAsArrayBuffer(file);
-});
+  // Save JSON button
+  document.getElementById("save-btn").onclick = saveToJSON;
 
-// Buttons
-document.getElementById("filter-btn").addEventListener("click", filterData);
-document.getElementById("reset-btn").addEventListener("click", resetFilters);
-document.getElementById("refresh-btn").addEventListener("click", () => {
-  mergeData();
-  renderTable(mergedData);
-});
-document.getElementById("save-btn").addEventListener("click", saveUserEdits);
+  // Load JSON button
+  document.getElementById("load-btn").onclick = () => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".json";
+    input.onchange = async (e) => {
+      if (e.target.files.length) await loadFromJSON(e.target.files[0]);
+    };
+    input.click();
+  };
 
-// Initialize
-window.onload = () => {
+  // Setup sidebar menu
+  setupMenu();
+
+  // Initial empty table render
   renderTable([]);
-};
+}
 
-
+window.onload = init;
