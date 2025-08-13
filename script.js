@@ -51,6 +51,7 @@ function formatDateISO(dateStr) {
 
 // -------- Merge function to combine data from multiple sheets --------
 function mergeData() {
+  // map iw39Data order as base
   mergedData = iw39Data.map(item => ({
     Room: item.Room || "",
     "Order Type": item["Order Type"] || "",
@@ -72,63 +73,50 @@ function mergeData() {
     "Status AMT": ""
   }));
 
-  // Merge CPH dari data2Data by MAT
+  // Merge CPH from data2Data by matching MAT
   mergedData.forEach(md => {
-    const d2 = data2Data.find(d => ((d.MAT || "").trim().toLowerCase()) === ((md.MAT || "").trim().toLowerCase()));
+    const d2 = data2Data.find(d => d.MAT && d.MAT.trim() === md.MAT.trim());
     md.CPH = d2 ? d2.CPH || "" : "";
   });
 
-  // Merge Section dari data1Data by Room
+  // Merge Section from data1Data by matching Room
   mergedData.forEach(md => {
-    const d1 = data1Data.find(d => ((d.Room || "").trim().toLowerCase()) === ((md.Room || "").trim().toLowerCase()));
+    const d1 = data1Data.find(d => d.Room && d.Room.trim() === md.Room.trim());
     md.Section = d1 ? d1.Section || "" : "";
   });
 
-  // Merge Aging dan Status Part dari sum57Data by Order
+  // Merge Aging & Status Part from sum57Data by matching Order
   mergedData.forEach(md => {
-    const s57 = sum57Data.find(s => ((s.Order || "").trim().toLowerCase()) === ((md.Order || "").trim().toLowerCase()));
+    const s57 = sum57Data.find(s => s.Order === md.Order);
     if (s57) {
       md.Aging = s57.Aging || "";
       md["Status Part"] = s57["Part Complete"] || "";
     }
   });
 
-  // Merge Cost, Include, Exclude dari budgetData by Order
+  // Merge Planning data by matching Order and picking Event Start or Status
   mergedData.forEach(md => {
-    const bd = budgetData.find(b => ((b.Order || "").trim().toLowerCase()) === ((md.Order || "").trim().toLowerCase()));
-    if (bd) {
-      md.Cost = bd.Cost || "-";
-      md.Include = bd.Include || "-";
-      md.Exclude = bd.Exclude || "-";
-    }
-  });
-
-  // Merge Planning data by Order
-  mergedData.forEach(md => {
-    const pl = planningData.find(p => ((p.Order || "").trim().toLowerCase()) === ((md.Order || "").trim().toLowerCase()));
+    const pl = planningData.find(p => p.Order === md.Order);
     if (pl) {
       md.Planning = pl["Event Start"] || pl.Status || "";
     }
   });
 
-  // Restore user edits dari localStorage
+  // Restore saved user edits from localStorage
   try {
     const raw = localStorage.getItem(UI_LS_KEY);
     if (raw) {
       const saved = JSON.parse(raw);
-      if (saved.userEdits && Array.isArray(saved.userEdits)) {
-        saved.userEdits.forEach(edit => {
-          const idx = mergedData.findIndex(r => r.Order === edit.Order);
-          if (idx !== -1) {
-            mergedData[idx] = { ...mergedData[idx], ...edit };
-          }
-        });
-      }
+      saved.userEdits.forEach(edit => {
+        const idx = mergedData.findIndex(r => r.Order === edit.Order);
+        if (idx !== -1) {
+          mergedData[idx] = { ...mergedData[idx], ...edit };
+        }
+      });
     }
-  } catch(e) {
-    console.error("Error parsing localStorage edits:", e);
-  }
+  } catch {}
 
+  // Update filter month dropdown options based on mergedData
   updateMonthFilterOptions();
 }
 
@@ -190,7 +178,6 @@ function startEdit(order) {
   const tr = tbody.children[rowIndex];
   const rowData = mergedData[rowIndex];
 
-  // Replace cells with inputs
   tr.innerHTML = `
     <td><input type="text" value="${rowData.Room}" data-field="Room" /></td>
     <td><input type="text" value="${rowData["Order Type"]}" data-field="Order Type" /></td>
@@ -216,7 +203,6 @@ function startEdit(order) {
     </td>
   `;
 
-  // Attach save/cancel handlers
   tr.querySelector(".save-btn").onclick = () => saveEdit(order);
   tr.querySelector(".cancel-btn").onclick = () => cancelEdit(order);
 }
@@ -233,19 +219,13 @@ function saveEdit(order) {
   const tbody = document.querySelector("#output-table tbody");
   const tr = tbody.children[rowIndex];
 
-  // Read inputs
   const inputs = tr.querySelectorAll("input[data-field]");
   inputs.forEach(input => {
     const field = input.dataset.field;
-    let val = input.value;
-    if (field === "Created On") val = val || "";
-    mergedData[rowIndex][field] = val;
+    mergedData[rowIndex][field] = input.value;
   });
 
-  // Save edits to localStorage
   saveUserEdits();
-
-  // Re-render table
   renderTable(mergedData);
 }
 
@@ -273,9 +253,8 @@ function saveUserEdits() {
       "Status AMT": item["Status AMT"]
     }));
     localStorage.setItem(UI_LS_KEY, JSON.stringify({ userEdits }));
-  } catch(e) {
-    console.error("Error saving user edits:", e);
-  }
+  } catch {}
+
 }
 
 // -------- Delete order ----------
@@ -440,62 +419,7 @@ function refreshData() {
   mergeData();
   renderTable(mergedData);
 }
-// Fungsi setupMenu: untuk handle klik sidebar
-function setupMenu() {
-  const menuItems = document.querySelectorAll(".sidebar .menu-item");
-  const contentSections = document.querySelectorAll(".content-section");
 
-  menuItems.forEach(item => {
-    item.addEventListener("click", () => {
-      menuItems.forEach(i => i.classList.remove("active"));
-      item.classList.add("active");
-
-      const menuId = item.dataset.menu;
-      contentSections.forEach(sec => {
-        if (sec.id === menuId) sec.classList.add("active");
-        else sec.classList.remove("active");
-      });
-    });
-  });
-}
-
-// Fungsi init: panggil setupMenu dan binding event lain
-function init() {
-  setupMenu();
-
-  document.getElementById("upload-btn").onclick = handleUpload;
-  document.getElementById("clear-files-btn").onclick = clearAllData;
-  document.getElementById("refresh-btn").onclick = refreshData;
-  document.getElementById("add-order-btn").onclick = addOrders;
-
-  // Filter inputs
-  document.getElementById("filter-room").oninput = filterData;
-  document.getElementById("filter-order").oninput = filterData;
-  document.getElementById("filter-cph").oninput = filterData;
-  document.getElementById("filter-mat").oninput = filterData;
-  document.getElementById("filter-section").oninput = filterData;
-  document.getElementById("filter-month").onchange = filterData;
-
-  // Buttons
-  document.getElementById("filter-btn").onclick = filterData;
-  document.getElementById("reset-btn").onclick = resetFilters;
-  document.getElementById("save-btn").onclick = saveToJSON;
-  document.getElementById("load-btn").onclick = () => {
-    const input = document.createElement("input");
-    input.type = "file";
-    input.accept = "application/json";
-    input.onchange = () => {
-      if (input.files.length) {
-        loadFromJSON(input.files[0]);
-      }
-    };
-    input.click();
-  };
-
-  renderTable([]);
-}
-
-window.onload = init;
 // -------- Add Order button handler (append new order) ----------
 function addOrders() {
   const input = document.getElementById("add-order-input");
@@ -544,17 +468,45 @@ function addOrders() {
   input.value = "";
 }
 
-// -------- Init event listeners ----------
-document.getElementById("upload-btn").onclick = handleUpload;
+// -------- Setup menu click switching ----------
+function setupMenu() {
+  const menuItems = document.querySelectorAll(".sidebar .menu-item");
+  const contentSections = document.querySelectorAll(".content-section");
+
+  menuItems.forEach(item => {
+    item.addEventListener("click", () => {
+      // Hapus active dari semua menu item
+      menuItems.forEach(i => i.classList.remove("active"));
+      // Set active menu yang di klik
+      item.classList.add("active");
+
+      // Tampilkan content sesuai menu yang dipilih
+      const menuId = item.dataset.menu;
+      contentSections.forEach(sec => {
+        if (sec.id === menuId) sec.classList.add("active");
+        else sec.classList.remove("active");
+      });
+    });
+  });
+}
+
+// -------- Init main --------
+function init() {
+  setupMenu();
+
+  document.getElementById("upload-btn").onclick = handleUpload;
   document.getElementById("clear-files-btn").onclick = clearAllData;
   document.getElementById("refresh-btn").onclick = refreshData;
   document.getElementById("add-order-btn").onclick = addOrders;
+
+  // Filters
   document.getElementById("filter-room").oninput = filterData;
   document.getElementById("filter-order").oninput = filterData;
   document.getElementById("filter-cph").oninput = filterData;
   document.getElementById("filter-mat").oninput = filterData;
   document.getElementById("filter-section").oninput = filterData;
   document.getElementById("filter-month").onchange = filterData;
+
   document.getElementById("filter-btn").onclick = filterData;
   document.getElementById("reset-btn").onclick = resetFilters;
   document.getElementById("save-btn").onclick = saveToJSON;
@@ -572,7 +524,5 @@ document.getElementById("upload-btn").onclick = handleUpload;
 
   renderTable([]);
 }
-// -------- Run init on page load ----------
+
 window.onload = init;
-
-
