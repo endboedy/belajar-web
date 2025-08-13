@@ -329,7 +329,7 @@ function filterData() {
   const filtered = mergedData.filter(row => {
     return (
       (!room || (row.Room && row.Room.toLowerCase().includes(room))) &&
-      (!order || (row.Order && row.Order.toLowerCase().includes(order))) &&
+      (!order || (String(row.Order || "").toLowerCase().includes(order))) &&
       (!cph || (row.CPH && row.CPH.toLowerCase().includes(cph))) &&
       (!mat || (row.MAT && row.MAT.toLowerCase().includes(mat))) &&
       (!section || (row.Section && row.Section.toLowerCase().includes(section))) &&
@@ -339,7 +339,6 @@ function filterData() {
 
   renderTable(filtered);
 }
-
 // ======= RESET FILTERS =======
 function resetFilters() {
   document.getElementById("filter-room").value = "";
@@ -474,3 +473,4 @@ function init() {
 }
 
 window.onload = init;
+
