@@ -9,24 +9,24 @@ let mergedData = [];
 
 const UI_LS_KEY = "ndarboe_ui_edits";
 
-// ======= UTILS =======
+// ======= UTILITIES =======
 function formatDateDDMMMYYYY(dateInput) {
   if (!dateInput) return "";
   let d;
   if (dateInput instanceof Date) {
     d = dateInput;
   } else if (typeof dateInput === "string") {
-    // Try parse with Date()
     d = new Date(dateInput);
     if (isNaN(d)) {
-      // Try manual parsing for format like 11/12/2024 or 8/12/2025 7:03:00 AM
-      const parts = dateInput.split(/[\s\/:-]+/);
+      // try dd/mm/yyyy or mm/dd/yyyy
+      let parts = dateInput.split(/[\s\/:-]+/);
       if (parts.length >= 3) {
+        // swap month/day if month > 12
         let mm = parseInt(parts[0], 10);
         let dd = parseInt(parts[1], 10);
         let yyyy = parseInt(parts[2], 10);
         if (yyyy < 100) yyyy += 2000;
-        if (mm > 12) [mm, dd] = [dd, mm]; // swap if mm invalid
+        if (mm > 12) [mm, dd] = [dd, mm];
         d = new Date(yyyy, mm - 1, dd);
       } else {
         return dateInput;
@@ -75,8 +75,9 @@ function mergeData() {
   }
 
   mergedData = iw39Data.map(item => {
-    // Create On formatted
-    const createdOn = formatDateDDMMMYYYY(item["Created On"]);
+    // Format Created On tanggal
+    const createdOnRaw = item["Created On"];
+    const createdOn = formatDateDDMMMYYYY(createdOnRaw);
 
     // Cost calculation
     let cost = "-";
@@ -85,7 +86,7 @@ function mergeData() {
     const diff = (planNum - actualNum) / 16500;
     if (diff >= 0) cost = diff.toFixed(2);
 
-    // Include and Exclude
+    // Include dan Exclude
     let includeVal = cost;
     if (item.Reman && item.Reman.toLowerCase().includes("reman")) {
       includeVal = cost === "-" ? "-" : (parseFloat(cost) * 0.25).toFixed(2);
@@ -93,7 +94,7 @@ function mergeData() {
     let excludeVal = includeVal;
     if (item["Order Type"] && item["Order Type"].toUpperCase() === "PM38") excludeVal = "-";
 
-    // Planning & Status AMT lookup
+    // Planning dan Status AMT dari planningData (lookup Order)
     const pl = planningData.find(p => p.Order === item.Order);
     const planningVal = pl ? formatDateDDMMMYYYY(pl["Event Start"]) : "";
     const statusAMTVal = pl ? (pl.Status || "") : "";
@@ -107,14 +108,14 @@ function mergeData() {
       cphVal = d2 ? (d2.CPH || "") : "";
     }
 
-    // Section from data1 by Room
+    // Section dari data1Data (lookup Room)
     let sectionVal = "";
     if (item.Room && data1Data.length) {
       const d1 = data1Data.find(d => d.Room === item.Room);
       sectionVal = d1 ? (d1.Section || "") : "";
     }
 
-    // Status Part and Aging from sum57 by Order
+    // Status Part dan Aging dari sum57Data (lookup Order)
     let statusPart = "";
     let agingVal = "";
     if (item.Order && sum57Data.length) {
@@ -145,7 +146,7 @@ function mergeData() {
     };
   });
 
-  // Restore edits from localStorage if any
+  // Restore user edits dari localStorage
   try {
     const lsRaw = localStorage.getItem(UI_LS_KEY);
     if (lsRaw) {
@@ -277,7 +278,7 @@ function saveEdit(order) {
   renderTable(mergedData);
 }
 
-// ======= SAVE USER EDITS =======
+// ======= SAVE USER EDITS KE localStorage =======
 function saveUserEdits() {
   try {
     const userEdits = mergedData.map(item => ({
