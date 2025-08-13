@@ -41,9 +41,16 @@ function formatDateDDMMMYYYY(dt) {
   return `${d.getDate().toString().padStart(2,"0")} ${monthNames[d.getMonth()]} ${d.getFullYear()}`;
 }
 
+// -------- Format date to yyyy-mm-dd for input type=date ----------
+function formatDateISO(dateStr) {
+  if (!dateStr) return "";
+  const d = new Date(dateStr);
+  if (isNaN(d)) return "";
+  return d.toISOString().split("T")[0];
+}
+
 // -------- Merge function to combine data from multiple sheets --------
 function mergeData() {
-  // map iw39Data order as base
   mergedData = iw39Data.map(item => ({
     Room: item.Room || "",
     "Order Type": item["Order Type"] || "",
@@ -65,53 +72,63 @@ function mergeData() {
     "Status AMT": ""
   }));
 
-  // Merge CPH from data2Data by matching Order or MAT
+  // Merge CPH dari data2Data by MAT
   mergedData.forEach(md => {
-    const d2 = data2Data.find(d => {
-      // As you didn't give exact key, match by MAT or empty fallback
-      return (d.MAT && d.MAT.trim() === md.MAT.trim());
-    });
+    const d2 = data2Data.find(d => ((d.MAT || "").trim().toLowerCase()) === ((md.MAT || "").trim().toLowerCase()));
     md.CPH = d2 ? d2.CPH || "" : "";
   });
 
-  // Merge Section from data1Data by matching Room
+  // Merge Section dari data1Data by Room
   mergedData.forEach(md => {
-    const d1 = data1Data.find(d => (d.Room && d.Room.trim()) === (md.Room && md.Room.trim()));
+    const d1 = data1Data.find(d => ((d.Room || "").trim().toLowerCase()) === ((md.Room || "").trim().toLowerCase()));
     md.Section = d1 ? d1.Section || "" : "";
   });
 
-  // Merge Aging & Status Part from sum57Data by matching Order
+  // Merge Aging dan Status Part dari sum57Data by Order
   mergedData.forEach(md => {
-    const s57 = sum57Data.find(s => s.Order === md.Order);
+    const s57 = sum57Data.find(s => ((s.Order || "").trim().toLowerCase()) === ((md.Order || "").trim().toLowerCase()));
     if (s57) {
       md.Aging = s57.Aging || "";
       md["Status Part"] = s57["Part Complete"] || "";
     }
   });
 
-  // Merge Planning data by matching Order and picking Event Start or Status
+  // Merge Cost, Include, Exclude dari budgetData by Order
   mergedData.forEach(md => {
-    const pl = planningData.find(p => p.Order === md.Order);
+    const bd = budgetData.find(b => ((b.Order || "").trim().toLowerCase()) === ((md.Order || "").trim().toLowerCase()));
+    if (bd) {
+      md.Cost = bd.Cost || "-";
+      md.Include = bd.Include || "-";
+      md.Exclude = bd.Exclude || "-";
+    }
+  });
+
+  // Merge Planning data by Order
+  mergedData.forEach(md => {
+    const pl = planningData.find(p => ((p.Order || "").trim().toLowerCase()) === ((md.Order || "").trim().toLowerCase()));
     if (pl) {
       md.Planning = pl["Event Start"] || pl.Status || "";
     }
   });
 
-  // Restore saved user edits from localStorage
+  // Restore user edits dari localStorage
   try {
     const raw = localStorage.getItem(UI_LS_KEY);
     if (raw) {
       const saved = JSON.parse(raw);
-      saved.userEdits.forEach(edit => {
-        const idx = mergedData.findIndex(r => r.Order === edit.Order);
-        if (idx !== -1) {
-          mergedData[idx] = { ...mergedData[idx], ...edit };
-        }
-      });
+      if (saved.userEdits && Array.isArray(saved.userEdits)) {
+        saved.userEdits.forEach(edit => {
+          const idx = mergedData.findIndex(r => r.Order === edit.Order);
+          if (idx !== -1) {
+            mergedData[idx] = { ...mergedData[idx], ...edit };
+          }
+        });
+      }
     }
-  } catch {}
+  } catch(e) {
+    console.error("Error parsing localStorage edits:", e);
+  }
 
-  // Update filter month dropdown options based on mergedData
   updateMonthFilterOptions();
 }
 
@@ -256,7 +273,9 @@ function saveUserEdits() {
       "Status AMT": item["Status AMT"]
     }));
     localStorage.setItem(UI_LS_KEY, JSON.stringify({ userEdits }));
-  } catch {}
+  } catch(e) {
+    console.error("Error saving user edits:", e);
+  }
 }
 
 // -------- Delete order ----------
@@ -307,12 +326,9 @@ function resetFilters() {
 // -------- Update Month dropdown options ----------
 function updateMonthFilterOptions() {
   const monthSelect = document.getElementById("filter-month");
-  // ambil semua month unik dari mergedData
   const months = Array.from(new Set(mergedData.map(d => d.Month).filter(m => m && m.trim() !== "")));
-  // sort alphabetically (optional)
   months.sort();
 
-  // Hapus opsi lama kecuali yang pertama
   while (monthSelect.options.length > 1) {
     monthSelect.remove(1);
   }
@@ -323,14 +339,6 @@ function updateMonthFilterOptions() {
     opt.textContent = m;
     monthSelect.appendChild(opt);
   });
-}
-
-// -------- Format date to yyyy-mm-dd for input type=date ----------
-function formatDateISO(dateStr) {
-  if (!dateStr) return "";
-  const d = new Date(dateStr);
-  if (isNaN(d)) return "";
-  return d.toISOString().split("T")[0];
 }
 
 // -------- Save mergedData to JSON file ----------
@@ -481,47 +489,31 @@ function addOrders() {
   input.value = "";
 }
 
-// -------- Setup menu click switching ----------
-function setupMenu() {
-  document.querySelectorAll(".sidebar .menu-item").forEach(item => {
-    item.addEventListener("click", () => {
-      document.querySelectorAll(".sidebar .menu-item").forEach(i => i.classList.remove("active"));
-      item.classList.add("active");
-
-      document.querySelectorAll(".content-section").forEach(sec => sec.classList.remove("active"));
-      const target = document.getElementById(item.dataset.menu);
-      if (target) target.classList.add("active");
-    });
-  });
-}
-
-// -------- Setup button events ----------
-function setupButtons() {
-  document.getElementById("upload-btn").onclick = handleUpload;
-  document.getElementById("clear-files-btn").onclick = clearAllData;
-  document.getElementById("refresh-btn").onclick = refreshData;
-  document.getElementById("filter-btn").onclick = filterData;
-  document.getElementById("reset-btn").onclick = resetFilters;
-  document.getElementById("save-btn").onclick = saveToJSON;
-  document.getElementById("load-btn").onclick = () => {
-    const input = document.createElement("input");
-    input.type = "file";
-    input.accept = "application/json";
-    input.onchange = () => {
-      if (input.files.length) {
-        loadFromJSON(input.files[0]);
-      }
-    };
-    input.click();
-  };
-  document.getElementById("add-order-btn").onclick = addOrders;
-}
-
-// -------- Initialize app ----------
+// -------- Init event listeners ----------
 function init() {
-  setupMenu();
-  setupButtons();
+  document.getElementById("upload-btn").onclick = handleUpload;
+  document.getElementById("clear-btn").onclick = clearAllData;
+  document.getElementById("refresh-btn").onclick = refreshData;
+  document.getElementById("add-order-btn").onclick = addOrders;
+  document.getElementById("filter-room").oninput = filterData;
+  document.getElementById("filter-order").oninput = filterData;
+  document.getElementById("filter-cph").oninput = filterData;
+  document.getElementById("filter-mat").oninput = filterData;
+  document.getElementById("filter-section").oninput = filterData;
+  document.getElementById("filter-month").onchange = filterData;
+  document.getElementById("reset-filter-btn").onclick = resetFilters;
+  document.getElementById("save-json-btn").onclick = saveToJSON;
+
+  const jsonLoadInput = document.getElementById("load-json-input");
+  jsonLoadInput.onchange = async () => {
+    if (jsonLoadInput.files.length) {
+      await loadFromJSON(jsonLoadInput.files[0]);
+      jsonLoadInput.value = "";
+    }
+  };
+
   renderTable([]);
 }
 
-init();
+// -------- Run init on page load ----------
+window.onload = init;
