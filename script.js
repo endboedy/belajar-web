@@ -440,7 +440,62 @@ function refreshData() {
   mergeData();
   renderTable(mergedData);
 }
+// Fungsi setupMenu: untuk handle klik sidebar
+function setupMenu() {
+  const menuItems = document.querySelectorAll(".sidebar .menu-item");
+  const contentSections = document.querySelectorAll(".content-section");
 
+  menuItems.forEach(item => {
+    item.addEventListener("click", () => {
+      menuItems.forEach(i => i.classList.remove("active"));
+      item.classList.add("active");
+
+      const menuId = item.dataset.menu;
+      contentSections.forEach(sec => {
+        if (sec.id === menuId) sec.classList.add("active");
+        else sec.classList.remove("active");
+      });
+    });
+  });
+}
+
+// Fungsi init: panggil setupMenu dan binding event lain
+function init() {
+  setupMenu();
+
+  document.getElementById("upload-btn").onclick = handleUpload;
+  document.getElementById("clear-files-btn").onclick = clearAllData;
+  document.getElementById("refresh-btn").onclick = refreshData;
+  document.getElementById("add-order-btn").onclick = addOrders;
+
+  // Filter inputs
+  document.getElementById("filter-room").oninput = filterData;
+  document.getElementById("filter-order").oninput = filterData;
+  document.getElementById("filter-cph").oninput = filterData;
+  document.getElementById("filter-mat").oninput = filterData;
+  document.getElementById("filter-section").oninput = filterData;
+  document.getElementById("filter-month").onchange = filterData;
+
+  // Buttons
+  document.getElementById("filter-btn").onclick = filterData;
+  document.getElementById("reset-btn").onclick = resetFilters;
+  document.getElementById("save-btn").onclick = saveToJSON;
+  document.getElementById("load-btn").onclick = () => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "application/json";
+    input.onchange = () => {
+      if (input.files.length) {
+        loadFromJSON(input.files[0]);
+      }
+    };
+    input.click();
+  };
+
+  renderTable([]);
+}
+
+window.onload = init;
 // -------- Add Order button handler (append new order) ----------
 function addOrders() {
   const input = document.getElementById("add-order-input");
@@ -490,9 +545,8 @@ function addOrders() {
 }
 
 // -------- Init event listeners ----------
-function init() {
-  document.getElementById("upload-btn").onclick = handleUpload;
-  document.getElementById("clear-files-btn").onclick = clearAllData;  // sesuai HTML kamu
+document.getElementById("upload-btn").onclick = handleUpload;
+  document.getElementById("clear-files-btn").onclick = clearAllData;
   document.getElementById("refresh-btn").onclick = refreshData;
   document.getElementById("add-order-btn").onclick = addOrders;
   document.getElementById("filter-room").oninput = filterData;
@@ -501,8 +555,8 @@ function init() {
   document.getElementById("filter-mat").oninput = filterData;
   document.getElementById("filter-section").oninput = filterData;
   document.getElementById("filter-month").onchange = filterData;
-  document.getElementById("filter-btn").onclick = filterData;         // tombol Filter manual
-  document.getElementById("reset-btn").onclick = resetFilters;       // tombol Reset sesuai HTML
+  document.getElementById("filter-btn").onclick = filterData;
+  document.getElementById("reset-btn").onclick = resetFilters;
   document.getElementById("save-btn").onclick = saveToJSON;
   document.getElementById("load-btn").onclick = () => {
     const input = document.createElement("input");
@@ -520,4 +574,5 @@ function init() {
 }
 // -------- Run init on page load ----------
 window.onload = init;
+
 
