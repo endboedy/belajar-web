@@ -336,7 +336,10 @@ function renderTable(data) {
       <td>${planningFmt}</td>
       <td>${asColoredStatusAMT(row["Status AMT"])}</td>
       <td>
-        <button class="action-btn edit-btn" data-order="${safe(row.Order)}">Edit</button>
+        <button class="action-btn edit-btn" data-order="${safe(row.Order)}" 
+          data-month="${safe(row.Month)}"
+          data-cost="${safe(row.Cost)}"
+          data-reman="${safe(row.Reman)}">Edit</button>
         <button class="action-btn delete-btn" data-order="${safe(row.Order)}">Delete</button>
       </td>
     `;
@@ -677,3 +680,4 @@ function setupButtons() {
   const addOrderBtn = document.getElementById("add-order-btn");
   if (addOrderBtn) addOrderBtn.onclick = addOrders;
 }
+
