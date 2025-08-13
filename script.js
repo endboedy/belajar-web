@@ -33,13 +33,19 @@ async function parseFile(file) {
 // -------- Format date DD MMM YYYY ----------
 function formatDateDDMMMYYYY(dt) {
   if (!dt) return "";
+  
   let d;
-
+  // Jika sudah Date instance, gunakan langsung
   if (dt instanceof Date) {
     d = dt;
-  } else if (typeof dt === "string") {
-    // coba parse string ke Date
+  } else if (typeof dt === "string" || typeof dt === "number") {
+    // Jika string atau number, coba konversi ke Date
     d = new Date(dt);
+  } else if (typeof dt === "object" && dt !== null) {
+    // Coba ambil properti yang mungkin tanggal, misal dt.$date atau dt.date (jika dari JSON khusus)
+    if (dt.$date) d = new Date(dt.$date);
+    else if (dt.date) d = new Date(dt.date);
+    else return ""; // tidak bisa parse, return kosong
   } else {
     return "";
   }
@@ -49,6 +55,7 @@ function formatDateDDMMMYYYY(dt) {
   const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
   return `${d.getDate().toString().padStart(2,"0")} ${monthNames[d.getMonth()]} ${d.getFullYear()}`;
 }
+
 // -------- Format date to yyyy-mm-dd for input type=date ----------
 function formatDateISO(dateStr) {
   if (!dateStr) return "";
@@ -535,5 +542,6 @@ function init() {
 }
 
 window.onload = init;
+
 
 
