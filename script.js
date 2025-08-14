@@ -316,24 +316,44 @@ function mergeData() {
 
 function renderTable(data = mergedData) {
   const tbody = document.querySelector("#output-table tbody");
-  if (!tbody) return;
+  if (!tbody) {
+    console.warn("Tabel #output-table tidak ditemukan.");
+    return;
+  }
 
   tbody.innerHTML = "";
+
   data.forEach((row, index) => {
     const tr = document.createElement("tr");
-    Object.values(row).forEach(cell => {
+
+    // Sesuaikan urutan kolom dengan <thead>
+    const columns = [
+      "Room", "Order Type", "Order", "Description", "Created On",
+      "User Status", "MAT", "CPH", "Section", "Status Part", "Aging",
+      "Month", "Cost", "Reman", "Include", "Exclude", "Planning", "Status AMT"
+    ];
+
+    columns.forEach(col => {
       const td = document.createElement("td");
-      td.textContent = cell;
+      let val = row[col] ?? "";
+
+      // Format tanggal jika kolom Created On atau Planning
+      if (col === "Created On" || col === "Planning") {
+        val = formatDateDDMMMYYYY(val);
+      }
+
+      td.textContent = val;
       tr.appendChild(td);
     });
 
-    // Kolom action
+    // Kolom Action
     const actionTd = document.createElement("td");
     actionTd.innerHTML = `
       <button class="action-btn edit-btn" data-index="${index}">Edit</button>
       <button class="action-btn delete-btn" data-index="${index}">Delete</button>
     `;
     tr.appendChild(actionTd);
+
     tbody.appendChild(tr);
   });
 
@@ -722,6 +742,7 @@ function setupButtons() {
   const addOrderBtn = document.getElementById("add-order-btn");
   if (addOrderBtn) addOrderBtn.onclick = addOrders;
 }
+
 
 
 
