@@ -312,56 +312,6 @@ function mergeData() {
   updateMonthFilterOptions();
 }
 
-/* ===================== RENDER TABLE ===================== */
-function renderTable(dataToRender = mergedData) {
-  const tbody = document.querySelector("#output-table tbody");
-  if (!tbody) {
-    console.warn("Tabel #output-table tidak ditemukan.");
-    return;
-  }
-
-  tbody.innerHTML = ""; // reset tabel
-
-  dataToRender.forEach((row, index) => {
-    const tr = document.createElement("tr");
-    tr.dataset.index = index; // simpan index row
-
-    // Urutan kolom sesuai <thead>
-    const columns = [
-      "Room", "Order Type", "Order", "Description", "Created On",
-      "User Status", "MAT", "CPH", "Section", "Status Part", "Aging",
-      "Month", "Cost", "Reman", "Include", "Exclude", "Planning", "Status AMT"
-    ];
-
-    columns.forEach(col => {
-      const td = document.createElement("td");
-      td.textContent = row[col] ?? "";
-
-      // Tambahkan class untuk kolom yang ingin diedit
-      if (col === "Month") td.classList.add("col-month");
-      if (col === "Cost") td.classList.add("col-cost");
-      if (col === "Reman") td.classList.add("col-reman");
-
-      // Format tanggal
-      if (col === "Created On" || col === "Planning") {
-        td.textContent = formatDateDDMMMYYYY(td.textContent);
-      }
-
-      tr.appendChild(td);
-    });
-
-    // Kolom Action terakhir
-    const actionTd = document.createElement("td");
-    actionTd.innerHTML = `
-      <button class="action-btn edit-btn" data-index="${index}">Edit</button>
-      <button class="action-btn delete-btn" data-index="${index}">Delete</button>
-    `;
-    tr.appendChild(actionTd);
-
-    tbody.appendChild(tr);
-  });
-}
-
 /* ===================== ACTIVATE EDIT ===================== */
 function activateEdit(tr, index) {
   const tdMonth = tr.querySelector("td.col-month");
@@ -406,7 +356,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!tr) return;
     const index = btn.dataset.index;
 
-    // Tombol Edit
+    // Tombol Edit → hanya aktif untuk row tertentu
     if (btn.classList.contains("edit-btn")) {
       activateEdit(tr, index);
     }
@@ -425,6 +375,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const tdCost  = tr.querySelector("td.col-cost input");
       const tdReman = tr.querySelector("td.col-reman select");
 
+      // Simpan hanya 3 kolom
       mergedData[index]["Month"] = tdMonth.value;
       mergedData[index]["Cost"]  = tdCost.value;
       mergedData[index]["Reman"] = tdReman.value;
@@ -438,6 +389,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 });
+
 
 /* ===================== CELL COLORING ===================== */
 function asColoredStatusUser(val) {
@@ -766,6 +718,7 @@ function setupButtons() {
   const addOrderBtn = document.getElementById("add-order-btn");
   if (addOrderBtn) addOrderBtn.onclick = addOrders;
 }
+
 
 
 
