@@ -238,37 +238,41 @@ function renderTable(dataToRender = mergedData) {
   attachTableEvents(); // pastikan tombol berfungsi
 }
 
-/* ===================== START EDIT ===================== */
+/* ===================== START EDIT (HANYA Month, Cost, Reman) ===================== */
 function startEdit(index) {
   const row = mergedData[index];
-  if(!row) return;
+  if (!row) return;
 
   const tbody = document.querySelector("#output-table tbody");
   const tr = tbody.querySelector(`tr[data-index='${index}']`);
-  if(!tr) return;
+  if (!tr) return;
 
   const months = Array.from(new Set(mergedData.map(d => d.Month).filter(m => m && m.trim() !== ""))).sort();
   const monthOptions = [`<option value="">--Select Month--</option>`].concat(months.map(m => `<option value="${m}">${m}</option>`)).join("");
 
   tr.innerHTML = `
-    <td><input type="text" value="${safe(row.Room)}" data-field="Room"/></td>
-    <td><input type="text" value="${safe(row["Order Type"])}" data-field="Order Type"/></td>
+    <td>${safe(row.Room)}</td>
+    <td>${safe(row["Order Type"])}</td>
     <td>${safe(row.Order)}</td>
-    <td><input type="text" value="${safe(row.Description)}" data-field="Description"/></td>
-    <td><input type="date" value="${formatDateISO(row["Created On"])}" data-field="Created On"/></td>
-    <td><input type="text" value="${safe(row["User Status"])}" data-field="User Status"/></td>
-    <td><input type="text" value="${safe(row.MAT)}" data-field="MAT"/></td>
-    <td><input type="text" value="${safe(row.CPH)}" data-field="CPH"/></td>
-    <td><input type="text" value="${safe(row.Section)}" data-field="Section"/></td>
-    <td><input type="text" value="${safe(row["Status Part"])}" data-field="Status Part"/></td>
-    <td><input type="text" value="${safe(row.Aging)}" data-field="Aging"/></td>
+    <td>${safe(row.Description)}</td>
+    <td>${formatDateDDMMMYYYY(row["Created On"])}</td>
+    <td>${asColoredStatusUser(row["User Status"])}</td>
+    <td>${safe(row.MAT)}</td>
+    <td>${safe(row.CPH)}</td>
+    <td>${safe(row.Section)}</td>
+    <td>${asColoredStatusPart(row["Status Part"])}</td>
+    <td>${asColoredAging(row.Aging)}</td>
     <td><select data-field="Month">${monthOptions}</select></td>
-    <td><input type="text" value="${safe(row.Cost)}" data-field="Cost" readonly style="text-align:right;background:#eee;"/></td>
-    <td><input type="text" value="${safe(row.Reman)}" data-field="Reman"/></td>
-    <td><input type="text" value="${safe(row.Include)}" data-field="Include" readonly style="text-align:right;background:#eee;"/></td>
-    <td><input type="text" value="${safe(row.Exclude)}" data-field="Exclude" readonly style="text-align:right;background:#eee;"/></td>
-    <td><input type="date" value="${formatDateISO(row.Planning)}" data-field="Planning"/></td>
-    <td><input type="text" value="${safe(row["Status AMT"])}" data-field="Status AMT"/></td>
+    <td><input type="text" value="${safe(row.Cost)}" data-field="Cost" style="text-align:right;"/></td>
+    <td><select data-field="Reman">
+          <option value="Reman" ${row.Reman==="Reman"?"selected":""}>Reman</option>
+          <option value="-" ${row.Reman==="-"?"selected":""}>-</option>
+        </select>
+    </td>
+    <td>${formatNumber1(row.Include)}</td>
+    <td>${formatNumber1(row.Exclude)}</td>
+    <td>${formatDateDDMMMYYYY(row.Planning)}</td>
+    <td>${asColoredStatusAMT(row["Status AMT"])}</td>
     <td>
       <button class="action-btn save-btn" data-index="${index}">Save</button>
       <button class="action-btn cancel-btn" data-index="${index}">Cancel</button>
@@ -283,7 +287,6 @@ function startEdit(index) {
   tr.querySelector(".save-btn").onclick = () => saveEdit(index);
   tr.querySelector(".cancel-btn").onclick = () => cancelEdit();
 }
-
 
 /* ===================== FILTERS ===================== */
 function filterData(){
@@ -376,4 +379,5 @@ function setupButtons(){
   };
   if(document.getElementById(ids.add)) document.getElementById(ids.add).onclick=addOrders;
 }
+
 
