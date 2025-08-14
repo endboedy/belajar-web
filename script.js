@@ -878,6 +878,170 @@ function setupButtons() {
   const addOrderBtn = document.getElementById("add-order-btn");
   if (addOrderBtn) addOrderBtn.onclick = addOrders;
 }
+/* =====================Menu LOM GLOBAL ===================== */
+
+// Data LOM disimpan di localStorage
+const LOM_LS_KEY = "lomData";
+
+// Inisialisasi data LOM
+let lomData = [];
+try {
+  const raw = localStorage.getItem(LOM_LS_KEY);
+  if (raw) lomData = JSON.parse(raw) || [];
+} catch { lomData = []; }
+
+// Helper render LOM Table
+function renderLOMTable(data = lomData) {
+  const tbody = document.querySelector("#lom-table tbody");
+  if (!tbody) return;
+  tbody.innerHTML = "";
+  data.forEach((row, idx) => {
+    const tr = document.createElement("tr");
+    tr.dataset.index = idx;
+
+    // Kolom Order
+    const tdOrder = document.createElement("td");
+    tdOrder.textContent = row.Order || "";
+    tr.appendChild(tdOrder);
+
+    // Kolom Month (dropdown Jan-Dec)
+    const tdMonth = document.createElement("td");
+    const selectMonth = document.createElement("select");
+    selectMonth.innerHTML = `<option value=""></option>
+      <option>Jan</option><option>Feb</option><option>Mar</option><option>Apr</option>
+      <option>May</option><option>Jun</option><option>Jul</option><option>Aug</option>
+      <option>Sep</option><option>Oct</option><option>Nov</option><option>Dec</option>`;
+    selectMonth.value = row.Month || "";
+    selectMonth.addEventListener("change", e => { row.Month = e.target.value; });
+    tdMonth.appendChild(selectMonth);
+    tr.appendChild(tdMonth);
+
+    // Kolom Cost
+    const tdCost = document.createElement("td");
+    const inputCost = document.createElement("input");
+    inputCost.type = "number";
+    inputCost.value = row.Cost || "";
+    inputCost.addEventListener("input", e => { row.Cost = e.target.value; });
+    tdCost.appendChild(inputCost);
+    tr.appendChild(tdCost);
+
+    // Kolom Reman (dropdown Reman/-)
+    const tdReman = document.createElement("td");
+    const selectReman = document.createElement("select");
+    selectReman.innerHTML = `<option value=""></option><option>Reman</option><option>-</option>`;
+    selectReman.value = row.Reman || "";
+    selectReman.addEventListener("change", e => { row.Reman = e.target.value; });
+    tdReman.appendChild(selectReman);
+    tr.appendChild(tdReman);
+
+    // Kolom Status (read-only)
+    const tdStatus = document.createElement("td");
+    tdStatus.textContent = row.Status || "";
+    tr.appendChild(tdStatus);
+
+    tbody.appendChild(tr);
+  });
+}
+
+// Add Order LOM
+document.querySelector("#lom-add-btn").addEventListener("click", () => {
+  const input = document.querySelector("#lom-add-input");
+  if (!input) return;
+  const orders = input.value.split(/[\s,]+/).map(s => s.trim()).filter(Boolean);
+  orders.forEach(order => {
+    if (!lomData.find(r => r.Order === order)) {
+      // lookup User Status dari IW39
+      const iw39Row = iw39Data.find(r => r.Order === order);
+      lomData.push({
+        Order: order,
+        Month: "",
+        Cost: "",
+        Reman: "",
+        Status: iw39Row ? iw39Row["User Status"] || "" : ""
+      });
+    }
+  });
+  input.value = "";
+  renderLOMTable();
+});
+
+// Filter Order LOM
+document.querySelector("#lom-filter-btn").addEventListener("click", () => {
+  const filterInput = document.querySelector("#lom-filter-order");
+  const val = filterInput.value.trim().toLowerCase();
+  const filtered = lomData.filter(r => (r.Order || "").toLowerCase().includes(val));
+  renderLOMTable(filtered);
+});
+
+// Save LOM ke localStorage
+document.querySelector("#lom-save-btn").addEventListener("click", () => {
+  localStorage.setItem(LOM_LS_KEY, JSON.stringify(lomData));
+  const status = document.querySelector("#lom-status");
+  if (status) {
+    status.textContent = "✔ Data LOM tersimpan!";
+    setTimeout(() => status.textContent = "", 2000);
+  }
+  // Re-render tabel utama agar lookup bisa muncul
+  renderTable();
+});
+
+/* ===================== Integrasi LOM ke renderTable ===================== */
+function fillFromLOM(row) {
+  if (!row) return row;
+  const lomRow = lomData.find(r => r.Order === row.Order);
+  if (lomRow) {
+    // Hanya isi jika field kosong
+    if (!row.Month) row.Month = lomRow.Month || "";
+    if (!row.Cost) row.Cost = lomRow.Cost || "";
+    if (!row.Reman) row.Reman = lomRow.Reman || "";
+  }
+  return row;
+}
+
+// Modifikasi renderTable
+function renderTable(dataToRender = mergedData) {
+  const tbody = document.querySelector("#output-table tbody");
+  if (!tbody) return;
+  tbody.innerHTML = "";
+
+  dataToRender.forEach((row, index) => {
+    row = fillFromLOM(row); // ambil data dari LOM jika kosong
+
+    const tr = document.createElement("tr");
+    tr.dataset.index = index;
+
+    const columns = [
+      "Room", "Order Type", "Order", "Description", "Created On",
+      "User Status", "MAT", "CPH", "Section", "Status Part", "Aging",
+      "Month", "Cost", "Reman", "Include", "Exclude", "Planning", "Status AMT"
+    ];
+
+    columns.forEach(col => {
+      const td = document.createElement("td");
+      td.textContent = row[col] ?? "";
+
+      if (col === "Month") td.classList.add("col-month");
+      if (col === "Cost") td.classList.add("col-cost");
+      if (col === "Reman") td.classList.add("col-reman");
+
+      if (col === "Created On" || col === "Planning") {
+        td.textContent = formatDateDDMMMYYYY(td.textContent);
+      }
+
+      tr.appendChild(td);
+    });
+
+    const actionTd = document.createElement("td");
+    actionTd.innerHTML = `
+      <button class="action-btn edit-btn" data-index="${index}">Edit</button>
+      <button class="action-btn delete-btn" data-index="${index}">Delete</button>
+    `;
+    tr.appendChild(actionTd);
+
+    tbody.appendChild(tr);
+  });
+}
+
 
 
 
