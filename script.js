@@ -1,12 +1,3 @@
-/****************************************************
- * Ndarboe.net - FULL script.js (>1000 baris)
- * --------------------------------------------------
- * - Upload: IW39, SUM57, Planning, Budget, Data1, Data2
- * - Lembar Kerja: Merge data, lookup Month/Cost/Reman, Planning, Status AMT
- * - LOM: Add Order, Filter, Save/Load, lookup Cost/Reman, Planning, Status AMT
- * - Summary & Download: placeholder
- ****************************************************/
-
 /* ===================== GLOBAL STATE ===================== */
 window.iw39Data     = window.iw39Data || [];
 window.sum57Data    = window.sum57Data || [];
@@ -15,19 +6,24 @@ window.data1Data    = window.data1Data || [];
 window.data2Data    = window.data2Data || [];
 window.budgetData   = window.budgetData || [];
 window.mergedData   = window.mergedData || [];
-let lomData         = [];
-const UI_LS_KEY      = "ndarboe_ui_edits_v2";
-const LOM_LS_KEY     = "lomUserEdits";
 
-/* ===================== UTILITY FUNCTIONS ===================== */
-function formatDate(d){ if(!d) return ""; const dt=new Date(d); if(isNaN(dt)) return d; return dt.toLocaleDateString("id-ID",{day:"2-digit",month:"short",year:"numeric"});}
-function formatNumber(n){ if(n===null||n===undefined||n==='-') return "-"; return parseFloat(n).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});}
-function getLOMLookup(order){ return lomData.find(r=>r.Order.toUpperCase()===order.toUpperCase())||{}; }
+const UI_LS_KEY  = "ndarboe_ui_edits_v2";
+const LOM_LS_KEY = "lomUserEdits";
+
+/* ===================== DOM READY ===================== */
+document.addEventListener("DOMContentLoaded", () => {
+  setupMenu();
+  setupLOM();
+  setupLembarKerja();
+  renderLembarKerjaTable();
+  renderLOMTable();
+  updateMonthFilterOptions();
+});
 
 /* ===================== MENU SETUP ===================== */
 function setupMenu(){
   document.querySelectorAll(".sidebar .menu-item").forEach(item=>{
-    item.addEventListener("click",()=>{
+    item.addEventListener("click", ()=>{
       document.querySelectorAll(".sidebar .menu-item").forEach(i=>i.classList.remove("active"));
       item.classList.add("active");
       const menu = item.dataset.menu;
@@ -37,121 +33,201 @@ function setupMenu(){
   });
 }
 
-/* ===================== LEMBAR KERJA ===================== */
-function renderLembarKerjaTable(data){
-  const tbody=document.querySelector("#output-table tbody");
-  tbody.innerHTML="";
-  data.forEach(r=>{
-    const lom=getLOMLookup(r.Order);
-    const month=r.Month||lom.Month||"";
-    const cost=r.Cost!=="-"?r.Cost:(lom.Cost||"-");
-    const reman=r.Reman||lom.Reman||"";
-    const tr=document.createElement("tr");
-    tr.innerHTML=`
-      <td>${r.Room||""}</td>
-      <td>${r["Order Type"]||""}</td>
-      <td>${r.Order||""}</td>
-      <td>${r.Description||""}</td>
-      <td>${formatDate(r["Created On"])}</td>
-      <td>${r["User Status"]||""}</td>
-      <td>${r.MAT||""}</td>
-      <td>${r.CPH||""}</td>
-      <td>${r.Section||""}</td>
-      <td>${r["Status Part"]||""}</td>
-      <td>${r.Aging||""}</td>
-      <td>${month}</td>
-      <td>${formatNumber(cost)}</td>
-      <td>${reman}</td>
-      <td>${formatNumber(r.Include)}</td>
-      <td>${formatNumber(r.Exclude)}</td>
-      <td>${formatDate(r.Planning)}</td>
-      <td>${r["Status AMT"]||""}</td>
-    `;
-    tbody.appendChild(tr);
+/* ===================== LOM (LIST ORDER MONTHLY) ===================== */
+let lomData = JSON.parse(localStorage.getItem(LOM_LS_KEY)||"[]");
+
+function setupLOM(){
+  const addBtn = document.getElementById("lom-add-btn");
+  addBtn.addEventListener("click", ()=>{
+    const input = document.getElementById("lom-add-order").value;
+    const orders = input.split(/[\s,]+/).filter(v=>v);
+    orders.forEach(o=>{
+      if(!lomData.some(e=>e.Order===o)){
+        lomData.push({
+          Order:o,
+          Month:"",
+          Cost:"",
+          Reman:"",
+          Status:"",
+          Planning:"",
+          StatusAMT:""
+        });
+      }
+    });
+    localStorage.setItem(LOM_LS_KEY, JSON.stringify(lomData));
+    renderLOMTable();
+    document.getElementById("lom-add-order").value="";
+  });
+
+  document.getElementById("lom-filter-btn").addEventListener("click", renderLOMTable);
+  document.getElementById("lom-save-btn").addEventListener("click", ()=>{
+    localStorage.setItem(LOM_LS_KEY, JSON.stringify(lomData));
+    alert("LOM saved!");
+  });
+  document.getElementById("lom-load-btn").addEventListener("click", ()=>{
+    lomData = JSON.parse(localStorage.getItem(LOM_LS_KEY)||"[]");
+    renderLOMTable();
   });
 }
 
-/* ===================== LOM RENDER ===================== */
-function renderLOMTable(data){
-  const tbody=document.querySelector("#lom-table tbody");
+function renderLOMTable(){
+  const tbody = document.querySelector("#lom-table tbody");
   tbody.innerHTML="";
-  data.forEach((r,i)=>{
-    const tr=document.createElement("tr");
+  const filterVal = document.getElementById("lom-filter-order").value.toUpperCase();
+  lomData.forEach((row,i)=>{
+    if(filterVal && !row.Order.toUpperCase().includes(filterVal)) return;
+    const tr = document.createElement("tr");
+
     tr.innerHTML=`
-      <td>${r.Order||""}</td>
+      <td>${row.Order}</td>
       <td>
-        <select class="lom-month">
+        <select data-index="${i}" class="lom-month-select">
           <option value="">--</option>
-          ${["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
-            .map(m=>`<option value="${m}" ${r.Month===m?"selected":""}>${m}</option>`).join("")}
+          ${["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"].map(m=>`<option value="${m}" ${row.Month===m?"selected":""}>${m}</option>`).join("")}
         </select>
       </td>
-      <td><input type="number" class="lom-cost" value="${r.Cost||0}" /></td>
-      <td><input type="text" class="lom-reman" value="${r.Reman||""}" /></td>
-      <td>${r.Status||""}</td>
-      <td>${formatDate(r.Planning)}</td>
-      <td>${r["Status AMT"]||""}</td>
-      <td><button class="lom-delete-btn action-btn">Del</button></td>
+      <td><input type="number" data-index="${i}" class="lom-cost-input" value="${row.Cost}" /></td>
+      <td><input type="text" data-index="${i}" class="lom-reman-input" value="${row.Reman}" /></td>
+      <td>${row.Status}</td>
+      <td>${row.Planning}</td>
+      <td>${row.StatusAMT}</td>
+      <td>
+        <button data-index="${i}" class="delete-btn action-btn">Delete</button>
+      </td>
     `;
     tbody.appendChild(tr);
-    tr.querySelector(".lom-delete-btn").addEventListener("click",()=>{
-      lomData.splice(i,1);
-      saveLOMToLS();
-      renderLOMTable(lomData);
+  });
+
+  // Event listeners for editable fields
+  tbody.querySelectorAll(".lom-month-select").forEach(sel=>{
+    sel.addEventListener("change", e=>{
+      const idx = e.target.dataset.index;
+      lomData[idx].Month = e.target.value;
+      localStorage.setItem(LOM_LS_KEY, JSON.stringify(lomData));
+    });
+  });
+  tbody.querySelectorAll(".lom-cost-input").forEach(inp=>{
+    inp.addEventListener("input", e=>{
+      const idx = e.target.dataset.index;
+      lomData[idx].Cost = e.target.value;
+      localStorage.setItem(LOM_LS_KEY, JSON.stringify(lomData));
+    });
+  });
+  tbody.querySelectorAll(".lom-reman-input").forEach(inp=>{
+    inp.addEventListener("input", e=>{
+      const idx = e.target.dataset.index;
+      lomData[idx].Reman = e.target.value;
+      localStorage.setItem(LOM_LS_KEY, JSON.stringify(lomData));
+    });
+  });
+  tbody.querySelectorAll(".delete-btn").forEach(btn=>{
+    btn.addEventListener("click", e=>{
+      const idx = e.target.dataset.index;
+      lomData.splice(idx,1);
+      localStorage.setItem(LOM_LS_KEY, JSON.stringify(lomData));
+      renderLOMTable();
     });
   });
 }
 
-/* ===================== LOM SAVE/LOAD ===================== */
-function saveLOMToLS(){
-  const rows=[];
-  document.querySelectorAll("#lom-table tbody tr").forEach(tr=>{
-    const order=tr.cells[0].textContent.trim();
-    const month=tr.querySelector(".lom-month").value;
-    const cost=tr.querySelector(".lom-cost").value;
-    const reman=tr.querySelector(".lom-reman").value;
-    rows.push({Order:order, Month:month, Cost:cost, Reman:reman});
+/* ===================== LEMBAR KERJA ===================== */
+let mergedLembarData = [];
+
+function setupLembarKerja(){
+  document.getElementById("refresh-btn").addEventListener("click", renderLembarKerjaTable);
+  document.getElementById("filter-btn").addEventListener("click", renderLembarKerjaTable);
+  document.getElementById("reset-btn").addEventListener("click", ()=>{
+    document.querySelectorAll("#filter-room,#filter-order,#filter-cph,#filter-mat,#filter-section,#filter-month").forEach(inp=>inp.value="");
+    renderLembarKerjaTable();
   });
-  localStorage.setItem(LOM_LS_KEY, JSON.stringify(rows));
 }
 
-function loadLOMFromLS(){
-  const raw=localStorage.getItem(LOM_LS_KEY);
-  if(raw){ try{ lomData=JSON.parse(raw);}catch{} }
-  renderLOMTable(lomData);
+function updateMonthFilterOptions(){
+  const monthFilter = document.getElementById("filter-month");
+  const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  monthFilter.innerHTML = '<option value="">-- All --</option>' + months.map(m=>`<option value="${m}">${m}</option>`).join("");
 }
 
-/* ===================== LOM ADD ORDER ===================== */
-function addLOMOrders(){
-  const input=document.getElementById("lom-add-order").value;
-  const orders=input.split(/[\n,]+/).map(o=>o.trim()).filter(o=>o);
-  orders.forEach(o=>{
-    if(!lomData.find(r=>r.Order.toUpperCase()===o.toUpperCase())){
-      lomData.push({Order:o, Month:"", Cost:0, Reman:"", Status:""});
+function renderLembarKerjaTable(){
+  const tbody = document.querySelector("#output-table tbody");
+  tbody.innerHTML="";
+  // Merge data
+  mergedLembarData = [...window.iw39Data];
+  // Lookup LOM for Month/Cost/Reman
+  mergedLembarData.forEach(row=>{
+    const lomRow = lomData.find(l=>l.Order===row.Order);
+    if(lomRow){
+      row.Month = lomRow.Month || row.Month;
+      row.Cost  = lomRow.Cost  || row.Cost;
+      row.Reman = lomRow.Reman || row.Reman;
     }
   });
-  saveLOMToLS();
-  renderLOMTable(lomData);
+  const fRoom = document.getElementById("filter-room").value.toUpperCase();
+  const fOrder = document.getElementById("filter-order").value.toUpperCase();
+  const fCPH   = document.getElementById("filter-cph").value.toUpperCase();
+  const fMAT   = document.getElementById("filter-mat").value.toUpperCase();
+  const fSection = document.getElementById("filter-section").value.toUpperCase();
+  const fMonth   = document.getElementById("filter-month").value.toUpperCase();
+
+  mergedLembarData.forEach((row,i)=>{
+    if(fRoom && !row.Room?.toUpperCase().includes(fRoom)) return;
+    if(fOrder && !row.Order?.toUpperCase().includes(fOrder)) return;
+    if(fCPH && !row.CPH?.toUpperCase().includes(fCPH)) return;
+    if(fMAT && !row.MAT?.toUpperCase().includes(fMAT)) return;
+    if(fSection && !row.Section?.toUpperCase().includes(fSection)) return;
+    if(fMonth && !row.Month?.toUpperCase().includes(fMonth)) return;
+
+    const tr = document.createElement("tr");
+    tr.innerHTML=`
+      <td>${row.Room||""}</td>
+      <td>${row.OrderType||""}</td>
+      <td>${row.Order||""}</td>
+      <td>${row.Description||""}</td>
+      <td>${row.CreatedOn||""}</td>
+      <td>${row.UserStatus||""}</td>
+      <td>${row.MAT||""}</td>
+      <td>${row.CPH||""}</td>
+      <td>${row.Section||""}</td>
+      <td>${row.StatusPart||""}</td>
+      <td>${row.Aging||""}</td>
+      <td>${row.Month||""}</td>
+      <td>${row.Cost||""}</td>
+      <td>${row.Reman||""}</td>
+      <td>${row.Include||""}</td>
+      <td>${row.Exclude||""}</td>
+      <td>${row.Planning||""}</td>
+      <td>${row.StatusAMT||""}</td>
+      <td></td>
+    `;
+    tbody.appendChild(tr);
+  });
 }
 
-/* ===================== EVENT BINDINGS ===================== */
-document.getElementById("lom-add-btn")?.addEventListener("click", addLOMOrders);
-document.getElementById("lom-save-btn")?.addEventListener("click", saveLOMToLS);
-document.getElementById("lom-load-btn")?.addEventListener("click", loadLOMFromLS);
-document.getElementById("lom-filter-btn")?.addEventListener("click", ()=>{
-  const filter=document.getElementById("lom-filter-order").value.toUpperCase();
-  renderLOMTable(lomData.filter(r=>r.Order.toUpperCase().includes(filter)));
+/* ===================== UPLOAD FILES ===================== */
+document.getElementById("upload-btn").addEventListener("click", ()=>{
+  const fileInput = document.getElementById("file-input");
+  const type = document.getElementById("file-select").value;
+  if(fileInput.files.length===0){ alert("Pilih file terlebih dahulu"); return;}
+  const file = fileInput.files[0];
+  const reader = new FileReader();
+  reader.onload = e=>{
+    const data = new Uint8Array(e.target.result);
+    const workbook = XLSX.read(data,{type:"array"});
+    const sheetName = workbook.SheetNames[0];
+    const json = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName],{defval:""});
+    switch(type){
+      case "IW39": window.iw39Data = json; break;
+      case "SUM57": window.sum57Data = json; break;
+      case "Planning": window.planningData = json; break;
+      case "Budget": window.budgetData = json; break;
+      case "Data1": window.data1Data = json; break;
+      case "Data2": window.data2Data = json; break;
+    }
+    alert(type+" uploaded: "+json.length+" rows");
+  };
+  reader.readAsArrayBuffer(file);
 });
-
-/* ===================== DOM READY ===================== */
-document.addEventListener("DOMContentLoaded",()=>{
-  setupMenu();
-  loadLOMFromLS();
-  renderLembarKerjaTable([]);
-  updateMonthFilterOptions();
+document.getElementById("clear-files-btn").addEventListener("click", ()=>{
+  document.getElementById("file-input").value="";
+  alert("File input cleared");
 });
-
-/* ===================== MORE FUNCTIONS ===================== */
-/* - Upload, filter, refresh, merge data, pewarnaan, summary, download placeholder */
-/* - Bisa ditambahkan seperti sebelumnya dari script full >1000 baris */
-
