@@ -506,6 +506,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const tr = btn.closest("tr");
     if (!tr) return;
     const index = btn.dataset.index;
+    if (index === undefined) return; // pastikan ada index
 
     // Tombol Edit → hanya 3 kolom
     if (btn.classList.contains("edit-btn")) {
@@ -516,8 +517,8 @@ document.addEventListener("DOMContentLoaded", () => {
     else if (btn.classList.contains("delete-btn")) {
       if (confirm("Yakin mau hapus data ini?")) {
         mergedData.splice(index, 1);
-        renderTable();
         saveUserEdits();
+        renderTable();
       }
     }
 
@@ -527,12 +528,14 @@ document.addEventListener("DOMContentLoaded", () => {
       const tdCost  = tr.querySelector("td.col-cost input");
       const tdReman = tr.querySelector("td.col-reman select");
 
-      mergedData[index]["Month"] = tdMonth.value;
-      mergedData[index]["Cost"]  = tdCost.value;
-      mergedData[index]["Reman"] = tdReman.value;
+      if (tdMonth && tdCost && tdReman) {
+        mergedData[index]["Month"] = tdMonth.value;
+        mergedData[index]["Cost"]  = tdCost.value;
+        mergedData[index]["Reman"] = tdReman.value;
 
-      saveUserEdits();
-      renderTable();
+        saveUserEdits();  // pastikan tersimpan
+        renderTable();    // render ulang tabel
+      }
     }
 
     // Tombol Cancel
@@ -869,6 +872,7 @@ function setupButtons() {
   const addOrderBtn = document.getElementById("add-order-btn");
   if (addOrderBtn) addOrderBtn.onclick = addOrders;
 }
+
 
 
 
