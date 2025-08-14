@@ -248,7 +248,9 @@ function startEdit(index) {
   if (!tr) return;
 
   const months = Array.from(new Set(mergedData.map(d => d.Month).filter(m => m && m.trim() !== ""))).sort();
-  const monthOptions = [`<option value="">--Select Month--</option>`].concat(months.map(m => `<option value="${m}">${m}</option>`)).join("");
+  const monthOptions = [`<option value="">--Select Month--</option>`]
+    .concat(months.map(m => `<option value="${m}">${m}</option>`))
+    .join("");
 
   tr.innerHTML = `
     <td>${safe(row.Room)}</td>
@@ -264,10 +266,11 @@ function startEdit(index) {
     <td>${asColoredAging(row.Aging)}</td>
     <td><select data-field="Month">${monthOptions}</select></td>
     <td><input type="text" value="${safe(row.Cost)}" data-field="Cost" style="text-align:right;"/></td>
-    <td><select data-field="Reman">
-          <option value="Reman" ${row.Reman==="Reman"?"selected":""}>Reman</option>
-          <option value="-" ${row.Reman==="-"?"selected":""}>-</option>
-        </select>
+    <td>
+      <select data-field="Reman">
+        <option value="Reman" ${row.Reman === "Reman" ? "selected" : ""}>Reman</option>
+        <option value="-" ${row.Reman === "-" ? "selected" : ""}>-</option>
+      </select>
     </td>
     <td>${formatNumber1(row.Include)}</td>
     <td>${formatNumber1(row.Exclude)}</td>
@@ -285,8 +288,45 @@ function startEdit(index) {
 
   // tombol save/cancel
   tr.querySelector(".save-btn").onclick = () => saveEdit(index);
-  tr.querySelector(".cancel-btn").onclick = () => cancelEdit();
+  tr.querySelector(".cancel-btn").onclick = () => cancelEdit(index);
 }
+
+/* ===================== SAVE EDIT ===================== */
+function saveEdit(index) {
+  const tr = document.querySelector(`#output-table tbody tr[data-index='${index}']`);
+  if (!tr) return;
+
+  const month = tr.querySelector("select[data-field='Month']").value;
+  const cost = tr.querySelector("input[data-field='Cost']").value;
+  const reman = tr.querySelector("select[data-field='Reman']").value;
+
+  // update data
+  mergedData[index].Month = month;
+  mergedData[index].Cost = cost;
+  mergedData[index].Reman = reman;
+
+  // render ulang table
+  renderTable();
+}
+
+/* ===================== CANCEL EDIT ===================== */
+function cancelEdit() {
+  renderTable();
+}
+
+/* ===================== ATTACH TABLE EVENTS ===================== */
+function attachTableEvents() {
+  const editButtons = document.querySelectorAll(".edit-btn");
+  editButtons.forEach(btn => {
+    btn.addEventListener("click", () => startEdit(parseInt(btn.dataset.index)));
+  });
+
+  const deleteButtons = document.querySelectorAll(".delete-btn");
+  deleteButtons.forEach(btn => {
+    btn.addEventListener("click", () => deleteRow(parseInt(btn.dataset.index)));
+  });
+}
+
 
 /* ===================== FILTERS ===================== */
 function filterData(){
@@ -379,5 +419,6 @@ function setupButtons(){
   };
   if(document.getElementById(ids.add)) document.getElementById(ids.add).onclick=addOrders;
 }
+
 
 
