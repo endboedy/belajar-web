@@ -44,28 +44,26 @@ function setupMenu() {
   });
 }
 
-/* ===================== HELPERS: DATE PARSING/FORMATTING ===================== */
+ /* ===================== HELPERS: DATE PARSING/FORMATTING ===================== */
+
 /**
  * Parse apa pun (Excel serial number / string MM/DD/YYYY / string MM/DD/YYYY HH:mm:ss AM/PM /
- * ISO yyyy-mm-dd) ke Date object (valid) atau null
+ * ISO yyyy-mm-dd / Date object) ke Date object (valid) atau null
  */
 function toDateObj(anyDate) {
   if (anyDate == null || anyDate === "") return null;
 
   // Numeric Excel serial
   if (typeof anyDate === "number") {
-    const dec = XLSX && XLSX.SSF && XLSX.SSF.parse_date_code
-      ? XLSX.SSF.parse_date_code(anyDate)
-      : null;
-    if (dec && typeof dec === "object") {
-      return new Date(dec.y, (dec.m || 1) - 1, dec.d || 1, dec.H || 0, dec.M || 0, dec.S || 0);
-    }
+    return excelDateToJS(anyDate);
   }
 
+  // Already Date object
   if (anyDate instanceof Date && !isNaN(anyDate)) {
     return anyDate;
   }
 
+  // String parsing
   if (typeof anyDate === "string") {
     const s = anyDate.trim();
     if (!s) return null;
@@ -74,23 +72,21 @@ function toDateObj(anyDate) {
     const iso = new Date(s);
     if (!isNaN(iso)) return iso;
 
-    // Coba pattern US "M/D/YYYY" atau "M/D/YYYY HH:mm:ss AM"
-    // Ambil digit
+    // US format M/D/YYYY or M/D/YYYY HH:mm:ss AM/PM
     const parts = s.match(/(\d{1,4})/g);
     if (parts && parts.length >= 3) {
-      // deteksi AM/PM
       const ampm = /am|pm/i.test(s) ? s.match(/am|pm/i)[0] : "";
-      // heuristic: kalau 1st <=12 dan 2nd <=31 → asumsikan M/D/YYYY
       const p1 = parseInt(parts[0], 10);
       const p2 = parseInt(parts[1], 10);
       const p3 = parseInt(parts[2], 10);
       let year, month, day, hour = 0, min = 0, sec = 0;
+
       if (p1 <= 12 && p2 <= 31) {
         month = p1; day = p2; year = p3;
       } else {
-        // fallback: D/M/YYYY
         day = p1; month = p2; year = p3;
       }
+
       if (parts.length >= 5) {
         hour = parseInt(parts[3], 10);
         min  = parseInt(parts[4], 10);
@@ -100,6 +96,7 @@ function toDateObj(anyDate) {
           if (/am/i.test(ampm) && hour === 12) hour = 0;
         }
       }
+
       const d = new Date(year, (month || 1) - 1, day || 1, hour, min, sec);
       if (!isNaN(d)) return d;
     }
@@ -108,29 +105,53 @@ function toDateObj(anyDate) {
   return null;
 }
 
-/** format dd-MMM-yyyy */
+/**
+ * Convert Excel serial number (e.g. 45167) ke JS Date
+ */
+function excelDateToJS(serial) {
+  if (!serial || isNaN(serial)) return null;
+  const utc_days  = Math.floor(serial - 25569);
+  const utc_value = utc_days * 86400;
+  const date_info = new Date(utc_value * 1000);
 
+  const fractional_day = serial - Math.floor(serial) + 0.0000001;
+  let totalSeconds = Math.floor(86400 * fractional_day);
+  const seconds = totalSeconds % 60;
+  totalSeconds -= seconds;
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor(totalSeconds / 60) % 60;
 
+  date_info.setHours(hours);
+  date_info.setMinutes(minutes);
+  date_info.setSeconds(seconds);
+
+  return date_info;
+}
+
+/**
+ * Format Date / Excel serial / string → dd-MMM-yyyy
+ * Contoh: 5/20/2025 atau 45167 → 20-May-2025
+ */
 function formatDateDDMMMYYYY(input) {
   if (input === undefined || input === null || input === "") return "";
   let d = null;
+
   if (typeof input === "number") d = excelDateToJS(input);
-  else {
-    d = new Date(input);
-    if (isNaN(d)) {
-      const alt = new Date(String(input).replace(/\//g, "-"));
-      d = isNaN(alt) ? null : alt;
-    }
-  }
+  else d = toDateObj(input);
+
   if (!d || isNaN(d)) return "";
+
   const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
   const day = String(d.getDate()).padStart(2,"0");
   const mon = months[d.getMonth()];
   const year = d.getFullYear();
+
   return `${day}-${mon}-${year}`;
 }
 
-/** format value="yyyy-mm-dd" untuk input[type=date] */
+/**
+ * Format value untuk input[type=date] → yyyy-mm-dd
+ */
 function formatDateISO(anyDate) {
   const d = toDateObj(anyDate);
   if (!d || isNaN(d)) return "";
@@ -768,6 +789,7 @@ function setupButtons() {
   const addOrderBtn = document.getElementById("add-order-btn");
   if (addOrderBtn) addOrderBtn.onclick = addOrders;
 }
+
 
 
 
