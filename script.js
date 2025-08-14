@@ -203,6 +203,20 @@ function renderLembarKerjaTable(){
   });
 }
 
+/* ===================== UPDATE MONTH FILTER OPTIONS ===================== */
+function updateMonthFilterOptions() {
+  const filterMonth = document.getElementById("filter-month");
+  if (!filterMonth) return;
+
+  const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  filterMonth.innerHTML = '<option value="">-- All --</option>'; // reset
+  months.forEach(m => {
+    const opt = document.createElement("option");
+    opt.value = m;
+    opt.textContent = m;
+    filterMonth.appendChild(opt);
+  });
+}
 /* ===================== UPLOAD FILES ===================== */
 document.getElementById("upload-btn").addEventListener("click", ()=>{
   const fileInput = document.getElementById("file-input");
@@ -313,4 +327,5 @@ document.getElementById("download-btn").addEventListener("click", downloadExcel)
 document.addEventListener("DOMContentLoaded", ()=>{
   renderSummaryCRM();
 });
+
 
