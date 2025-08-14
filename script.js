@@ -9,13 +9,13 @@
  ****************************************************/
 
 /* ===================== GLOBAL STATE ===================== */
-let iw39Data = [];
-let sum57Data = [];
-let planningData = [];
-let data1Data = [];
-let data2Data = [];
-let budgetData = [];
-let mergedData = [];
+window.iw39Data     = window.iw39Data || [];
+window.sum57Data    = window.sum57Data || [];
+window.planningData = window.planningData || [];
+window.data1Data    = window.data1Data || [];
+window.data2Data    = window.data2Data || [];
+window.budgetData   = window.budgetData || [];
+window.mergedData   = window.mergedData || [];
 
 const UI_LS_KEY = "ndarboe_ui_edits_v2";
 
@@ -1057,6 +1057,7 @@ function saveLOMEdits() {
   localStorage.setItem(LOM_LS_KEY, JSON.stringify(lomData));
   alert("Data LOM berhasil disimpan!");
 }
+
 
 
 
