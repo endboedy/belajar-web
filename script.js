@@ -374,16 +374,21 @@ function mergeData() {
     }
   });
 
-  // Restore user edits
+  // Restore user edits → HANYA Month / Cost / Reman
   try {
     const raw = localStorage.getItem(UI_LS_KEY);
     if (raw) {
       const saved = JSON.parse(raw);
       if (saved && Array.isArray(saved.userEdits)) {
-        saved.userEdits.forEach(edit => {
-          const idx = mergedData.findIndex(r => r.Order === edit.Order);
-          if (idx !== -1) {
-            mergedData[idx] = { ...mergedData[idx], ...edit };
+        const editMap = {};
+        saved.userEdits.forEach(edit => { editMap[edit.Order] = edit; });
+
+        mergedData.forEach(md => {
+          const e = editMap[md.Order];
+          if (e) {
+            md.Month  = e.Month  ?? md.Month;
+            md.Cost   = e.Cost   ?? md.Cost;
+            md.Reman  = e.Reman  ?? md.Reman;
           }
         });
       }
@@ -392,6 +397,7 @@ function mergeData() {
 
   updateMonthFilterOptions();
 }
+
 
 /* ===================== HELPER: EXCEL SERIAL → JS DATE ===================== */
 function excelDateToJS(serial) {
@@ -872,6 +878,7 @@ function setupButtons() {
   const addOrderBtn = document.getElementById("add-order-btn");
   if (addOrderBtn) addOrderBtn.onclick = addOrders;
 }
+
 
 
 
