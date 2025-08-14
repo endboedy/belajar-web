@@ -107,44 +107,32 @@ async function handleUpload() {
   const fileSelect = document.getElementById("file-select");
   const fileInput = document.getElementById("file-input");
   const status = document.getElementById("upload-status");
-  if(!fileInput.files.length){ alert("Pilih file terlebih dahulu."); return; }
+  if (!fileInput.files.length) { alert("Pilih file terlebih dahulu."); return; }
   const file = fileInput.files[0];
   const jenis = fileSelect.value;
-  status.textContent=`Memproses ${file.name} sebagai ${jenis}...`;
-  try{
+  status.textContent = `Memproses ${file.name} sebagai ${jenis}...`;
+  try {
     const data = await parseFile(file, jenis);
-    switch(jenis){
-      case "IW39": iw39Data=data; break;
-      case "SUM57": sum57Data=data; break;
-      case "Planning": planningData=data; break;
-      case "Data1": data1Data=data; break;
-      case "Data2": data2Data=data; break;
-      case "Budget": budgetData=data; break;
+    switch (jenis) {
+      case "IW39": iw39Data = data; break;
+      case "SUM57": sum57Data = data; break;
+      case "Planning": planningData = data; break;
+      case "Data1": data1Data = data; break;
+      case "Data2": data2Data = data; break;
+      case "Budget": budgetData = data; break;
       default: break;
     }
-    status.textContent=`File ${file.name} berhasil diupload (${data.length} baris)`;
-    fileInput.value="";
-  }catch(e){
-    status.textContent=`Error: ${e.message}`;
+    status.textContent = `File ${file.name} berhasil diupload (${data.length} baris)`;
+    fileInput.value = "";
+  } catch (e) {
+    status.textContent = `Error: ${e.message}`;
   }
 }
 
-async function parseFile(file, sheetName){
-  return new Promise((resolve,reject)=>{
-    const reader=new FileReader();
-    reader.onload=e=>{
-      try{
-        const data=new Uint8Array(e.target.result);
-        const workbook=XLSX.read(data,{type:"array"});
-        const sheet=workbook.Sheets[sheetName]||workbook.Sheets[workbook.SheetNames[0]];
-        const json=XLSX.utils.sheet_to_json(sheet,{defval:"",raw:false});
-        resolve(json);
-      }catch(err){ reject(err); }
-    };
-    reader.onerror=err=>reject(err);
-    reader.readAsArrayBuffer(file);
-  });
-}
+/* ===================== DOM READY ===================== */
+document.addEventListener("DOMContentLoaded", () => {
+  setupButtons(); // pastikan handleUpload sudah ada di atas
+});
 
 /* ===================== MERGE ===================== */
 function mergeData(){
@@ -417,3 +405,4 @@ function setupButtons(){
   const addOrderBtn=document.getElementById("add-order-btn");
   if(addOrderBtn) addOrderBtn.onclick=addOrders;
 }
+
