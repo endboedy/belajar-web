@@ -16,7 +16,7 @@ window.data1Data    = window.data1Data || [];
 window.data2Data    = window.data2Data || [];
 window.budgetData   = window.budgetData || [];
 window.mergedData   = window.mergedData || [];
-FL
+
 const UI_LS_KEY = "ndarboe_ui_edits_v2";
 
 /* ===================== DOM READY ===================== */
@@ -1020,6 +1020,7 @@ lomLoadBtn.addEventListener("click", () => {
 
 // render awal jika ada data tersimpan
 lomLoadBtn.click();
+
 
 
 
