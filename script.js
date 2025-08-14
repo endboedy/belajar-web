@@ -6,32 +6,8 @@
 let iw39Data=[], sum57Data=[], planningData=[], data1Data=[], data2Data=[], budgetData=[], mergedData=[];
 const UI_LS_KEY="ndarboe_ui_edits_v2";
 
-/* ===================== DOM READY ===================== */
-document.addEventListener("DOMContentLoaded",()=>{
-  setupButtons();
-  setupMenu();
-  renderTable([]);
-  updateMonthFilterOptions();
-});
-
-/* ===================== MENU HANDLER ===================== */
-function setupMenu(){
-  const menuItems=document.querySelectorAll(".sidebar .menu-item");
-  const contentSections=document.querySelectorAll(".content-section");
-  menuItems.forEach(item=>{
-    item.addEventListener("click",()=>{
-      menuItems.forEach(i=>i.classList.remove("active"));
-      item.classList.add("active");
-      const menuId=item.dataset.menu;
-      contentSections.forEach(sec=>{
-        if(sec.id===menuId) sec.classList.add("active");
-        else sec.classList.remove("active");
-      });
-    });
-  });
-}
-
 /* ===================== HELPERS ===================== */
+function safe(val){return val==null?"":val;}
 function toDateObj(anyDate){
   if(anyDate==null||anyDate==="") return null;
   if(typeof anyDate==="number"){ // Excel serial
@@ -44,13 +20,10 @@ function toDateObj(anyDate){
     const iso=new Date(s); if(!isNaN(iso)) return iso;
     const parts=s.match(/(\d{1,4})/g);
     if(parts&&parts.length>=3){
-      const ampm=/am|pm/i.test(s)?s.match(/am|pm/i)[0]:"";
-      const p1=parseInt(parts[0],10),p2=parseInt(parts[1],10),p3=parseInt(parts[2],10);
       let year,month,day,hour=0,min=0,sec=0;
+      const p1=parseInt(parts[0],10),p2=parseInt(parts[1],10),p3=parseInt(parts[2],10);
       if(p1<=12&&p2<=31){month=p1;day=p2;year=p3;} else {day=p1;month=p2;year=p3;}
-      if(parts.length>=5){hour=parseInt(parts[3],10);min=parseInt(parts[4],10); if(parts.length>=6) sec=parseInt(parts[5],10)||0;
-        if(ampm){if(/pm/i.test(ampm)&&hour<12) hour+=12; if(/am/i.test(ampm)&&hour===12) hour=0;}
-      }
+      if(parts.length>=5){hour=parseInt(parts[3],10);min=parseInt(parts[4],10); if(parts.length>=6) sec=parseInt(parts[5],10)||0;}
       const d=new Date(year,(month||1)-1,day||1,hour,min,sec);
       if(!isNaN(d)) return d;
     }
@@ -63,10 +36,6 @@ function formatDateDDMMMYYYY(input){
   if(isNaN(d)) return "";
   const months=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
   return `${String(d.getDate()).padStart(2,"0")}-${months[d.getMonth()]}-${d.getFullYear()}`;
-}
-function formatDateISO(input){
-  const d=toDateObj(input); if(!d) return "";
-  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
 }
 function formatNumber1(val){
   let num=parseFloat(String(val).replace(/,/g,""));
@@ -104,129 +73,42 @@ function asColoredAging(val){
   return val;
 }
 
-/* ===================== UPLOAD & PARSE ===================== */
-async function handleUpload(){
-  const fileInput=document.getElementById("file-input");
-  const fileSelect=document.getElementById("file-select");
-  const status=document.getElementById("upload-status");
-  if(!fileInput.files.length){alert("Pilih file!");return;}
-  const file=fileInput.files[0],jenis=fileSelect.value;
-  status.textContent=`Memproses ${file.name} sebagai ${jenis}...`;
-  try{
-    const json=await parseFile(file,jenis);
-    if(jenis==="IW39") iw39Data=json;
-    else if(jenis==="SUM57") sum57Data=json;
-    else if(jenis==="Planning") planningData=json;
-    else if(jenis==="Data1") data1Data=json;
-    else if(jenis==="Data2") data2Data=json;
-    else if(jenis==="Budget") budgetData=json;
-    status.textContent=`File ${file.name} berhasil diupload (${json.length} rows).`;
-    fileInput.value="";
-  }catch(e){status.textContent=`Error: ${e.message}`;}
-}
-async function parseFile(file,jenis){return new Promise((resolve,reject)=>{
-  const reader=new FileReader();
-  reader.onload=e=>{
-    try{
-      const data=new Uint8Array(e.target.result);
-      const workbook=XLSX.read(data,{type:"array"});
-      let sheetName="";
-      if(workbook.SheetNames.includes(jenis)) sheetName=jenis;
-      else sheetName=workbook.SheetNames[0];
-      const ws=workbook.Sheets[sheetName]; if(!ws) throw new Error(`Sheet "${sheetName}" tidak ditemukan`);
-      const json=XLSX.utils.sheet_to_json(ws,{defval:"",raw:false});
-      resolve(json);
-    }catch(err){reject(err);}
-  };
-  reader.onerror=err=>reject(err);
-  reader.readAsArrayBuffer(file);
-});}
-
-/* ===================== MERGE DATA ===================== */
-function mergeData(){
-  if(!iw39Data.length){alert("Upload IW39 dulu"); return;}
-  mergedData=iw39Data.map(row=>({
-    Room:row.Room||"", "Order Type":row["Order Type"]||"", Order:row.Order||"", Description:row.Description||"",
-    "Created On":row["Created On"]||"", "User Status":row["User Status"]||"", MAT:row.MAT||"", CPH:"", Section:"", 
-    "Status Part":"", Aging:"", Month:row.Month||"", Cost:"-", Reman:row.Reman||"", Include:"-", Exclude:"-", 
-    Planning:"", "Status AMT":""
-  }));
-  mergedData.forEach(md=>{
-    if((md.Description||"").toUpperCase().startsWith("JR")) md.CPH="External Job";
-    else{
-      const d2=data2Data.find(d=>(d.MAT||"").trim()===md.MAT.trim());
-      md.CPH=d2?d2.CPH||"":"";
-    }
-    const d1=data1Data.find(d=>(d.Room||"").trim()===md.Room.trim());
-    md.Section=d1?d1.Section||"":"";
-    const s57=sum57Data.find(s=>(s.Order||"")==md.Order);
-    if(s57){md.Aging=s57.Aging||""; md["Status Part"]=s57["Part Complete"]||"";}
-    const pl=planningData.find(p=>(p.Order||"")==md.Order);
-    if(pl){md.Planning=pl["Event Start"]||""; md["Status AMT"]=pl.Status||"";}
-    const src=iw39Data.find(i=>(i.Order||"")==md.Order);
-    if(src){
-      const plan=parseFloat((src["Total sum (plan)"]||"").replace(/,/g,""))||0;
-      const actual=parseFloat((src["Total sum (actual)"]||"").replace(/,/g,""))||0;
-      let cost=(plan-actual)/16500;
-      if(!isFinite(cost)||cost<0){md.Cost="-";md.Include="-";md.Exclude="-";}
-      else{
-        md.Cost=cost.toFixed(1);
-        const isReman=(md.Reman||"").toLowerCase().includes("reman");
-        const inc=isReman?cost*0.25:cost;
-        md.Include=inc.toFixed(1); md.Exclude=md.Include;
-      }
-    }
+/* ===================== ATTACH TABLE EVENTS ===================== */
+function attachTableEvents() {
+  document.querySelectorAll(".edit-btn").forEach(btn => {
+    btn.addEventListener("click", () => startEdit(parseInt(btn.dataset.index)));
   });
-  try{
-    const raw=localStorage.getItem(UI_LS_KEY);
-    if(raw){const saved=JSON.parse(raw);
-      saved.userEdits?.forEach(edit=>{
-        const idx=mergedData.findIndex(r=>r.Order===edit.Order);
-        if(idx!==-1) mergedData[idx]={...mergedData[idx],...edit};
-      });
-    }
-  }catch{}
-  updateMonthFilterOptions();
+  document.querySelectorAll(".delete-btn").forEach(btn => {
+    btn.addEventListener("click", () => deleteRow(parseInt(btn.dataset.index)));
+  });
 }
 
 /* ===================== RENDER TABLE ===================== */
 function renderTable(dataToRender = mergedData) {
   const tbody = document.querySelector("#output-table tbody");
-  if (!tbody) { console.warn("Tabel #output-table tidak ditemukan."); return; }
+  if (!tbody) return;
   tbody.innerHTML = "";
 
   dataToRender.forEach((row, index) => {
     const tr = document.createElement("tr");
-    tr.dataset.index = index; // simpan index row
+    tr.dataset.index = index;
 
     const cols = ["Room","Order Type","Order","Description","Created On","User Status","MAT","CPH","Section","Status Part","Aging","Month","Cost","Reman","Include","Exclude","Planning","Status AMT"];
-
     cols.forEach(col => {
       const td = document.createElement("td");
       let val = row[col] || "";
-
-      // Pewarnaan
-      if(col === "User Status") td.innerHTML = asColoredStatusUser(val);
-      else if(col === "Status Part") td.innerHTML = asColoredStatusPart(val);
-      else if(col === "Status AMT") td.innerHTML = asColoredStatusAMT(val);
-      else if(col === "Aging") td.innerHTML = asColoredAging(val);
-
-      // Tanggal
-      else if(col === "Created On" || col === "Planning") td.textContent = formatDateDDMMMYYYY(val);
-
-      // Angka / cost / include / exclude
-      else if(col === "Cost" || col === "Include" || col === "Exclude") {
-        td.textContent = formatNumber1(val);
-        td.style.textAlign = "right";
-      }
-      else td.textContent = val;
-
+      if(col==="User Status") td.innerHTML=asColoredStatusUser(val);
+      else if(col==="Status Part") td.innerHTML=asColoredStatusPart(val);
+      else if(col==="Status AMT") td.innerHTML=asColoredStatusAMT(val);
+      else if(col==="Aging") td.innerHTML=asColoredAging(val);
+      else if(col==="Created On"||col==="Planning") td.textContent=formatDateDDMMMYYYY(val);
+      else if(col==="Cost"||col==="Include"||col==="Exclude") {td.textContent=formatNumber1(val); td.style.textAlign="right";}
+      else td.textContent=val;
       tr.appendChild(td);
     });
 
-    // Action
-    const tdAct = document.createElement("td");
-    tdAct.innerHTML = `
+    const tdAct=document.createElement("td");
+    tdAct.innerHTML=`
       <button class="action-btn edit-btn" data-index="${index}">Edit</button>
       <button class="action-btn delete-btn" data-index="${index}">Delete</button>
     `;
@@ -235,24 +117,21 @@ function renderTable(dataToRender = mergedData) {
     tbody.appendChild(tr);
   });
 
-  attachTableEvents(); // pastikan tombol berfungsi
+  attachTableEvents();
 }
 
-/* ===================== START EDIT (HANYA Month, Cost, Reman) ===================== */
-function startEdit(index) {
+/* ===================== START EDIT ===================== */
+function startEdit(index){
   const row = mergedData[index];
-  if (!row) return;
+  if(!row) return;
+  const tbody=document.querySelector("#output-table tbody");
+  const tr=tbody.querySelector(`tr[data-index='${index}']`);
+  if(!tr) return;
 
-  const tbody = document.querySelector("#output-table tbody");
-  const tr = tbody.querySelector(`tr[data-index='${index}']`);
-  if (!tr) return;
+  const months = Array.from(new Set(mergedData.map(d=>d.Month).filter(m=>m && m.trim()!=""))).sort();
+  const monthOptions = [`<option value="">--Select Month--</option>`].concat(months.map(m=>`<option value="${m}">${m}</option>`)).join("");
 
-  const months = Array.from(new Set(mergedData.map(d => d.Month).filter(m => m && m.trim() !== ""))).sort();
-  const monthOptions = [`<option value="">--Select Month--</option>`]
-    .concat(months.map(m => `<option value="${m}">${m}</option>`))
-    .join("");
-
-  tr.innerHTML = `
+  tr.innerHTML=`
     <td>${safe(row.Room)}</td>
     <td>${safe(row["Order Type"])}</td>
     <td>${safe(row.Order)}</td>
@@ -268,8 +147,8 @@ function startEdit(index) {
     <td><input type="text" value="${safe(row.Cost)}" data-field="Cost" style="text-align:right;"/></td>
     <td>
       <select data-field="Reman">
-        <option value="Reman" ${row.Reman === "Reman" ? "selected" : ""}>Reman</option>
-        <option value="-" ${row.Reman === "-" ? "selected" : ""}>-</option>
+        <option value="Reman" ${row.Reman==="Reman"?"selected":""}>Reman</option>
+        <option value="-" ${row.Reman==="-"?"selected":""}>-</option>
       </select>
     </td>
     <td>${formatNumber1(row.Include)}</td>
@@ -282,143 +161,34 @@ function startEdit(index) {
     </td>
   `;
 
-  // set selected month
-  tr.querySelector("select[data-field='Month']").value = row.Month || "";
-
-  // tombol save/cancel
-  tr.querySelector(".save-btn").onclick = () => saveEdit(index);
-  tr.querySelector(".cancel-btn").onclick = () => cancelEdit();
+  tr.querySelector("select[data-field='Month']").value=row.Month||"";
+  tr.querySelector(".save-btn").onclick=()=>saveEdit(index);
+  tr.querySelector(".cancel-btn").onclick=()=>cancelEdit();
 }
 
 /* ===================== SAVE EDIT ===================== */
-function saveEdit(index) {
-  const tr = document.querySelector(`#output-table tbody tr[data-index='${index}']`);
-  if (!tr) return;
+function saveEdit(index){
+  const tr=document.querySelector(`#output-table tbody tr[data-index='${index}']`);
+  if(!tr) return;
 
-  const month = tr.querySelector("select[data-field='Month']").value;
-  const cost = tr.querySelector("input[data-field='Cost']").value;
-  const reman = tr.querySelector("select[data-field='Reman']").value;
+  const month=tr.querySelector("select[data-field='Month']").value;
+  const cost=tr.querySelector("input[data-field='Cost']").value;
+  const reman=tr.querySelector("select[data-field='Reman']").value;
 
-  // update data
-  mergedData[index].Month = month;
-  mergedData[index].Cost = cost;
-  mergedData[index].Reman = reman;
+  mergedData[index].Month=month;
+  mergedData[index].Cost=cost;
+  mergedData[index].Reman=reman;
 
-  // render ulang table
   renderTable();
 }
 
 /* ===================== CANCEL EDIT ===================== */
-function cancelEdit() {
-  renderTable();
-}
+function cancelEdit(){renderTable();}
 
-/* ===================== ATTACH TABLE EVENTS ===================== */
-function attachTableEvents() {
-  // tombol Edit
-  document.querySelectorAll(".edit-btn").forEach(btn => {
-    btn.addEventListener("click", () => startEdit(parseInt(btn.dataset.index)));
-  });
-
-  // tombol Delete
-  document.querySelectorAll(".delete-btn").forEach(btn => {
-    btn.addEventListener("click", () => deleteRow(parseInt(btn.dataset.index)));
-  });
-}
-
-/* ===================== FILTERS ===================== */
-function filterData(){
-  const room=document.getElementById("filter-room").value.trim().toLowerCase();
-  const order=document.getElementById("filter-order").value.trim().toLowerCase();
-  const cph=document.getElementById("filter-cph").value.trim().toLowerCase();
-  const mat=document.getElementById("filter-mat").value.trim().toLowerCase();
-  const section=document.getElementById("filter-section").value.trim().toLowerCase();
-  const month=document.getElementById("filter-month").value.trim().toLowerCase();
-  const filtered=mergedData.filter(row=>{
-    if(room&&!(row.Room||"").toLowerCase().includes(room)) return false;
-    if(order&&!(row.Order||"").toLowerCase().includes(order)) return false;
-    if(cph&&!(row.CPH||"").toLowerCase().includes(cph)) return false;
-    if(mat&&!(row.MAT||"").toLowerCase().includes(mat)) return false;
-    if(section&&!(row.Section||"").toLowerCase().includes(section)) return false;
-    if(month&&(row.Month||"").toLowerCase()!==month) return false;
-    return true;
-  });
-  renderTable(filtered);
-}
-function resetFilters(){
-  ["filter-room","filter-order","filter-cph","filter-mat","filter-section","filter-month"].forEach(id=>document.getElementById(id).value="");
-  renderTable(mergedData);
-}
-function updateMonthFilterOptions(){
-  const sel=document.getElementById("filter-month"); if(!sel) return;
-  const months=Array.from(new Set(mergedData.map(d=>d.Month).filter(m=>m&&m.trim()!=""))).sort();
-  sel.innerHTML=`<option value="">-- All --</option>`+months.map(m=>`<option value="${m.toLowerCase()}">${m}</option>`).join("");
-}
-
-/* ===================== ADD ORDERS ===================== */
-function addOrders(){
-  const input=document.getElementById("add-order-input");
-  const status=document.getElementById("add-order-status");
-  const orders=(input.value||"").trim().split(/[\s,]+/).filter(Boolean);
-  let added=0; orders.forEach(o=>{
-    if(!mergedData.some(r=>r.Order===o)){
-      mergedData.push({Room:"", "Order Type":"", Order:o, Description:"", "Created On":"", "User Status":"", MAT:"", CPH:"", Section:"", "Status Part":"", Aging:"", Month:"", Cost:"-", Reman:"", Include:"-", Exclude:"-", Planning:"", "Status AMT":""});
-      added++;
-    }
-  });
-  if(added) { saveUserEdits(); renderTable(mergedData); status.textContent=`${added} Order berhasil ditambahkan.`; }
-  else status.textContent="Order sudah ada di data.";
-  input.value="";
-}
-
-/* ===================== SAVE / LOAD JSON ===================== */
-function saveToJSON(){
-  if(!mergedData.length){alert("Tidak ada data"); return;}
-  const dataStr=JSON.stringify({mergedData,timestamp:new Date().toISOString()},null,2);
-  const blob=new Blob([dataStr],{type:"application/json"});
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement("a"); a.href=url;
-  a.download=`ndarboe_data_${new Date().toISOString().slice(0,10)}.json`;
-  document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
-}
-async function loadFromJSON(file){
-  try{
-    const text=await file.text(); const obj=JSON.parse(text);
-    if(obj.mergedData&&Array.isArray(obj.mergedData)){mergedData=obj.mergedData; renderTable(mergedData); updateMonthFilterOptions(); alert("Data berhasil dimuat");}
-    else alert("File JSON tidak valid");
-  }catch(e){alert("Gagal membaca JSON: "+e.message);}
-}
-
-/* ===================== PERSISTENCE ===================== */
-function saveUserEdits(){
-  try{localStorage.setItem(UI_LS_KEY,JSON.stringify({userEdits:mergedData.map(r=>({...r}))}));}catch{}
-}
-
-/* ===================== CLEAR ALL ===================== */
-function clearAllData(){
-  if(!confirm("Yakin ingin hapus semua data?")) return;
-  [iw39Data,sum57Data,planningData,data1Data,data2Data,budgetData,mergedData]=[[],[],[],[],[],[],[]];
-  renderTable([]); document.getElementById("upload-status").textContent="Data dihapus";
+/* ===================== DOM READY ===================== */
+document.addEventListener("DOMContentLoaded",()=>{
+  setupButtons();
+  setupMenu();
+  renderTable([]); // aman karena attachTableEvents sudah ada
   updateMonthFilterOptions();
-}
-
-/* ===================== BUTTON SETUP ===================== */
-function setupButtons(){
-  const ids={upload:"upload-btn",clear:"clear-files-btn",refresh:"refresh-btn",filter:"filter-btn",reset:"reset-btn",save:"save-btn",load:"load-btn",add:"add-order-btn"};
-  if(document.getElementById(ids.upload)) document.getElementById(ids.upload).onclick=handleUpload;
-  if(document.getElementById(ids.clear)) document.getElementById(ids.clear).onclick=clearAllData;
-  if(document.getElementById(ids.refresh)) document.getElementById(ids.refresh).onclick=()=>{mergeData(); renderTable(mergedData);};
-  if(document.getElementById(ids.filter)) document.getElementById(ids.filter).onclick=filterData;
-  if(document.getElementById(ids.reset)) document.getElementById(ids.reset).onclick=resetFilters;
-  if(document.getElementById(ids.save)) document.getElementById(ids.save).onclick=saveToJSON;
-  if(document.getElementById(ids.load)) document.getElementById(ids.load).onclick=()=>{
-    const input=document.createElement("input"); input.type="file"; input.accept="application/json";
-    input.onchange=()=>{if(input.files.length) loadFromJSON(input.files[0]);}; input.click();
-  };
-  if(document.getElementById(ids.add)) document.getElementById(ids.add).onclick=addOrders;
-}
-
-
-
-
-
+});
