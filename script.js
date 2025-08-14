@@ -847,3 +847,4 @@ function wireUp() {
 window.addEventListener("DOMContentLoaded", () => {
   wireUp();
 });
+
