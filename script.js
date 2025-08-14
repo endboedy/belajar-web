@@ -190,85 +190,100 @@ function mergeData(){
 }
 
 /* ===================== RENDER TABLE ===================== */
-function renderTable(dataToRender=mergedData){
-  const tbody=document.querySelector("#output-table tbody"); if(!tbody){console.warn("Tabel tidak ditemukan");return;}
-  tbody.innerHTML="";
-  dataToRender.forEach((row,index)=>{
-    const tr=document.createElement("tr"); tr.dataset.index=index;
-    const cols=["Room","Order Type","Order","Description","Created On","User Status","MAT","CPH","Section","Status Part","Aging","Month","Cost","Reman","Include","Exclude","Planning","Status AMT"];
-    cols.forEach(col=>{
-      const td=document.createElement("td"); let val=row[col]||"";
-      if(col==="User Status") td.innerHTML=asColoredStatusUser(val);
-      else if(col==="Status Part") td.innerHTML=asColoredStatusPart(val);
-      else if(col==="Status AMT") td.innerHTML=asColoredStatusAMT(val);
-      else if(col==="Aging") td.innerHTML=asColoredAging(val);
-      else if(col==="Created On"||col==="Planning") td.textContent=formatDateDDMMMYYYY(val);
-      else if(col==="Cost"||col==="Include"||col==="Exclude"){ td.textContent=formatNumber1(val); td.style.textAlign="right"; }
-      else td.textContent=val;
+function renderTable(dataToRender = mergedData) {
+  const tbody = document.querySelector("#output-table tbody");
+  if (!tbody) { console.warn("Tabel #output-table tidak ditemukan."); return; }
+  tbody.innerHTML = "";
+
+  dataToRender.forEach((row, index) => {
+    const tr = document.createElement("tr");
+    tr.dataset.index = index; // simpan index row
+
+    const cols = ["Room","Order Type","Order","Description","Created On","User Status","MAT","CPH","Section","Status Part","Aging","Month","Cost","Reman","Include","Exclude","Planning","Status AMT"];
+
+    cols.forEach(col => {
+      const td = document.createElement("td");
+      let val = row[col] || "";
+
+      // Pewarnaan
+      if(col === "User Status") td.innerHTML = asColoredStatusUser(val);
+      else if(col === "Status Part") td.innerHTML = asColoredStatusPart(val);
+      else if(col === "Status AMT") td.innerHTML = asColoredStatusAMT(val);
+      else if(col === "Aging") td.innerHTML = asColoredAging(val);
+
+      // Tanggal
+      else if(col === "Created On" || col === "Planning") td.textContent = formatDateDDMMMYYYY(val);
+
+      // Angka / cost / include / exclude
+      else if(col === "Cost" || col === "Include" || col === "Exclude") {
+        td.textContent = formatNumber1(val);
+        td.style.textAlign = "right";
+      }
+      else td.textContent = val;
+
       tr.appendChild(td);
     });
-    const tdAct=document.createElement("td");
-    tdAct.innerHTML=`<button class="action-btn edit-btn" data-order="${row.Order}">Edit</button>
-                      <button class="action-btn delete-btn" data-order="${row.Order}">Delete</button>`;
+
+    // Action
+    const tdAct = document.createElement("td");
+    tdAct.innerHTML = `
+      <button class="action-btn edit-btn" data-index="${index}">Edit</button>
+      <button class="action-btn delete-btn" data-index="${index}">Delete</button>
+    `;
     tr.appendChild(tdAct);
+
     tbody.appendChild(tr);
   });
-  attachTableEvents();
+
+  attachTableEvents(); // pastikan tombol berfungsi
 }
 
-/* ===================== EDIT / DELETE ===================== */
-function attachTableEvents(){
-  document.querySelectorAll(".edit-btn").forEach(btn=>{
-    btn.onclick=()=>startEdit(btn.dataset.order);
-  });
-  document.querySelectorAll(".delete-btn").forEach(btn=>{
-    btn.onclick=()=>deleteOrder(btn.dataset.order);
-  });
-}
+/* ===================== START EDIT ===================== */
+function startEdit(index) {
+  const row = mergedData[index];
+  if(!row) return;
 
-function startEdit(order){
-  const idx=mergedData.findIndex(r=>r.Order===order); if(idx===-1) return;
-  const tbody=document.querySelector("#output-table tbody"); const tr=tbody.children[idx]; const row=mergedData[idx];
-  const months=Array.from(new Set(mergedData.map(d=>d.Month).filter(m=>m&&m.trim()!=""))).sort();
-  const monthOptions=[`<option value="">--Select Month--</option>`,...months.map(m=>`<option value="${m}">${m}</option>`)].join("");
-  tr.innerHTML=`
-    <td><input type="text" value="${row.Room}" data-field="Room"/></td>
-    <td><input type="text" value="${row["Order Type"]}" data-field="Order Type"/></td>
-    <td>${row.Order}</td>
-    <td><input type="text" value="${row.Description}" data-field="Description"/></td>
+  const tbody = document.querySelector("#output-table tbody");
+  const tr = tbody.querySelector(`tr[data-index='${index}']`);
+  if(!tr) return;
+
+  const months = Array.from(new Set(mergedData.map(d => d.Month).filter(m => m && m.trim() !== ""))).sort();
+  const monthOptions = [`<option value="">--Select Month--</option>`].concat(months.map(m => `<option value="${m}">${m}</option>`)).join("");
+
+  tr.innerHTML = `
+    <td><input type="text" value="${safe(row.Room)}" data-field="Room"/></td>
+    <td><input type="text" value="${safe(row["Order Type"])}" data-field="Order Type"/></td>
+    <td>${safe(row.Order)}</td>
+    <td><input type="text" value="${safe(row.Description)}" data-field="Description"/></td>
     <td><input type="date" value="${formatDateISO(row["Created On"])}" data-field="Created On"/></td>
-    <td><input type="text" value="${row["User Status"]}" data-field="User Status"/></td>
-    <td><input type="text" value="${row.MAT}" data-field="MAT"/></td>
-    <td><input type="text" value="${row.CPH}" data-field="CPH"/></td>
-    <td><input type="text" value="${row.Section}" data-field="Section"/></td>
-    <td><input type="text" value="${row["Status Part"]}" data-field="Status Part"/></td>
-    <td><input type="text" value="${row.Aging}" data-field="Aging"/></td>
+    <td><input type="text" value="${safe(row["User Status"])}" data-field="User Status"/></td>
+    <td><input type="text" value="${safe(row.MAT)}" data-field="MAT"/></td>
+    <td><input type="text" value="${safe(row.CPH)}" data-field="CPH"/></td>
+    <td><input type="text" value="${safe(row.Section)}" data-field="Section"/></td>
+    <td><input type="text" value="${safe(row["Status Part"])}" data-field="Status Part"/></td>
+    <td><input type="text" value="${safe(row.Aging)}" data-field="Aging"/></td>
     <td><select data-field="Month">${monthOptions}</select></td>
-    <td><input type="text" value="${row.Cost}" data-field="Cost" readonly style="text-align:right;background:#eee;"/></td>
-    <td><input type="text" value="${row.Reman}" data-field="Reman"/></td>
-    <td><input type="text" value="${row.Include}" data-field="Include" readonly style="text-align:right;background:#eee;"/></td>
-    <td><input type="text" value="${row.Exclude}" data-field="Exclude" readonly style="text-align:right;background:#eee;"/></td>
+    <td><input type="text" value="${safe(row.Cost)}" data-field="Cost" readonly style="text-align:right;background:#eee;"/></td>
+    <td><input type="text" value="${safe(row.Reman)}" data-field="Reman"/></td>
+    <td><input type="text" value="${safe(row.Include)}" data-field="Include" readonly style="text-align:right;background:#eee;"/></td>
+    <td><input type="text" value="${safe(row.Exclude)}" data-field="Exclude" readonly style="text-align:right;background:#eee;"/></td>
     <td><input type="date" value="${formatDateISO(row.Planning)}" data-field="Planning"/></td>
-    <td><input type="text" value="${row["Status AMT"]}" data-field="Status AMT"/></td>
-    <td><button class="action-btn save-btn" data-order="${row.Order}">Save</button>
-        <button class="action-btn cancel-btn" data-order="${row.Order}">Cancel</button></td>`;
-  tr.querySelector("select[data-field='Month']").value=row.Month||"";
-  tr.querySelector(".save-btn").onclick=()=>saveEdit(order);
-  tr.querySelector(".cancel-btn").onclick=()=>renderTable(mergedData);
+    <td><input type="text" value="${safe(row["Status AMT"])}" data-field="Status AMT"/></td>
+    <td>
+      <button class="action-btn save-btn" data-index="${index}">Save</button>
+      <button class="action-btn cancel-btn" data-index="${index}">Cancel</button>
+    </td>
+  `;
+
+  // set selected month
+  const monthSel = tr.querySelector("select[data-field='Month']");
+  monthSel.value = row.Month || "";
+
+  // tombol save/cancel
+  tr.querySelector(".save-btn").onclick = () => saveEdit(index);
+  tr.querySelector(".cancel-btn").onclick = () => cancelEdit();
 }
-function saveEdit(order){
-  const idx=mergedData.findIndex(r=>r.Order===order); if(idx===-1) return;
-  const tr=document.querySelector("#output-table tbody").children[idx];
-  tr.querySelectorAll("input[data-field],select[data-field]").forEach(input=>{
-    const f=input.dataset.field; mergedData[idx][f]=input.value;
-  });
-  saveUserEdits(); mergeData(); renderTable(mergedData);
-}
-function deleteOrder(order){
-  const idx=mergedData.findIndex(r=>r.Order===order); if(idx===-1) return;
-  if(!confirm(`Hapus data order ${order} ?`)) return;
-  mergedData.splice(idx,1); saveUserEdits(); renderTable(mergedData);
-}
+
 
 /* ===================== FILTERS ===================== */
 function filterData(){
@@ -361,3 +376,4 @@ function setupButtons(){
   };
   if(document.getElementById(ids.add)) document.getElementById(ids.add).onclick=addOrders;
 }
+
