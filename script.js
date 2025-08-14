@@ -313,15 +313,15 @@ function mergeData() {
 }
 
 /* ===================== RENDER TABLE ===================== */
-function renderTable() {
-  const tbody = document.querySelector("#data-table tbody");
-  if (!tbody) return; // kalau table belum ada, stop
-  tbody.innerHTML = "";
 
+function renderTable(data = [], tableId = "output-table") {
+  const tbody = document.querySelector(`#${tableId} tbody`);
+  if (!tbody) return;
+
+  tbody.innerHTML = "";
   data.forEach((row, index) => {
     const tr = document.createElement("tr");
-
-    row.forEach(cell => {
+    Object.values(row).forEach(cell => {
       const td = document.createElement("td");
       td.textContent = cell;
       tr.appendChild(td);
@@ -334,7 +334,6 @@ function renderTable() {
       <button class="action-btn delete-btn" data-index="${index}">Delete</button>
     `;
     tr.appendChild(actionTd);
-
     tbody.appendChild(tr);
   });
 
@@ -723,6 +722,7 @@ function setupButtons() {
   const addOrderBtn = document.getElementById("add-order-btn");
   if (addOrderBtn) addOrderBtn.onclick = addOrders;
 }
+
 
 
 
