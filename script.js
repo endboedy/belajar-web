@@ -313,17 +313,16 @@ function mergeData() {
 }
 
 /* ===================== RENDER TABLE ===================== */
-
-function renderTable(data = mergedData) {
+function renderTable(dataToRender = mergedData) {
   const tbody = document.querySelector("#output-table tbody");
   if (!tbody) {
     console.warn("Tabel #output-table tidak ditemukan.");
     return;
   }
 
-  tbody.innerHTML = "";
+  tbody.innerHTML = ""; // reset tabel
 
-  data.forEach((row, index) => {
+  dataToRender.forEach((row, index) => {
     const tr = document.createElement("tr");
 
     // Sesuaikan urutan kolom dengan <thead>
@@ -357,15 +356,22 @@ function renderTable(data = mergedData) {
     tbody.appendChild(tr);
   });
 
+  // Pasang event listener tombol setelah render
   attachTableEvents();
 }
 
 /* ===================== ATTACH TABLE EVENTS ===================== */
 function attachTableEvents() {
+  // Tombol Edit
   document.querySelectorAll(".edit-btn").forEach(btn => {
-    btn.addEventListener("click", () => activateEdit(btn.closest("tr"), btn.dataset.index));
+    btn.addEventListener("click", function () {
+      const tr = this.closest("tr");
+      const index = this.dataset.index;
+      activateEdit(tr, index);
+    });
   });
 
+  // Tombol Delete
   document.querySelectorAll(".delete-btn").forEach(btn => {
     btn.addEventListener("click", function () {
       const index = this.dataset.index;
@@ -377,6 +383,7 @@ function attachTableEvents() {
   });
 }
 
+/* ===================== ACTIVATE EDIT ===================== */
 function activateEdit(tr, index) {
   const tds = tr.querySelectorAll("td");
 
@@ -384,22 +391,27 @@ function activateEdit(tr, index) {
   const currentCost  = tds[12].textContent.trim();
   const currentReman = tds[13].textContent.trim();
 
+  // Dropdown Month
   const monthOptions = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
     .map(m => `<option value="${m}" ${m===currentMonth?"selected":""}>${m}</option>`).join("");
   tds[11].innerHTML = `<select class="edit-month">${monthOptions}</select>`;
 
+  // Input Cost
   tds[12].innerHTML = `<input type="text" class="edit-cost" value="${currentCost}" style="width:80px;text-align:right;">`;
 
+  // Dropdown Reman
   tds[13].innerHTML = `
     <select class="edit-reman">
       <option value="Reman" ${currentReman==="Reman"?"selected":""}>Reman</option>
       <option value="-" ${currentReman==="-"?"selected":""}>-</option>
     </select>`;
 
+  // Tombol Save & Cancel
   tds[14].innerHTML = `
     <button class="action-btn save-btn" data-index="${index}">Save</button>
     <button class="action-btn cancel-btn">Cancel</button>`;
 
+  // Save
   tr.querySelector(".save-btn").addEventListener("click", function () {
     const idx = this.dataset.index;
     data[idx][11] = tr.querySelector(".edit-month").value;
@@ -408,19 +420,15 @@ function activateEdit(tr, index) {
     renderTable();
   });
 
+  // Cancel
   tr.querySelector(".cancel-btn").addEventListener("click", function () {
     renderTable();
   });
 }
 
-// Panggil saat DOM siap
+/* ===================== DOM READY ===================== */
 document.addEventListener("DOMContentLoaded", () => {
-  renderTable();
-
-  // Aktifkan edit otomatis untuk semua baris (jika mau semua langsung bisa diedit)
-  document.querySelectorAll("table tbody tr").forEach((tr, i) => {
-    activateEdit(tr, i);
-  });
+  renderTable(); // render tabel awal dan attach event tombol
 });
 
 /* ===================== CELL COLORING ===================== */
@@ -750,6 +758,7 @@ function setupButtons() {
   const addOrderBtn = document.getElementById("add-order-btn");
   if (addOrderBtn) addOrderBtn.onclick = addOrders;
 }
+
 
 
 
