@@ -325,7 +325,7 @@ function renderTable(dataToRender = mergedData) {
   dataToRender.forEach((row, index) => {
     const tr = document.createElement("tr");
 
-    // Sesuaikan urutan kolom dengan <thead>
+    // Urutan kolom sesuai <thead>
     const columns = [
       "Room", "Order Type", "Order", "Description", "Created On",
       "User Status", "MAT", "CPH", "Section", "Status Part", "Aging",
@@ -336,7 +336,6 @@ function renderTable(dataToRender = mergedData) {
       const td = document.createElement("td");
       let val = row[col] ?? "";
 
-      // Format tanggal jika kolom Created On atau Planning
       if (col === "Created On" || col === "Planning") {
         val = formatDateDDMMMYYYY(val);
       }
@@ -345,7 +344,7 @@ function renderTable(dataToRender = mergedData) {
       tr.appendChild(td);
     });
 
-    // Kolom Action
+    // Kolom Action terakhir
     const actionTd = document.createElement("td");
     actionTd.innerHTML = `
       <button class="action-btn edit-btn" data-index="${index}">Edit</button>
@@ -361,22 +360,23 @@ function renderTable(dataToRender = mergedData) {
 document.addEventListener("DOMContentLoaded", () => {
   renderTable(); // render awal
 
-  // Delegated listener di tbody
   const tbody = document.querySelector("#output-table tbody");
 
+  // Event delegation untuk semua tombol di tbody
   tbody.addEventListener("click", function(e) {
     const btn = e.target;
+    const tr = btn.closest("tr");
+    const index = btn.dataset.index;
+
+    if (!tr || index === undefined) return;
 
     // Tombol Edit
     if (btn.classList.contains("edit-btn")) {
-      const tr = btn.closest("tr");
-      const index = btn.dataset.index;
       activateEdit(tr, index);
     }
 
     // Tombol Delete
     if (btn.classList.contains("delete-btn")) {
-      const index = btn.dataset.index;
       if (confirm("Yakin mau hapus data ini?")) {
         mergedData.splice(index, 1);
         renderTable();
@@ -385,14 +385,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Tombol Save
     if (btn.classList.contains("save-btn")) {
-      const tr = btn.closest("tr");
-      const idx = btn.dataset.index;
       const tds = tr.querySelectorAll("td");
-
-      mergedData[idx]["Month"] = tds[11].querySelector(".edit-month").value;
-      mergedData[idx]["Cost"]  = tds[12].querySelector(".edit-cost").value;
-      mergedData[idx]["Reman"] = tds[13].querySelector(".edit-reman").value;
-
+      mergedData[index]["Month"] = tds[11].querySelector(".edit-month").value;
+      mergedData[index]["Cost"]  = tds[12].querySelector(".edit-cost").value;
+      mergedData[index]["Reman"] = tds[13].querySelector(".edit-reman").value;
       renderTable();
     }
 
@@ -429,7 +425,7 @@ function activateEdit(tr, index) {
   // Tombol Save & Cancel di kolom Action terakhir
   tds[tds.length - 1].innerHTML = `
     <button class="action-btn save-btn" data-index="${index}">Save</button>
-    <button class="action-btn cancel-btn">Cancel</button>`;
+    <button class="action-btn cancel-btn" data-index="${index}">Cancel</button>`;
 }
 
 
@@ -765,6 +761,7 @@ function setupButtons() {
   const addOrderBtn = document.getElementById("add-order-btn");
   if (addOrderBtn) addOrderBtn.onclick = addOrders;
 }
+
 
 
 
