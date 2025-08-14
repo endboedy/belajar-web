@@ -120,33 +120,42 @@
       </div>
     </section>
 
-    <!-- List Order Monthly (LOM) -->
-    <section id="lom" class="content-section">
-      <h2>List Order Monthly</h2>
-      <div class="add-order-section">
-        <label for="lom-add-order">Add Order (pisah koma atau enter)</label>
-        <textarea id="lom-add-order" rows="3" placeholder="ORD001, ORD002"></textarea>
-        <button id="lom-add-btn" style="margin-top:8px">Add Orders</button>
-      </div>
-      <div class="filter-group">
-        <label>Order: <input type="text" id="lom-filter-order" placeholder="Filter Order" /></label>
-        <button id="lom-filter-btn">Filter</button>
-        <button id="lom-save-btn">Save</button>
-        <button id="lom-load-btn">Load</button>
-      </div>
-      <div style="overflow:auto; max-height:500px;">
-        <table id="lom-table">
-          <thead>
-            <tr>
-              <th>Order</th><th>Month</th><th>Cost</th><th>Reman</th>
-              <th>Status</th><th>Planning</th><th>Status AMT</th><th>Action</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-      </div>
-    </section>
+   <!-- List Order Monthly (LOM) -->
+<section id="lom" class="content-section">
+  <h2>List Order Monthly</h2>
 
+  <div class="add-order-section">
+    <label for="lom-add-input">Add Order (pisah koma atau enter)</label>
+    <textarea id="lom-add-input" rows="3" placeholder="ORD001, ORD002"></textarea>
+    <button id="lom-add-btn" style="margin-top:8px">Add Orders</button>
+    <div id="lom-add-status" class="status-message"></div>
+  </div>
+
+  <div class="filter-group">
+    <label>Order: <input type="text" id="lom-filter-order" placeholder="Filter Order" /></label>
+    <button id="lom-filter-btn">Filter</button>
+    <button id="lom-save-btn">Save</button>
+    <button id="lom-load-btn">Load</button>
+  </div>
+
+  <div style="overflow:auto; max-height:500px;">
+    <table id="lom-table">
+      <thead>
+        <tr>
+          <th>Order</th>
+          <th>Month</th>
+          <th>Cost</th>
+          <th>Reman</th>
+          <th>Status</th>
+          <th>Planning</th>
+          <th>Status AMT</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</section>
     <section id="summary" class="content-section">
       <h2>Summary CRM</h2>
       <p class="small">(Kosong dulu)</p>
@@ -174,3 +183,4 @@
 </script>
 </body>
 </html>
+
