@@ -44,11 +44,10 @@ function setupMenu() {
   });
 }
 
- /* ===================== HELPERS: DATE PARSING/FORMATTING ===================== */
+/* ===================== HELPERS: DATE PARSING/FORMATTING ===================== */
 
 /**
- * Parse apa pun (Excel serial number / string MM/DD/YYYY / string MM/DD/YYYY HH:mm:ss AM/PM /
- * ISO yyyy-mm-dd / Date object) ke Date object (valid) atau null
+ * Parse apa pun (Excel serial number / string MM/DD/YYYY / ISO yyyy-mm-dd / Date object) ke Date object (valid) atau null
  */
 function toDateObj(anyDate) {
   if (anyDate == null || anyDate === "") return null;
@@ -110,21 +109,19 @@ function toDateObj(anyDate) {
  */
 function excelDateToJS(serial) {
   if (!serial || isNaN(serial)) return null;
-  const utc_days  = Math.floor(serial - 25569);
-  const utc_value = utc_days * 86400;
-  const date_info = new Date(utc_value * 1000);
+  // Excel serial 1 → 1900-01-01
+  const utc_days = Math.floor(serial - 25569);
+  const utc_value = utc_days * 86400 * 1000; // milidetik
+  const date_info = new Date(utc_value);
 
-  const fractional_day = serial - Math.floor(serial) + 0.0000001;
-  let totalSeconds = Math.floor(86400 * fractional_day);
-  const seconds = totalSeconds % 60;
-  totalSeconds -= seconds;
+  // jam, menit, detik dari desimal
+  const fractional_day = serial - Math.floor(serial);
+  const totalSeconds = Math.round(86400 * fractional_day);
   const hours = Math.floor(totalSeconds / 3600);
-  const minutes = Math.floor(totalSeconds / 60) % 60;
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
 
-  date_info.setHours(hours);
-  date_info.setMinutes(minutes);
-  date_info.setSeconds(seconds);
-
+  date_info.setHours(hours, minutes, seconds, 0);
   return date_info;
 }
 
@@ -160,6 +157,7 @@ function formatDateDDMMMYYYY(input) {
 
   return `${day}-${mon}-${year}`;
 }
+
 /**
  * Format value untuk input[type=date] → yyyy-mm-dd
  */
@@ -170,6 +168,57 @@ function formatDateISO(anyDate) {
   const mm = String(d.getMonth()+1).padStart(2,"0");
   const dd = String(d.getDate()).padStart(2,"0");
   return `${yyyy}-${mm}-${dd}`;
+}
+
+/* ===================== RENDER TABLE ===================== */
+function renderTable(dataToRender = mergedData) {
+  const tbody = document.querySelector("#output-table tbody");
+  if (!tbody) {
+    console.warn("Tabel #output-table tidak ditemukan.");
+    return;
+  }
+
+  tbody.innerHTML = ""; // reset tabel
+
+  dataToRender.forEach((row, index) => {
+    const tr = document.createElement("tr");
+    tr.dataset.index = index; // simpan index row
+
+    // Urutan kolom sesuai <thead>
+    const columns = [
+      "Room", "Order Type", "Order", "Description", "Created On",
+      "User Status", "MAT", "CPH", "Section", "Status Part", "Aging",
+      "Month", "Cost", "Reman", "Include", "Exclude", "Planning", "Status AMT"
+    ];
+
+    columns.forEach(col => {
+      const td = document.createElement("td");
+
+      // Format tanggal untuk Created On & Planning
+      if (col === "Created On" || col === "Planning") {
+        td.textContent = formatDateDDMMMYYYY(row[col]);
+      } else {
+        td.textContent = row[col] ?? "";
+      }
+
+      // Tambahkan class untuk kolom yang ingin diedit
+      if (col === "Month") td.classList.add("col-month");
+      if (col === "Cost") td.classList.add("col-cost");
+      if (col === "Reman") td.classList.add("col-reman");
+
+      tr.appendChild(td);
+    });
+
+    // Kolom Action terakhir
+    const actionTd = document.createElement("td");
+    actionTd.innerHTML = `
+      <button class="action-btn edit-btn" data-index="${index}">Edit</button>
+      <button class="action-btn delete-btn" data-index="${index}">Delete</button>
+    `;
+    tr.appendChild(actionTd);
+
+    tbody.appendChild(tr);
+  });
 }
 
 /* ===================== UPLOAD & PARSE EXCEL ===================== */
@@ -820,6 +869,7 @@ function setupButtons() {
   const addOrderBtn = document.getElementById("add-order-btn");
   if (addOrderBtn) addOrderBtn.onclick = addOrders;
 }
+
 
 
 
