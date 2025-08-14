@@ -958,7 +958,8 @@ function mergeLOMData() {
 
 /* ====== Render Tabel LOM ====== */
 function renderLOMTable() {
-  const tbody = document.querySelector("#lom-table tbody");
+  const tbody = document.querySelector("#lom-table tbody"); // pastikan id lom-table ada di HTML
+  if (!tbody) return;
   tbody.innerHTML = "";
 
   lomData.forEach((row, idx) => {
@@ -969,17 +970,17 @@ function renderLOMTable() {
     tdOrder.textContent = row.Order;
     tr.appendChild(tdOrder);
 
-    // Month (dropdown Jan–Dec)
+    // Month dropdown
     const tdMonth = document.createElement("td");
-    const select = document.createElement("select");
+    const selectMonth = document.createElement("select");
     ["", "Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"].forEach(m => {
       const opt = document.createElement("option");
       opt.value = m;
       opt.textContent = m;
       if (row.Month === m) opt.selected = true;
-      select.appendChild(opt);
+      selectMonth.appendChild(opt);
     });
-    tdMonth.appendChild(select);
+    tdMonth.appendChild(selectMonth);
     tr.appendChild(tdMonth);
 
     // Cost
@@ -990,7 +991,7 @@ function renderLOMTable() {
     tdCost.appendChild(inputCost);
     tr.appendChild(tdCost);
 
-    // Reman
+    // Reman dropdown
     const tdReman = document.createElement("td");
     const selectReman = document.createElement("select");
     ["", "Reman", "-"].forEach(r => {
@@ -1003,7 +1004,7 @@ function renderLOMTable() {
     tdReman.appendChild(selectReman);
     tr.appendChild(tdReman);
 
-    // Status (read-only)
+    // Status read-only
     const tdStatus = document.createElement("td");
     tdStatus.textContent = row.Status || "";
     tr.appendChild(tdStatus);
@@ -1012,6 +1013,23 @@ function renderLOMTable() {
   });
 }
 
+// Event listener Add Order
+document.getElementById("lom-add-btn").addEventListener("click", () => {
+  const input = document.getElementById("lom-add-input").value;
+  if (!input.trim()) return;
+
+  const orders = input.split(/[\s,]+/).filter(o => o.trim() !== "");
+  orders.forEach(order => {
+    if (!lomData.some(r => r.Order === order)) {
+      lomData.push({ Order: order, Month: "", Cost: "", Reman: "", Status: "" });
+    }
+  });
+
+  document.getElementById("lom-add-status").textContent = `${orders.length} order ditambahkan.`;
+  document.getElementById("lom-add-input").value = "";
+
+  renderLOMTable(); // pastikan tabel ter-render ulang
+});
 /* ====== Event Delegation ====== */
 document.addEventListener("DOMContentLoaded", () => {
   mergeLOMData();
@@ -1058,6 +1076,7 @@ function saveLOMEdits() {
   localStorage.setItem(LOM_LS_KEY, JSON.stringify(lomData));
   alert("Data LOM berhasil disimpan!");
 }
+
 
 
 
