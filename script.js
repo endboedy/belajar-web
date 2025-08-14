@@ -324,6 +324,7 @@ function renderTable(dataToRender = mergedData) {
 
   dataToRender.forEach((row, index) => {
     const tr = document.createElement("tr");
+    tr.dataset.index = index; // simpan index row
 
     // Urutan kolom sesuai <thead>
     const columns = [
@@ -334,13 +335,18 @@ function renderTable(dataToRender = mergedData) {
 
     columns.forEach(col => {
       const td = document.createElement("td");
-      let val = row[col] ?? "";
+      td.textContent = row[col] ?? "";
 
+      // Tambahkan class untuk kolom yang ingin diedit
+      if (col === "Month") td.classList.add("col-month");
+      if (col === "Cost") td.classList.add("col-cost");
+      if (col === "Reman") td.classList.add("col-reman");
+
+      // Format tanggal
       if (col === "Created On" || col === "Planning") {
-        val = formatDateDDMMMYYYY(val);
+        td.textContent = formatDateDDMMMYYYY(td.textContent);
       }
 
-      td.textContent = val;
       tr.appendChild(td);
     });
 
@@ -356,19 +362,49 @@ function renderTable(dataToRender = mergedData) {
   });
 }
 
-/* ===================== EVENT DELEGATION ===================== */
+/* ===================== ACTIVATE EDIT ===================== */
+function activateEdit(tr, index) {
+  const tdMonth = tr.querySelector("td.col-month");
+  const tdCost  = tr.querySelector("td.col-cost");
+  const tdReman = tr.querySelector("td.col-reman");
+  const tdAction = tr.querySelector("td:last-child");
+
+  const currentMonth = tdMonth.textContent.trim();
+  const currentCost  = tdCost.textContent.trim();
+  const currentReman = tdReman.textContent.trim();
+
+  // Dropdown Month
+  const monthOptions = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
+    .map(m => `<option value="${m}" ${m===currentMonth?"selected":""}>${m}</option>`).join("");
+  tdMonth.innerHTML = `<select class="edit-month">${monthOptions}</select>`;
+
+  // Input Cost
+  tdCost.innerHTML = `<input type="text" class="edit-cost" value="${currentCost}" style="width:80px;text-align:right;">`;
+
+  // Dropdown Reman
+  tdReman.innerHTML = `
+    <select class="edit-reman">
+      <option value="Reman" ${currentReman==="Reman"?"selected":""}>Reman</option>
+      <option value="-" ${currentReman==="-"?"selected":""}>-</option>
+    </select>`;
+
+  // Tombol Save & Cancel di kolom Action terakhir
+  tdAction.innerHTML = `
+    <button class="action-btn save-btn" data-index="${index}">Save</button>
+    <button class="action-btn cancel-btn">Cancel</button>`;
+}
+
+/* ===================== EVENT DELEGATION & DOM READY ===================== */
 document.addEventListener("DOMContentLoaded", () => {
   renderTable(); // render awal
 
   const tbody = document.querySelector("#output-table tbody");
 
-  // Event delegation untuk semua tombol di tbody
   tbody.addEventListener("click", function(e) {
     const btn = e.target;
     const tr = btn.closest("tr");
+    if (!tr) return;
     const index = btn.dataset.index;
-
-    if (!tr || index === undefined) return;
 
     // Tombol Edit
     if (btn.classList.contains("edit-btn")) {
@@ -376,7 +412,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // Tombol Delete
-    if (btn.classList.contains("delete-btn")) {
+    else if (btn.classList.contains("delete-btn")) {
       if (confirm("Yakin mau hapus data ini?")) {
         mergedData.splice(index, 1);
         renderTable();
@@ -384,54 +420,23 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // Tombol Save
-    if (btn.classList.contains("save-btn")) {
-      const tds = tr.querySelectorAll("td");
-      mergedData[index]["Month"] = tds[11].querySelector(".edit-month").value;
-      mergedData[index]["Cost"]  = tds[12].querySelector(".edit-cost").value;
-      mergedData[index]["Reman"] = tds[13].querySelector(".edit-reman").value;
+    else if (btn.classList.contains("save-btn")) {
+      const tdMonth = tr.querySelector("td.col-month select");
+      const tdCost  = tr.querySelector("td.col-cost input");
+      const tdReman = tr.querySelector("td.col-reman select");
+
+      mergedData[index]["Month"] = tdMonth.value;
+      mergedData[index]["Cost"]  = tdCost.value;
+      mergedData[index]["Reman"] = tdReman.value;
+
       renderTable();
     }
 
     // Tombol Cancel
-    if (btn.classList.contains("cancel-btn")) {
+    else if (btn.classList.contains("cancel-btn")) {
       renderTable();
     }
   });
-});
-
-/* ===================== ACTIVATE EDIT ===================== */
-function activateEdit(tr, index) {
-  const tds = tr.querySelectorAll("td");
-
-  const currentMonth = tds[11].textContent.trim();
-  const currentCost  = tds[12].textContent.trim();
-  const currentReman = tds[13].textContent.trim();
-
-  // Dropdown Month
-  const monthOptions = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
-    .map(m => `<option value="${m}" ${m===currentMonth?"selected":""}>${m}</option>`).join("");
-  tds[11].innerHTML = `<select class="edit-month">${monthOptions}</select>`;
-
-  // Input Cost
-  tds[12].innerHTML = `<input type="text" class="edit-cost" value="${currentCost}" style="width:80px;text-align:right;">`;
-
-  // Dropdown Reman
-  tds[13].innerHTML = `
-    <select class="edit-reman">
-      <option value="Reman" ${currentReman==="Reman"?"selected":""}>Reman</option>
-      <option value="-" ${currentReman==="-"?"selected":""}>-</option>
-    </select>`;
-
-  // Tombol Save & Cancel di kolom Action terakhir
-  tds[tds.length - 1].innerHTML = `
-    <button class="action-btn save-btn" data-index="${index}">Save</button>
-    <button class="action-btn cancel-btn" data-index="${index}">Cancel</button>`;
-}
-
-
-/* ===================== DOM READY ===================== */
-document.addEventListener("DOMContentLoaded", () => {
-  renderTable(); // render tabel awal dan attach event tombol
 });
 
 /* ===================== CELL COLORING ===================== */
@@ -761,6 +766,7 @@ function setupButtons() {
   const addOrderBtn = document.getElementById("add-order-btn");
   if (addOrderBtn) addOrderBtn.onclick = addOrders;
 }
+
 
 
 
