@@ -1,3 +1,13 @@
+/****************************************************
+ * Ndarboe.net - FULL script.js
+ * --------------------------------------------------
+ * - Menu 1: Upload File (IW39, SUM57, Planning, Budget, Data1, Data2)
+ * - Menu 2: Lembar Kerja (filter, lookup Month/Cost/Reman, render tabel)
+ * - Menu 3: LOM (Add Order, tabel, filter, save/load)
+ * - Menu 4: Summary CRM
+ * - Menu 5: Download Excel (Lembar Kerja + LOM + Summary)
+ ****************************************************/
+
 /* ===================== GLOBAL STATE ===================== */
 window.iw39Data     = window.iw39Data || [];
 window.sum57Data    = window.sum57Data || [];
@@ -19,7 +29,6 @@ document.addEventListener("DOMContentLoaded", () => {
   renderLOMTable();
   updateMonthFilterOptions();
   renderSummaryCRM();
-  setupDownload();
 });
 
 /* ===================== MENU SETUP ===================== */
@@ -79,6 +88,7 @@ function renderLOMTable(){
   lomData.forEach((row,i)=>{
     if(filterVal && !row.Order.toUpperCase().includes(filterVal)) return;
     const tr = document.createElement("tr");
+
     tr.innerHTML=`
       <td>${row.Order}</td>
       <td>
@@ -99,6 +109,7 @@ function renderLOMTable(){
     tbody.appendChild(tr);
   });
 
+  // Event listeners for editable fields
   tbody.querySelectorAll(".lom-month-select").forEach(sel=>{
     sel.addEventListener("change", e=>{
       const idx = e.target.dataset.index;
@@ -134,9 +145,9 @@ function renderLOMTable(){
 let mergedLembarData = [];
 
 function setupLembarKerja(){
-  document.getElementById("refresh-btn").addEventListener("click", renderLembarKerjaTable);
-  document.getElementById("filter-btn").addEventListener("click", renderLembarKerjaTable);
-  document.getElementById("reset-btn").addEventListener("click", ()=>{
+  document.getElementById("refresh-btn")?.addEventListener("click", renderLembarKerjaTable);
+  document.getElementById("filter-btn")?.addEventListener("click", renderLembarKerjaTable);
+  document.getElementById("reset-btn")?.addEventListener("click", ()=>{
     document.querySelectorAll("#filter-room,#filter-order,#filter-cph,#filter-mat,#filter-section,#filter-month").forEach(inp=>inp.value="");
     renderLembarKerjaTable();
   });
@@ -153,8 +164,9 @@ function renderLembarKerjaTable(){
   const tbody = document.querySelector("#output-table tbody");
   if(!tbody) return;
   tbody.innerHTML="";
+  // Merge data
   mergedLembarData = [...window.iw39Data];
-
+  // Lookup LOM for Month/Cost/Reman
   mergedLembarData.forEach(row=>{
     const lomRow = lomData.find(l=>l.Order===row.Order);
     if(lomRow){
@@ -164,14 +176,14 @@ function renderLembarKerjaTable(){
     }
   });
 
-  const fRoom    = document.getElementById("filter-room")?.value.toUpperCase() || "";
-  const fOrder   = document.getElementById("filter-order")?.value.toUpperCase() || "";
-  const fCPH     = document.getElementById("filter-cph")?.value.toUpperCase() || "";
-  const fMAT     = document.getElementById("filter-mat")?.value.toUpperCase() || "";
+  const fRoom = document.getElementById("filter-room")?.value.toUpperCase() || "";
+  const fOrder = document.getElementById("filter-order")?.value.toUpperCase() || "";
+  const fCPH   = document.getElementById("filter-cph")?.value.toUpperCase() || "";
+  const fMAT   = document.getElementById("filter-mat")?.value.toUpperCase() || "";
   const fSection = document.getElementById("filter-section")?.value.toUpperCase() || "";
   const fMonth   = document.getElementById("filter-month")?.value.toUpperCase() || "";
 
-  mergedLembarData.forEach((row)=>{
+  mergedLembarData.forEach((row,i)=>{
     if(fRoom && !row.Room?.toUpperCase().includes(fRoom)) return;
     if(fOrder && !row.Order?.toUpperCase().includes(fOrder)) return;
     if(fCPH && !row.CPH?.toUpperCase().includes(fCPH)) return;
@@ -206,10 +218,11 @@ function renderLembarKerjaTable(){
 }
 
 /* ===================== UPLOAD FILES ===================== */
+document.getElementById("upload-btn")
 document.getElementById("upload-btn")?.addEventListener("click", ()=>{
   const fileInput = document.getElementById("file-input");
   const type = document.getElementById("file-select")?.value;
-  if(!fileInput.files.length){ alert("Pilih file terlebih dahulu"); return; }
+  if(!fileInput || fileInput.files.length===0){ alert("Pilih file terlebih dahulu"); return; }
   const file = fileInput.files[0];
   const reader = new FileReader();
   reader.onload = e=>{
@@ -230,8 +243,10 @@ document.getElementById("upload-btn")?.addEventListener("click", ()=>{
   };
   reader.readAsArrayBuffer(file);
 });
+
 document.getElementById("clear-files-btn")?.addEventListener("click", ()=>{
-  document.getElementById("file-input").value="";
+  const fileInput = document.getElementById("file-input");
+  if(fileInput) fileInput.value="";
   alert("File input cleared");
 });
 
@@ -257,41 +272,56 @@ function renderSummaryCRM(){
 }
 
 /* ===================== DOWNLOAD EXCEL ===================== */
-function setupDownload(){
-  document.getElementById("download-btn")?.addEventListener("click", ()=>{
-    const wb = XLSX.utils.book_new();
-    const lwData = mergedLembarData.map(r=>{
-      return {
-        Room: r.Room,
-        OrderType: r.OrderType,
-        Order: r.Order,
-        Description: r.Description,
-        CreatedOn: r.CreatedOn,
-        UserStatus: r.UserStatus,
-        MAT: r.MAT,
-        CPH: r.CPH,
-        Section: r.Section,
-        StatusPart: r.StatusPart,
-        Aging: r.Aging,
-        Month: r.Month,
-        Cost: r.Cost,
-        Reman: r.Reman,
-        Include: r.Include,
-        Exclude: r.Exclude,
-        Planning: r.Planning,
-        StatusAMT: r.StatusAMT
-      };
-    });
-    const lwSheet = XLSX.utils.json_to_sheet(lwData);
-    XLSX.utils.book_append_sheet(wb,lwSheet,"Lembar Kerja");
-    const lomSheet = XLSX.utils.json_to_sheet(lomData);
-    XLSX.utils.book_append_sheet(wb,lomSheet,"LOM");
-    const summarySheet = XLSX.utils.json_to_sheet(
-      Object.keys(lomData.reduce((acc,row)=>{
-        const m=row.Month||"Unassigned"; acc[m]=(acc[m]||0)+1; return acc;
-      },{})).map(m=>{return {Month:m,TotalOrders:lomData.filter(r=>r.Month===m).length};})
-    );
-    XLSX.utils.book_append_sheet(wb,summarySheet,"Summary CRM");
-    XLSX.writeFile(wb,"Ndarboe_Report.xlsx");
-  });
+function downloadExcel(){
+  const wb = XLSX.utils.book_new();
+
+  // Lembar Kerja Sheet
+  const lwData = mergedLembarData.map(r=>({
+    Room: r.Room,
+    OrderType: r.OrderType,
+    Order: r.Order,
+    Description: r.Description,
+    CreatedOn: r.CreatedOn,
+    UserStatus: r.UserStatus,
+    MAT: r.MAT,
+    CPH: r.CPH,
+    Section: r.Section,
+    StatusPart: r.StatusPart,
+    Aging: r.Aging,
+    Month: r.Month,
+    Cost: r.Cost,
+    Reman: r.Reman,
+    Include: r.Include,
+    Exclude: r.Exclude,
+    Planning: r.Planning,
+    StatusAMT: r.StatusAMT
+  }));
+  const lwSheet = XLSX.utils.json_to_sheet(lwData);
+  XLSX.utils.book_append_sheet(wb, lwSheet, "Lembar Kerja");
+
+  // LOM Sheet
+  const lomSheet = XLSX.utils.json_to_sheet(lomData);
+  XLSX.utils.book_append_sheet(wb, lomSheet, "LOM");
+
+  // Summary CRM Sheet
+  const summaryData = Object.keys(
+    lomData.reduce((acc,row)=>{
+      const m = row.Month || "Unassigned";
+      acc[m]=(acc[m]||0)+1;
+      return acc;
+    },{})
+  ).map(m=>({Month:m, TotalOrders:lomData.filter(r=>r.Month===m).length}));
+
+  const summarySheet = XLSX.utils.json_to_sheet(summaryData);
+  XLSX.utils.book_append_sheet(wb, summarySheet, "Summary CRM");
+
+  XLSX.writeFile(wb, "Ndarboe_Report.xlsx");
 }
+
+document.getElementById("download")?.insertAdjacentHTML("beforeend", `
+  <h2>Download Excel</h2>
+  <button id="download-btn">Download All Data</button>
+  <p class="small">Membuat file Excel berisi Lembar Kerja, LOM, dan Summary CRM.</p>
+`);
+
+document.getElementById("download-btn")?.addEventListener("click", downloadExcel);
