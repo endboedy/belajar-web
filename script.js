@@ -881,9 +881,9 @@ function setupButtons() {
 /* ===================== Menu LOM GLOBAL ===================== */
 
 const LOM_LS_KEY = "lomUserEdits"; // localStorage key
-let lomData = []; // data utama LOM
-let iw39Data = []; // asumsi sudah terisi
-let planningData = []; // asumsi sudah terisi
+lomData = []; // data utama LOM
+iw39Data = []; // reset data IW39
+planningData = []; // reset planningData
 
 /* ====== Helpers ====== */
 function toDateObj(anyDate) {
@@ -1055,3 +1055,4 @@ function saveLOMEdits() {
   localStorage.setItem(LOM_LS_KEY, JSON.stringify(lomData));
   alert("Data LOM berhasil disimpan!");
 }
+
