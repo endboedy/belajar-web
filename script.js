@@ -244,16 +244,13 @@ function startEdit(index) {
   if (!row) return;
 
   const tbody = document.querySelector("#output-table tbody");
-function startEdit(index) {
-  const row = mergedData[index];
-  if (!row) return;
-
-  const tbody = document.querySelector("#output-table tbody");
   const tr = tbody.querySelector(`tr[data-index='${index}']`);
   if (!tr) return;
 
   const months = Array.from(new Set(mergedData.map(d => d.Month).filter(m => m && m.trim() !== ""))).sort();
-  const monthOptions = [`<option value="">--Select Month--</option>`].concat(months.map(m => `<option value="${m}">${m}</option>`)).join("");
+  const monthOptions = [`<option value="">--Select Month--</option>`]
+    .concat(months.map(m => `<option value="${m}">${m}</option>`))
+    .join("");
 
   tr.innerHTML = `
     <td>${safe(row.Room)}</td>
@@ -271,8 +268,8 @@ function startEdit(index) {
     <td><input type="text" value="${safe(row.Cost)}" data-field="Cost" style="text-align:right;"/></td>
     <td>
       <select data-field="Reman">
-        <option value="Reman" ${row.Reman==="Reman"?"selected":""}>Reman</option>
-        <option value="-" ${row.Reman==="-"?"selected":""}>-</option>
+        <option value="Reman" ${row.Reman === "Reman" ? "selected" : ""}>Reman</option>
+        <option value="-" ${row.Reman === "-" ? "selected" : ""}>-</option>
       </select>
     </td>
     <td>${formatNumber1(row.Include)}</td>
@@ -318,17 +315,16 @@ function cancelEdit() {
 
 /* ===================== ATTACH TABLE EVENTS ===================== */
 function attachTableEvents() {
-  const editButtons = document.querySelectorAll(".edit-btn");
-  editButtons.forEach(btn => {
+  // tombol Edit
+  document.querySelectorAll(".edit-btn").forEach(btn => {
     btn.addEventListener("click", () => startEdit(parseInt(btn.dataset.index)));
   });
 
-  const deleteButtons = document.querySelectorAll(".delete-btn");
-  deleteButtons.forEach(btn => {
+  // tombol Delete
+  document.querySelectorAll(".delete-btn").forEach(btn => {
     btn.addEventListener("click", () => deleteRow(parseInt(btn.dataset.index)));
   });
 }
-
 
 /* ===================== FILTERS ===================== */
 function filterData(){
@@ -421,6 +417,7 @@ function setupButtons(){
   };
   if(document.getElementById(ids.add)) document.getElementById(ids.add).onclick=addOrders;
 }
+
 
 
 
