@@ -18,13 +18,15 @@ window.budgetData   = window.budgetData || [];
 window.mergedData   = window.mergedData || [];
 
 const UI_LS_KEY = "ndarboe_ui_edits_v2";
+const LOM_LS_KEY = "lomUserEdits"; // LOM
 
 /* ===================== DOM READY ===================== */
 document.addEventListener("DOMContentLoaded", () => {
   setupMenu();
   setupButtons();
-  renderTable([]);        // kosong dulu
+  renderTable(window.mergedData);  // render tabel awal dari mergedData
   updateMonthFilterOptions();
+  setupLOM();  // init List Order Monthly
 });
 
 /* ===================== MENU HANDLER ===================== */
@@ -1020,6 +1022,7 @@ lomLoadBtn.addEventListener("click", () => {
 
 // render awal jika ada data tersimpan
 lomLoadBtn.click();
+
 
 
 
