@@ -363,41 +363,7 @@ function renderTable(data = mergedData) {
 /* ===================== ATTACH TABLE EVENTS ===================== */
 function attachTableEvents() {
   document.querySelectorAll(".edit-btn").forEach(btn => {
-    btn.addEventListener("click", function () {
-      const tr = this.closest("tr");
-      const tds = tr.querySelectorAll("td");
-
-      const currentMonth = tds[11].textContent.trim();
-      const currentCost  = tds[12].textContent.trim();
-      const currentReman = tds[13].textContent.trim();
-
-      const monthOptions = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
-        .map(m => `<option value="${m}" ${m===currentMonth?"selected":""}>${m}</option>`).join("");
-      tds[11].innerHTML = `<select class="edit-month">${monthOptions}</select>`;
-
-      tds[12].innerHTML = `<input type="number" class="edit-cost" value="${currentCost}" style="width:80px;text-align:right;">`;
-
-      tds[13].innerHTML = `
-        <select class="edit-reman">
-          <option value="Reman" ${currentReman==="Reman"?"selected":""}>Reman</option>
-          <option value="-" ${currentReman==="-"?"selected":""}>-</option>
-        </select>`;
-
-      this.outerHTML = `<button class="action-btn save-btn" data-index="${btn.dataset.index}">Save</button>
-                        <button class="action-btn cancel-btn">Cancel</button>`;
-
-      tr.querySelector(".save-btn").addEventListener("click", function () {
-        const index = this.dataset.index;
-        data[index][11] = tr.querySelector(".edit-month").value;
-        data[index][12] = tr.querySelector(".edit-cost").value;
-        data[index][13] = tr.querySelector(".edit-reman").value;
-        renderTable();
-      });
-
-      tr.querySelector(".cancel-btn").addEventListener("click", function () {
-        renderTable();
-      });
-    });
+    btn.addEventListener("click", () => activateEdit(btn.closest("tr"), btn.dataset.index));
   });
 
   document.querySelectorAll(".delete-btn").forEach(btn => {
@@ -411,10 +377,52 @@ function attachTableEvents() {
   });
 }
 
-// Pastikan fungsi dipanggil setelah DOM siap
+function activateEdit(tr, index) {
+  const tds = tr.querySelectorAll("td");
+
+  const currentMonth = tds[11].textContent.trim();
+  const currentCost  = tds[12].textContent.trim();
+  const currentReman = tds[13].textContent.trim();
+
+  const monthOptions = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
+    .map(m => `<option value="${m}" ${m===currentMonth?"selected":""}>${m}</option>`).join("");
+  tds[11].innerHTML = `<select class="edit-month">${monthOptions}</select>`;
+
+  tds[12].innerHTML = `<input type="text" class="edit-cost" value="${currentCost}" style="width:80px;text-align:right;">`;
+
+  tds[13].innerHTML = `
+    <select class="edit-reman">
+      <option value="Reman" ${currentReman==="Reman"?"selected":""}>Reman</option>
+      <option value="-" ${currentReman==="-"?"selected":""}>-</option>
+    </select>`;
+
+  tds[14].innerHTML = `
+    <button class="action-btn save-btn" data-index="${index}">Save</button>
+    <button class="action-btn cancel-btn">Cancel</button>`;
+
+  tr.querySelector(".save-btn").addEventListener("click", function () {
+    const idx = this.dataset.index;
+    data[idx][11] = tr.querySelector(".edit-month").value;
+    data[idx][12] = tr.querySelector(".edit-cost").value;
+    data[idx][13] = tr.querySelector(".edit-reman").value;
+    renderTable();
+  });
+
+  tr.querySelector(".cancel-btn").addEventListener("click", function () {
+    renderTable();
+  });
+}
+
+// Panggil saat DOM siap
 document.addEventListener("DOMContentLoaded", () => {
   renderTable();
+
+  // Aktifkan edit otomatis untuk semua baris (jika mau semua langsung bisa diedit)
+  document.querySelectorAll("table tbody tr").forEach((tr, i) => {
+    activateEdit(tr, i);
+  });
 });
+
 /* ===================== CELL COLORING ===================== */
 function asColoredStatusUser(val) {
   const v = (val || "").toString().toUpperCase();
@@ -742,6 +750,7 @@ function setupButtons() {
   const addOrderBtn = document.getElementById("add-order-btn");
   if (addOrderBtn) addOrderBtn.onclick = addOrders;
 }
+
 
 
 
