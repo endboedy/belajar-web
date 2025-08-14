@@ -314,8 +314,8 @@ function mergeData() {
 
 /* ===================== RENDER TABLE ===================== */
 
-function renderTable(data = [], tableId = "output-table") {
-  const tbody = document.querySelector(`#${tableId} tbody`);
+function renderTable(data = mergedData) {
+  const tbody = document.querySelector("#output-table tbody");
   if (!tbody) return;
 
   tbody.innerHTML = "";
@@ -722,6 +722,7 @@ function setupButtons() {
   const addOrderBtn = document.getElementById("add-order-btn");
   if (addOrderBtn) addOrderBtn.onclick = addOrders;
 }
+
 
 
 
