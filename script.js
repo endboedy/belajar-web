@@ -1,5 +1,12 @@
 /****************************************************
- * Ndarboe.net - FULL script.js (Revisi Final)
+ * Ndarboe.net - FULL script.js (Revisi)
+ * --------------------------------------------------
+ * - Upload 6 sumber (IW39, SUM57, Planning, Budget, Data1, Data2)
+ * - Merge & render Lembar Kerja
+ * - Filter, Add Order, Edit/Save/Delete, Save/Load JSON
+ * - Pewarnaan kolom status & Aging
+ * - Format tanggal dd-MMM-yyyy
+ * - Format angka dolar 1 decimal, rata kanan
  ****************************************************/
 
 /* ===================== GLOBAL STATE ===================== */
@@ -10,13 +17,14 @@ let data1Data = [];
 let data2Data = [];
 let budgetData = [];
 let mergedData = [];
+
 const UI_LS_KEY = "ndarboe_ui_edits_v2";
 
 /* ===================== DOM READY ===================== */
 document.addEventListener("DOMContentLoaded", () => {
   setupMenu();
   setupButtons();
-  renderTable([]);
+  renderTable([]);        // kosong dulu
   updateMonthFilterOptions();
 });
 
@@ -37,9 +45,9 @@ function setupMenu() {
   });
 }
 
-/* ===================== HELPERS: DATE & NUMBER ===================== */
+/* ===================== HELPERS: DATE PARSING/FORMATTING ===================== */
 function toDateObj(anyDate) {
-  if (!anyDate) return null;
+  if (anyDate == null || anyDate === "") return null;
   if (typeof anyDate === "number") {
     const dec = XLSX && XLSX.SSF && XLSX.SSF.parse_date_code
       ? XLSX.SSF.parse_date_code(anyDate)
@@ -48,13 +56,35 @@ function toDateObj(anyDate) {
       return new Date(dec.y, (dec.m || 1) - 1, dec.d || 1, dec.H || 0, dec.M || 0, dec.S || 0);
     }
   }
-  const d = new Date(anyDate);
-  return isNaN(d) ? null : d;
+  if (anyDate instanceof Date && !isNaN(anyDate)) return anyDate;
+  if (typeof anyDate === "string") {
+    const s = anyDate.trim();
+    if (!s) return null;
+    const iso = new Date(s);
+    if (!isNaN(iso)) return iso;
+    const parts = s.match(/(\d{1,4})/g);
+    if (parts && parts.length >= 3) {
+      const ampm = /am|pm/i.test(s) ? s.match(/am|pm/i)[0] : "";
+      const p1 = parseInt(parts[0], 10);
+      const p2 = parseInt(parts[1], 10);
+      const p3 = parseInt(parts[2], 10);
+      let year, month, day, hour = 0, min = 0, sec = 0;
+      if (p1 <= 12 && p2 <= 31) { month = p1; day = p2; year = p3; }
+      else { day = p1; month = p2; year = p3; }
+      if (parts.length >= 5) { hour = parseInt(parts[3],10); min=parseInt(parts[4],10); }
+      if (parts.length >= 6) sec = parseInt(parts[5],10)||0;
+      if (ampm) { if (/pm/i.test(ampm)&&hour<12) hour+=12; if (/am/i.test(ampm)&&hour===12) hour=0; }
+      const d = new Date(year, (month||1)-1, day||1, hour, min, sec);
+      if (!isNaN(d)) return d;
+    }
+  }
+  return null;
 }
 
 function formatDateDDMMMYYYY(input) {
-  const d = toDateObj(input);
-  if (!d) return "";
+  if (!input) return "";
+  let d = (typeof input === "number") ? excelDateToJS(input) : new Date(input);
+  if (isNaN(d)) return "";
   const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
   return `${String(d.getDate()).padStart(2,"0")}-${months[d.getMonth()]}-${d.getFullYear()}`;
 }
@@ -65,114 +95,101 @@ function formatDateISO(anyDate) {
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
 }
 
-function formatNumber1(val) {
-  const num = parseFloat(String(val).replace(/,/g,""));
-  return isNaN(num) ? val : num.toFixed(1);
+function formatNumber1(val){
+  const n=parseFloat(val);
+  if(isNaN(n)) return val;
+  return n.toFixed(1).replace(/\B(?=(\d{3})+(?!\d))/g,",");
 }
 
-function safe(val){ return val == null ? "" : String(val); }
-
 /* ===================== CELL COLORING ===================== */
-function asColoredStatusUser(val) {
-  const v = (val||"").toUpperCase();
-  let bg="", fg="";
-  if(v==="OUTS"){bg="#ffeb3b"; fg="#000";}
-  else if(v==="RELE"){bg="#2e7d32"; fg="#fff";}
-  else if(v==="PROG"){bg="#1976d2"; fg="#fff";}
-  else if(v==="COMP"){bg="#d32f2f"; fg="#fff";}
+function asColoredStatusUser(val){
+  const v=(val||"").toUpperCase();
+  let bg="",fg="";
+  if(v==="OUTS"){bg="#ffeb3b";fg="#000";}
+  else if(v==="RELE"){bg="#2e7d32";fg="#fff";}
+  else if(v==="PROG"){bg="#1976d2";fg="#fff";}
+  else if(v==="COMP"){bg="#d32f2f";fg="#fff";}
   else return safe(val);
   return `<span style="display:inline-block;padding:2px 6px;border-radius:4px;background:${bg};color:${fg};">${safe(val)}</span>`;
 }
 
 function asColoredStatusPart(val){
   const s=(val||"").toLowerCase();
-  if(s==="complete") return `<span style="display:inline-block;padding:2px 6px;border-radius:4px;background:#2e7d32;color:#fff;">${safe(val)}</span>`;
+  if(s==="complete") return `<span style="display:inline-block;padding:2px 6px;border-radius:4px;background:#1976d2;color:#fff;">${safe(val)}</span>`;
   if(s==="not complete") return `<span style="display:inline-block;padding:2px 6px;border-radius:4px;background:#d32f2f;color:#fff;">${safe(val)}</span>`;
   return safe(val);
 }
 
 function asColoredStatusAMT(val){
   const v=(val||"").toUpperCase();
-  if(v==="O") return `<span style="display:inline-block;padding:2px 6px;border-radius:4px;background:#bdbdbd;color:#000;">${safe(val)}</span>`;
+  if(v==="O") return `<span style="display:inline-block;padding:2px 6px;border-radius:4px;background:#9e9e9e;color:#000;">${safe(val)}</span>`;
   if(v==="IP") return `<span style="display:inline-block;padding:2px 6px;border-radius:4px;background:#1976d2;color:#fff;">${safe(val)}</span>`;
   if(v==="YTS") return `<span style="display:inline-block;padding:2px 6px;border-radius:4px;background:#2e7d32;color:#fff;">${safe(val)}</span>`;
   return safe(val);
 }
 
 function asColoredAging(val){
-  const n=parseInt(val,10);
-  if(isNaN(n)) return safe(val);
-  if(n>=1 && n<30) return `<span style="display:inline-block;padding:2px 6px;border-radius:4px;background:#2e7d32;color:#fff;">${val}</span>`;
-  if(n>=30) return `<span style="display:inline-block;padding:2px 6px;border-radius:4px;background:#d32f2f;color:#fff;">${val}</span>`;
-  return safe(val);
+  const n=parseInt(val);
+  if(!isNaN(n)){
+    if(n>=1 && n<=30) return `<span style="display:inline-block;padding:2px 6px;border-radius:4px;background:#2e7d32;color:#fff;">${val}</span>`;
+    if(n>30) return `<span style="display:inline-block;padding:2px 6px;border-radius:4px;background:#d32f2f;color:#fff;">${val}</span>`;
+  }
+  return val;
 }
 
-/* ===================== MERGE DATA ===================== */
-function mergeData() {
-  if(!iw39Data.length){ alert("Upload data IW39 dulu sebelum refresh."); return; }
-
-  mergedData = iw39Data.map(row=>({
-    Room: safe(row.Room),
-    "Order Type": safe(row["Order Type"]),
-    Order: safe(row.Order),
-    Description: safe(row.Description),
-    "Created On": row["Created On"]||"",
-    "User Status": safe(row["User Status"]),
-    MAT: safe(row.MAT),
-    CPH: "",
-    Section: "",
-    "Status Part": "",
-    Aging: "",
-    Month: safe(row.Month),
-    Cost: "-",
-    Reman: safe(row.Reman),
-    Include: "-",
-    Exclude: "-",
-    Planning: "",
-    "Status AMT": ""
+/* ===================== MERGE ===================== */
+function mergeData(){
+  if(!iw39Data.length){alert("Upload data IW39 dulu sebelum refresh."); return;}
+  mergedData=iw39Data.map(row=>({
+    Room: row.Room||"", "Order Type": row["Order Type"]||"", Order: row.Order||"", Description: row.Description||"",
+    "Created On": row["Created On"]||"", "User Status": row["User Status"]||"", MAT: row.MAT||"", CPH:"", Section:"", "Status Part":"", Aging:"", Month:row.Month||"",
+    Cost:"-", Reman: row.Reman||"", Include:"-", Exclude:"-", Planning:"", "Status AMT":""
   }));
 
+  // CPH
   mergedData.forEach(md=>{
-    if(md.Description.trim().toUpperCase().startsWith("JR")) md.CPH="External Job";
-    else {
+    if((md.Description||"").toUpperCase().startsWith("JR")) md.CPH="External Job";
+    else{
       const d2=data2Data.find(d=>(d.MAT||"").trim()===md.MAT.trim());
-      md.CPH=d2?safe(d2.CPH):"";
+      md.CPH=d2?d2.CPH||"":"";  
     }
   });
 
+  // Section
   mergedData.forEach(md=>{
     const d1=data1Data.find(d=>(d.Room||"").trim()===md.Room.trim());
-    md.Section=d1?safe(d1.Section):"";
+    md.Section=d1?d1.Section||"":"";
   });
 
+  // SUM57
   mergedData.forEach(md=>{
-    const s57=sum57Data.find(s=>safe(s.Order)===md.Order);
+    const s57=sum57Data.find(s=>(s.Order||"")===md.Order);
     if(s57){ md.Aging=s57.Aging||""; md["Status Part"]=s57["Part Complete"]||""; }
   });
 
+  // Planning
   mergedData.forEach(md=>{
-    const pl=planningData.find(p=>safe(p.Order)===md.Order);
+    const pl=planningData.find(p=>(p.Order||"")===md.Order);
     if(pl){ md.Planning=pl["Event Start"]||""; md["Status AMT"]=pl.Status||""; }
   });
 
-  // Cost / Include / Exclude
+  // Cost/Include/Exclude
   mergedData.forEach(md=>{
-    const src=iw39Data.find(i=>safe(i.Order)===md.Order);
-    if(!src) return;
-    const plan=parseFloat((src["Total sum (plan)"]||"0").toString().replace(/,/g,""))||0;
-    const actual=parseFloat((src["Total sum (actual)"]||"0").toString().replace(/,/g,""))||0;
+    const src=iw39Data.find(i=>(i.Order||"")===md.Order); if(!src) return;
+    const plan=parseFloat((src["Total sum (plan)"]||"").replace(/,/g,""))||0;
+    const actual=parseFloat((src["Total sum (actual)"]||"").replace(/,/g,""))||0;
     let cost=(plan-actual)/16500;
-    if(!isFinite(cost)||cost<0){ md.Cost="-"; md.Include="-"; md.Exclude="-"; }
+    if(!isFinite(cost)||cost<0){ md.Cost="-"; md.Include="-"; md.Exclude=md["Order Type"]==="PM38"? "-":"-"; }
     else{
-      md.Cost=cost.toFixed(1);
+      md.Cost=formatNumber1(cost);
       const isReman=(md.Reman||"").toLowerCase().includes("reman");
       const includeNum=isReman?cost*0.25:cost;
-      md.Include=includeNum.toFixed(1);
-      md.Exclude=md["Order Type"]==="PM38"? "-": md.Include;
+      md.Include=formatNumber1(includeNum);
+      md.Exclude=(md["Order Type"]==="PM38")? "-":md.Include;
     }
   });
 
-  // restore user edits
+  // Restore user edits
   try{
     const raw=localStorage.getItem(UI_LS_KEY);
     if(raw){
@@ -190,17 +207,15 @@ function mergeData() {
 }
 
 /* ===================== RENDER TABLE ===================== */
-function renderTable(dataToRender = mergedData){
-  const tbody=document.querySelector("#output-table tbody");
-  if(!tbody){ console.warn("Tabel #output-table tidak ditemukan."); return; }
+function renderTable(dataToRender=mergedData){
+  const tbody=document.querySelector("#output-table tbody"); if(!tbody){console.warn("Tabel #output-table tidak ditemukan."); return;}
   tbody.innerHTML="";
   dataToRender.forEach((row,index)=>{
     const tr=document.createElement("tr"); tr.dataset.index=index;
     const cols=["Room","Order Type","Order","Description","Created On","User Status","MAT","CPH","Section","Status Part","Aging","Month","Cost","Reman","Include","Exclude","Planning","Status AMT"];
     cols.forEach(col=>{
       const td=document.createElement("td");
-      let val=row[col]||"";
-
+      const val=row[col]||"";
       if(col==="User Status"){ td.innerHTML=asColoredStatusUser(val); }
       else if(col==="Status Part"){ td.innerHTML=asColoredStatusPart(val); }
       else if(col==="Status AMT"){ td.innerHTML=asColoredStatusAMT(val); }
@@ -208,21 +223,16 @@ function renderTable(dataToRender = mergedData){
       else if(col==="Created On"||col==="Planning"){ td.textContent=formatDateDDMMMYYYY(val); }
       else if(col==="Cost"||col==="Include"||col==="Exclude"){ 
         td.textContent=formatNumber1(val); 
-        td.style.textAlign="right"; 
-      }
-      else { td.textContent=val; }
-
+        td.style.textAlign="right";
+      } else { td.textContent=val; }
       tr.appendChild(td);
     });
-
-    // Action
     const tdAct=document.createElement("td");
     tdAct.innerHTML=`<button class="action-btn edit-btn" data-order="${safe(row.Order)}">Edit</button>
                       <button class="action-btn delete-btn" data-order="${safe(row.Order)}">Delete</button>`;
     tr.appendChild(tdAct);
     tbody.appendChild(tr);
   });
-
   attachTableEvents();
 }
 
@@ -231,7 +241,6 @@ function attachTableEvents(){
   document.querySelectorAll(".edit-btn").forEach(btn=>{ btn.onclick=()=>startEdit(btn.dataset.order); });
   document.querySelectorAll(".delete-btn").forEach(btn=>{ btn.onclick=()=>deleteOrder(btn.dataset.order); });
 }
-
 /* ===================== EDIT / SAVE / CANCEL ===================== */
 function startEdit(order){
   const idx=mergedData.findIndex(r=>r.Order===order);
@@ -424,3 +433,4 @@ function setupButtons(){
   const addOrderBtn=document.getElementById("add-order-btn");
   if(addOrderBtn) addOrderBtn.onclick=addOrders;
 }
+
