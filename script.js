@@ -355,33 +355,53 @@ function renderTable(dataToRender = mergedData) {
 
     tbody.appendChild(tr);
   });
-
-  // Pasang event listener tombol setelah render
-  attachTableEvents();
 }
 
-/* ===================== ATTACH TABLE EVENTS ===================== */
-function attachTableEvents() {
-  // Tombol Edit
-  document.querySelectorAll(".edit-btn").forEach(btn => {
-    btn.addEventListener("click", function () {
-      const tr = this.closest("tr");
-      const index = this.dataset.index;
-      activateEdit(tr, index);
-    });
-  });
+/* ===================== EVENT DELEGATION ===================== */
+document.addEventListener("DOMContentLoaded", () => {
+  renderTable(); // render awal
 
-  // Tombol Delete
-  document.querySelectorAll(".delete-btn").forEach(btn => {
-    btn.addEventListener("click", function () {
-      const index = this.dataset.index;
+  // Delegated listener di tbody
+  const tbody = document.querySelector("#output-table tbody");
+
+  tbody.addEventListener("click", function(e) {
+    const btn = e.target;
+
+    // Tombol Edit
+    if (btn.classList.contains("edit-btn")) {
+      const tr = btn.closest("tr");
+      const index = btn.dataset.index;
+      activateEdit(tr, index);
+    }
+
+    // Tombol Delete
+    if (btn.classList.contains("delete-btn")) {
+      const index = btn.dataset.index;
       if (confirm("Yakin mau hapus data ini?")) {
-        data.splice(index, 1);
+        mergedData.splice(index, 1);
         renderTable();
       }
-    });
+    }
+
+    // Tombol Save
+    if (btn.classList.contains("save-btn")) {
+      const tr = btn.closest("tr");
+      const idx = btn.dataset.index;
+      const tds = tr.querySelectorAll("td");
+
+      mergedData[idx]["Month"] = tds[11].querySelector(".edit-month").value;
+      mergedData[idx]["Cost"]  = tds[12].querySelector(".edit-cost").value;
+      mergedData[idx]["Reman"] = tds[13].querySelector(".edit-reman").value;
+
+      renderTable();
+    }
+
+    // Tombol Cancel
+    if (btn.classList.contains("cancel-btn")) {
+      renderTable();
+    }
   });
-}
+});
 
 /* ===================== ACTIVATE EDIT ===================== */
 function activateEdit(tr, index) {
@@ -406,25 +426,12 @@ function activateEdit(tr, index) {
       <option value="-" ${currentReman==="-"?"selected":""}>-</option>
     </select>`;
 
-  // Tombol Save & Cancel
-  tds[14].innerHTML = `
+  // Tombol Save & Cancel di kolom Action terakhir
+  tds[tds.length - 1].innerHTML = `
     <button class="action-btn save-btn" data-index="${index}">Save</button>
     <button class="action-btn cancel-btn">Cancel</button>`;
-
-  // Save
-  tr.querySelector(".save-btn").addEventListener("click", function () {
-    const idx = this.dataset.index;
-    data[idx][11] = tr.querySelector(".edit-month").value;
-    data[idx][12] = tr.querySelector(".edit-cost").value;
-    data[idx][13] = tr.querySelector(".edit-reman").value;
-    renderTable();
-  });
-
-  // Cancel
-  tr.querySelector(".cancel-btn").addEventListener("click", function () {
-    renderTable();
-  });
 }
+
 
 /* ===================== DOM READY ===================== */
 document.addEventListener("DOMContentLoaded", () => {
@@ -758,6 +765,7 @@ function setupButtons() {
   const addOrderBtn = document.getElementById("add-order-btn");
   if (addOrderBtn) addOrderBtn.onclick = addOrders;
 }
+
 
 
 
