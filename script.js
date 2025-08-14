@@ -882,7 +882,7 @@ function setupButtons() {
 
 const LOM_LS_KEY = "lomUserEdits"; // localStorage key
 
-// pastikan variabel global sudah ada, kalau belum buat
+// Pastikan variabel global sudah ada, jika belum buat
 if (typeof lomData === "undefined") lomData = [];
 if (typeof iw39Data === "undefined") iw39Data = [];
 if (typeof planningData === "undefined") planningData = [];
@@ -1057,5 +1057,6 @@ function saveLOMEdits() {
   localStorage.setItem(LOM_LS_KEY, JSON.stringify(lomData));
   alert("Data LOM berhasil disimpan!");
 }
+
 
 
