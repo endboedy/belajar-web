@@ -305,48 +305,95 @@ function asColoredStatusAMT(val) {
 }
 
 /* ===================== RENDER TABLE ===================== */
-/** Renders #output-table dari array of objects (default: mergedData) */
-function renderTable(rows = mergedData) {
-  const tbody = document.querySelector("#output-table tbody");
+function renderTable(dataSet = mergedData) {
+  const tbody = document.querySelector("#data-table tbody"); // pastikan id sesuai HTML
   if (!tbody) return;
   tbody.innerHTML = "";
 
-  rows.forEach(row => {
+  dataSet.forEach((row, index) => {
     const tr = document.createElement("tr");
 
-    const monthValue = safe(row.Month);
-    const costValue = safe(row.Cost);
-    const includeValue = safe(row.Include);
-    const excludeValue = safe(row.Exclude);
+    // Tulis semua kolom sesuai urutan field di mergedData
+    Object.values(row).forEach(val => {
+      const td = document.createElement("td");
+      td.textContent = val ?? "";
+      tr.appendChild(td);
+    });
 
-    tr.innerHTML = `
-      <td>${safe(row.Room)}</td>
-      <td>${safe(row["Order Type"])}</td>
-      <td>${safe(row.Order)}</td>
-      <td>${safe(row.Description)}</td>
-      <td>${fmtDateDisplay(row["Created On"])}</td>
-      <td>${asColoredStatusUser(row["User Status"])}</td>
-      <td>${safe(row.MAT)}</td>
-      <td>${safe(row.CPH)}</td>
-      <td>${safe(row.Section)}</td>
-      <td>${asColoredStatusPart(row["Status Part"])}</td>
-      <td>${safe(row.Aging)}</td>
-      <td>${monthValue}</td>
-      <td style="text-align:right;">${costValue}</td>
-      <td>${safe(row.Reman)}</td>
-      <td style="text-align:right;">${includeValue}</td>
-      <td style="text-align:right;">${excludeValue}</td>
-      <td>${fmtDateDisplay(row.Planning)}</td>
-      <td>${asColoredStatusAMT(row["Status AMT"])}</td>
-      <td>
-        <button class="action-btn edit-btn" data-order="${safe(row.Order)}">Edit</button>
-        <button class="action-btn delete-btn" data-order="${safe(row.Order)}">Delete</button>
-      </td>
+    // Kolom aksi edit/delete
+    const actionTd = document.createElement("td");
+    actionTd.innerHTML = `
+      <button class="action-btn edit-btn" data-index="${index}">Edit</button>
+      <button class="action-btn delete-btn" data-index="${index}">Delete</button>
     `;
+    tr.appendChild(actionTd);
+
     tbody.appendChild(tr);
   });
 
   attachTableEvents();
+}
+
+/* ===================== ATTACH TABLE EVENTS ===================== */
+function attachTableEvents() {
+  // Tombol Edit
+  document.querySelectorAll(".edit-btn").forEach(btn => {
+    btn.addEventListener("click", function () {
+      const tr = this.closest("tr");
+      const tds = tr.querySelectorAll("td");
+
+      // Ambil nilai lama
+      const currentMonth = tds[11].textContent.trim();
+      const currentCost  = tds[12].textContent.trim();
+      const currentReman = tds[13].textContent.trim();
+
+      // Ganti hanya kolom Month
+      const monthOptions = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
+        .map(m => `<option value="${m}" ${m===currentMonth?"selected":""}>${m}</option>`).join("");
+      tds[11].innerHTML = `<select class="edit-month">${monthOptions}</select>`;
+
+      // Ganti hanya kolom Cost
+      tds[12].innerHTML = `<input type="number" class="edit-cost" value="${currentCost}" style="width:80px;text-align:right;">`;
+
+      // Ganti hanya kolom Reman
+      tds[13].innerHTML = `
+        <select class="edit-reman">
+          <option value="Reman" ${currentReman==="Reman"?"selected":""}>Reman</option>
+          <option value="-" ${currentReman==="-"?"selected":""}>-</option>
+        </select>`;
+
+      // Ganti tombol jadi Save & Cancel
+      this.outerHTML = `<button class="action-btn save-btn" data-index="${btn.dataset.index}">Save</button>
+                        <button class="action-btn cancel-btn">Cancel</button>`;
+
+      // Handler Save
+      tr.querySelector(".save-btn").addEventListener("click", function () {
+        const index = parseInt(this.dataset.index, 10);
+        mergedData[index].Month = tr.querySelector(".edit-month").value;
+        mergedData[index].Cost  = tr.querySelector(".edit-cost").value;
+        mergedData[index].Reman = tr.querySelector(".edit-reman").value;
+        saveMergedData(); // kalau ada fitur simpan
+        renderTable();
+      });
+
+      // Handler Cancel
+      tr.querySelector(".cancel-btn").addEventListener("click", function () {
+        renderTable();
+      });
+    });
+  });
+
+  // Tombol Delete
+  document.querySelectorAll(".delete-btn").forEach(btn => {
+    btn.addEventListener("click", function () {
+      const index = parseInt(this.dataset.index, 10);
+      if (confirm("Yakin mau hapus data ini?")) {
+        mergedData.splice(index, 1);
+        saveMergedData(); // kalau ada fitur simpan
+        renderTable();
+      }
+    });
+  });
 }
 
 /* ===================== EDIT / DELETE ===================== */
@@ -630,3 +677,4 @@ function setupButtons() {
   const addOrderBtn = document.getElementById("add-order-btn");
   if (addOrderBtn) addOrderBtn.onclick = addOrders;
 }
+
