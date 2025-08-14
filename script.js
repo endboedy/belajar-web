@@ -231,3 +231,86 @@ document.getElementById("clear-files-btn").addEventListener("click", ()=>{
   document.getElementById("file-input").value="";
   alert("File input cleared");
 });
+/* ===================== SUMMARY CRM ===================== */
+function renderSummaryCRM(){
+  const section = document.getElementById("summary");
+  section.innerHTML = "<h2>Summary CRM</h2>";
+
+  // Contoh summary sederhana: total Order per Month dari LOM
+  const monthCount = {};
+  lomData.forEach(row=>{
+    const m = row.Month || "Unassigned";
+    monthCount[m] = (monthCount[m]||0)+1;
+  });
+
+  let html = "<table style='width:100%;border-collapse:collapse;'>";
+  html += "<thead><tr><th>Month</th><th>Total Orders</th></tr></thead><tbody>";
+  Object.keys(monthCount).forEach(m=>{
+    html += `<tr><td>${m}</td><td>${monthCount[m]}</td></tr>`;
+  });
+  html += "</tbody></table>";
+  section.innerHTML += html;
+}
+
+/* ===================== DOWNLOAD EXCEL ===================== */
+function downloadExcel(){
+  const wb = XLSX.utils.book_new();
+
+  // Lembar Kerja Sheet
+  const lwData = mergedLembarData.map(r=>{
+    return {
+      Room: r.Room,
+      OrderType: r.OrderType,
+      Order: r.Order,
+      Description: r.Description,
+      CreatedOn: r.CreatedOn,
+      UserStatus: r.UserStatus,
+      MAT: r.MAT,
+      CPH: r.CPH,
+      Section: r.Section,
+      StatusPart: r.StatusPart,
+      Aging: r.Aging,
+      Month: r.Month,
+      Cost: r.Cost,
+      Reman: r.Reman,
+      Include: r.Include,
+      Exclude: r.Exclude,
+      Planning: r.Planning,
+      StatusAMT: r.StatusAMT
+    };
+  });
+  const lwSheet = XLSX.utils.json_to_sheet(lwData);
+  XLSX.utils.book_append_sheet(wb, lwSheet, "Lembar Kerja");
+
+  // LOM Sheet
+  const lomSheet = XLSX.utils.json_to_sheet(lomData);
+  XLSX.utils.book_append_sheet(wb, lomSheet, "LOM");
+
+  // Summary CRM Sheet
+  const summarySheet = XLSX.utils.json_to_sheet(
+    Object.keys(lomData.reduce((acc,row)=>{
+      const m = row.Month || "Unassigned";
+      acc[m]=(acc[m]||0)+1;
+      return acc;
+    },{})).map(m=>{
+      return {Month:m, TotalOrders:lomData.filter(r=>r.Month===m).length};
+    })
+  );
+  XLSX.utils.book_append_sheet(wb, summarySheet, "Summary CRM");
+
+  XLSX.writeFile(wb, "Ndarboe_Report.xlsx");
+}
+
+document.getElementById("download").innerHTML = `
+  <h2>Download Excel</h2>
+  <button id="download-btn">Download All Data</button>
+  <p class="small">Membuat file Excel berisi Lembar Kerja, LOM, dan Summary CRM.</p>
+`;
+
+document.getElementById("download-btn").addEventListener("click", downloadExcel);
+
+/* ===================== AUTO RENDER SUMMARY ===================== */
+document.addEventListener("DOMContentLoaded", ()=>{
+  renderSummaryCRM();
+});
+
