@@ -198,31 +198,60 @@ function asColoredAging(val){
 function safe(str){ return String(str||"").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
 
 /* ===================== RENDER TABLE ===================== */
-function renderTable(dataToRender=mergedData){
-  const tbody=document.querySelector("#output-table tbody"); if(!tbody){ console.warn("Tabel #output-table tidak ditemukan."); return; }
-  tbody.innerHTML="";
-  dataToRender.forEach((row,index)=>{
-    const tr=document.createElement("tr"); tr.dataset.index=index;
-    const cols=["Room","Order Type","Order","Description","Created On","User Status","MAT","CPH","Section","Status Part","Aging","Month","Cost","Reman","Include","Exclude","Planning","Status AMT"];
-    cols.forEach(col=>{
-      const td=document.createElement("td");
-      let val=row[col]||"";
-      if(col==="User Status") td.innerHTML=asColoredStatusUser(val);
-      else if(col==="Status Part") td.innerHTML=asColoredStatusPart(val);
-      else if(col==="Status AMT") td.innerHTML=asColoredStatusAMT(val);
-      else if(col==="Aging") td.innerHTML=asColoredAging(val);
-      else if(col==="Created On"||col==="Planning") td.textContent=formatDateDDMMMYYYY(val);
-      else if(col==="Cost"||col==="Include"||col==="Exclude") td.textContent=formatNumber1(val); td.style.textAlign="right";
-      else td.textContent=val;
+function renderTable(dataToRender = mergedData) {
+  const tbody = document.querySelector("#output-table tbody");
+  if (!tbody) {
+    console.warn("Tabel #output-table tidak ditemukan.");
+    return;
+  }
+
+  tbody.innerHTML = ""; // reset tabel
+
+  dataToRender.forEach((row, index) => {
+    const tr = document.createElement("tr");
+    tr.dataset.index = index;
+
+    const cols = [
+      "Room","Order Type","Order","Description","Created On",
+      "User Status","MAT","CPH","Section","Status Part","Aging",
+      "Month","Cost","Reman","Include","Exclude","Planning","Status AMT"
+    ];
+
+    cols.forEach(col => {
+      const td = document.createElement("td");
+      let val = row[col] || "";
+
+      if (col === "User Status") {
+        td.innerHTML = asColoredStatusUser(val);
+      } else if (col === "Status Part") {
+        td.innerHTML = asColoredStatusPart(val);
+      } else if (col === "Status AMT") {
+        td.innerHTML = asColoredStatusAMT(val);
+      } else if (col === "Aging") {
+        td.innerHTML = asColoredAging(val);
+      } else if (col === "Created On" || col === "Planning") {
+        td.textContent = formatDateDDMMMYYYY(val);
+      } else if (col === "Cost" || col === "Include" || col === "Exclude") {
+        td.textContent = formatNumber1(val);
+        td.style.textAlign = "right";
+      } else {
+        td.textContent = val;
+      }
+
       tr.appendChild(td);
     });
-    // Action
-    const tdAct=document.createElement("td");
-    tdAct.innerHTML=`<button class="action-btn edit-btn" data-order="${safe(row.Order)}">Edit</button>
-                      <button class="action-btn delete-btn" data-order="${safe(row.Order)}">Delete</button>`;
+
+    // Kolom Action
+    const tdAct = document.createElement("td");
+    tdAct.innerHTML = `
+      <button class="action-btn edit-btn" data-order="${safe(row.Order)}">Edit</button>
+      <button class="action-btn delete-btn" data-order="${safe(row.Order)}">Delete</button>
+    `;
     tr.appendChild(tdAct);
+
     tbody.appendChild(tr);
   });
+
   attachTableEvents();
 }
 
@@ -361,3 +390,4 @@ function setupButtons(){
   }; }
   const addOrderBtn=document.getElementById("add-order-btn"); if(addOrderBtn) addOrderBtn.onclick=addOrders;
 }
+
