@@ -192,3 +192,29 @@ document.addEventListener("DOMContentLoaded",()=>{
   renderTable([]); // aman karena attachTableEvents sudah ada
   updateMonthFilterOptions();
 });
+/* ===================== BUTTON SETUP ===================== */
+function setupButtons(){
+  const ids={
+    upload:"upload-btn",
+    clear:"clear-files-btn",
+    refresh:"refresh-btn",
+    filter:"filter-btn",
+    reset:"reset-btn",
+    save:"save-btn",
+    load:"load-btn",
+    add:"add-order-btn"
+  };
+  if(document.getElementById(ids.upload)) document.getElementById(ids.upload).onclick=handleUpload;
+  if(document.getElementById(ids.clear)) document.getElementById(ids.clear).onclick=clearAllData;
+  if(document.getElementById(ids.refresh)) document.getElementById(ids.refresh).onclick=()=>{mergeData(); renderTable(mergedData);};
+  if(document.getElementById(ids.filter)) document.getElementById(ids.filter).onclick=filterData;
+  if(document.getElementById(ids.reset)) document.getElementById(ids.reset).onclick=resetFilters;
+  if(document.getElementById(ids.save)) document.getElementById(ids.save).onclick=saveToJSON;
+  if(document.getElementById(ids.load)) document.getElementById(ids.load).onclick=()=>{ 
+    const input=document.createElement("input"); 
+    input.type="file"; input.accept="application/json";
+    input.onchange=()=>{if(input.files.length) loadFromJSON(input.files[0]);}; 
+    input.click();
+  };
+  if(document.getElementById(ids.add)) document.getElementById(ids.add).onclick=addOrders;
+}
