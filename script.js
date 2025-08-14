@@ -957,55 +957,56 @@ function mergeLOMData() {
 }
 
 /* ====== Render Tabel LOM ====== */
-function renderLOMTable(dataToRender = lomData) {
+function renderLOMTable() {
   const tbody = document.querySelector("#lom-table tbody");
-  if (!tbody) return;
   tbody.innerHTML = "";
 
-  dataToRender.forEach((row, idx) => {
+  lomData.forEach((row, idx) => {
     const tr = document.createElement("tr");
-    tr.dataset.index = idx;
 
-    // Kolom
-    const cols = ["Order","Month","Cost","Reman","Status","Planning","Status AMT"];
-    cols.forEach(col => {
-      const td = document.createElement("td");
+    // Order
+    const tdOrder = document.createElement("td");
+    tdOrder.textContent = row.Order;
+    tr.appendChild(tdOrder);
 
-      if (col === "Month") {
-        const sel = document.createElement("select");
-        sel.innerHTML = `<option value="">--</option>
-          <option>Jan</option><option>Feb</option><option>Mar</option><option>Apr</option>
-          <option>May</option><option>Jun</option><option>Jul</option><option>Aug</option>
-          <option>Sep</option><option>Oct</option><option>Nov</option><option>Dec</option>`;
-        sel.value = row.Month || "";
-        td.appendChild(sel);
-      }
-      else if (col === "Cost") {
-        const inp = document.createElement("input");
-        inp.type = "number";
-        inp.value = row.Cost || "";
-        td.appendChild(inp);
-      }
-      else if (col === "Reman") {
-        const sel = document.createElement("select");
-        sel.innerHTML = `<option value="">--</option><option>Reman</option><option>-</option>`;
-        sel.value = row.Reman || "";
-        td.appendChild(sel);
-      }
-      else if (col === "Planning") {
-        td.textContent = formatDateDDMMMYYYY(row.Planning);
-      }
-      else {
-        td.textContent = row[col] || "";
-      }
-
-      tr.appendChild(td);
+    // Month (dropdown Jan–Dec)
+    const tdMonth = document.createElement("td");
+    const select = document.createElement("select");
+    ["", "Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"].forEach(m => {
+      const opt = document.createElement("option");
+      opt.value = m;
+      opt.textContent = m;
+      if (row.Month === m) opt.selected = true;
+      select.appendChild(opt);
     });
+    tdMonth.appendChild(select);
+    tr.appendChild(tdMonth);
 
-    // Action
-    const actionTd = document.createElement("td");
-    actionTd.innerHTML = `<button class="save-btn" data-index="${idx}">Save</button>`;
-    tr.appendChild(actionTd);
+    // Cost
+    const tdCost = document.createElement("td");
+    const inputCost = document.createElement("input");
+    inputCost.type = "number";
+    inputCost.value = row.Cost || "";
+    tdCost.appendChild(inputCost);
+    tr.appendChild(tdCost);
+
+    // Reman
+    const tdReman = document.createElement("td");
+    const selectReman = document.createElement("select");
+    ["", "Reman", "-"].forEach(r => {
+      const opt = document.createElement("option");
+      opt.value = r;
+      opt.textContent = r;
+      if (row.Reman === r) opt.selected = true;
+      selectReman.appendChild(opt);
+    });
+    tdReman.appendChild(selectReman);
+    tr.appendChild(tdReman);
+
+    // Status (read-only)
+    const tdStatus = document.createElement("td");
+    tdStatus.textContent = row.Status || "";
+    tr.appendChild(tdStatus);
 
     tbody.appendChild(tr);
   });
@@ -1057,6 +1058,7 @@ function saveLOMEdits() {
   localStorage.setItem(LOM_LS_KEY, JSON.stringify(lomData));
   alert("Data LOM berhasil disimpan!");
 }
+
 
 
 
