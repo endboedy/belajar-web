@@ -333,6 +333,24 @@ function mergeData() {
   updateMonthFilterOptions();
 }
 
+/* ===================== HELPER: EXCEL SERIAL → JS DATE ===================== */
+function excelDateToJS(serial) {
+  // Excel 1900 date system
+  const utc_days  = Math.floor(serial - 25569);
+  const utc_value = utc_days * 86400; 
+  const date_info = new Date(utc_value * 1000);
+  const fractional_day = serial - Math.floor(serial) + 0.0000001;
+  let total_seconds = Math.floor(86400 * fractional_day);
+  const seconds = total_seconds % 60;
+  total_seconds -= seconds;
+  const hours = Math.floor(total_seconds / 3600);
+  const minutes = Math.floor((total_seconds - (hours*3600))/60);
+  date_info.setHours(hours);
+  date_info.setMinutes(minutes);
+  date_info.setSeconds(seconds);
+  return date_info;
+}
+
 /* ===================== RENDER TABLE ===================== */
 function renderTable(dataToRender = mergedData) {
   const tbody = document.querySelector("#output-table tbody");
@@ -347,7 +365,6 @@ function renderTable(dataToRender = mergedData) {
     const tr = document.createElement("tr");
     tr.dataset.index = index; // simpan index row
 
-    // Urutan kolom sesuai <thead>
     const columns = [
       "Room", "Order Type", "Order", "Description", "Created On",
       "User Status", "MAT", "CPH", "Section", "Status Part", "Aging",
@@ -356,17 +373,18 @@ function renderTable(dataToRender = mergedData) {
 
     columns.forEach(col => {
       const td = document.createElement("td");
-      td.textContent = row[col] ?? "";
 
-      // Tambahkan class untuk kolom yang ingin diedit
+      // Format tanggal untuk "Created On" & "Planning"
+      if (col === "Created On" || col === "Planning") {
+        td.textContent = formatDateDDMMMYYYY(row[col]);
+      } else {
+        td.textContent = row[col] ?? "";
+      }
+
+      // Tambahkan class untuk kolom yang bisa diedit
       if (col === "Month") td.classList.add("col-month");
       if (col === "Cost") td.classList.add("col-cost");
       if (col === "Reman") td.classList.add("col-reman");
-
-      // Format tanggal
-      if (col === "Created On" || col === "Planning") {
-        td.textContent = formatDateDDMMMYYYY(td.textContent);
-      }
 
       tr.appendChild(td);
     });
@@ -381,6 +399,8 @@ function renderTable(dataToRender = mergedData) {
 
     tbody.appendChild(tr);
   });
+
+  attachTableEvents();
 }
 
 /* ===================== ACTIVATE EDIT ===================== */
@@ -789,6 +809,7 @@ function setupButtons() {
   const addOrderBtn = document.getElementById("add-order-btn");
   if (addOrderBtn) addOrderBtn.onclick = addOrders;
 }
+
 
 
 
