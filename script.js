@@ -109,13 +109,26 @@ function toDateObj(anyDate) {
 }
 
 /** format dd-MMM-yyyy */
-function formatDateDDMMMYYYY(anyDate) {
-  const d = toDateObj(anyDate);
+
+function formatDateDDMMMYYYY(input) {
+  if (input === undefined || input === null || input === "") return "";
+  let d = null;
+  if (typeof input === "number") d = excelDateToJS(input);
+  else {
+    d = new Date(input);
+    if (isNaN(d)) {
+      const alt = new Date(String(input).replace(/\//g, "-"));
+      d = isNaN(alt) ? null : alt;
+    }
+  }
   if (!d || isNaN(d)) return "";
   const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-  const dd = String(d.getDate()).padStart(2,"0");
-  return `${dd}-${months[d.getMonth()]}-${d.getFullYear()}`;
+  const day = String(d.getDate()).padStart(2,"0");
+  const mon = months[d.getMonth()];
+  const year = d.getFullYear();
+  return `${day}-${mon}-${year}`;
 }
+
 
 /** format value="yyyy-mm-dd" untuk input[type=date] */
 function formatDateISO(anyDate) {
@@ -710,6 +723,7 @@ function setupButtons() {
   const addOrderBtn = document.getElementById("add-order-btn");
   if (addOrderBtn) addOrderBtn.onclick = addOrders;
 }
+
 
 
 
