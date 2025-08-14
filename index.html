@@ -7,29 +7,39 @@
   <link rel="stylesheet" href="style.css" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <style>
-    :root{--blue:#2f8be6;--dark-blue:#1763b1;--sidebar:#1f73c9;--muted:#777;--card-bg:#fff;font-family:"Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;}
-    body{margin:0; background:#f3f6f9; color:#222;}
-    header{background:var(--blue); color:#fff; padding:18px 24px; text-align:center; font-size:34px; font-weight:700;}
-    .container{display:flex; min-height:calc(100vh - 80px);}
-    .sidebar{width:200px; background:var(--sidebar); color:#fff; padding-top:20px; box-shadow: 2px 0 6px rgba(0,0,0,0.06);}
-    .sidebar ul{list-style:none; padding:0; margin:0;}
-    .sidebar .menu-item{padding:12px 18px; cursor:pointer; color:#fff; border-left:4px solid transparent;}
-    .sidebar .menu-item.active{background: rgba(0,0,0,0.08); border-left-color:#0b4f85;}
-    .content{flex:1; padding:22px 28px;}
-    h2{margin-top:4px; color:#222;}
-    .content-section{display:none;}
-    .content-section.active{display:block;}
-    textarea,input,select{box-sizing:border-box;}
-    table{width:100%; border-collapse:collapse; background:#fff; border-radius:6px; overflow:hidden; box-shadow:0 1px 2px rgba(0,0,0,0.04);}
-    th{background:var(--dark-blue); color:#fff; padding:8px; text-align:left; font-size:13px;}
-    td{padding:8px; border-bottom:1px solid #eee; font-size:13px; vertical-align:middle;}
-    .action-btn{margin-right:6px; padding:4px 8px; border-radius:4px; border:0; cursor:pointer; font-size:12px;}
-    .edit-btn{background:#4da6ff; color:#fff;}
-    .save-btn{background:#28a745; color:#fff;}
-    .cancel-btn{background:#777; color:#fff;}
-    .delete-btn{background:#e04b4b; color:#fff;}
-    .hidden{display:none;}
-    .small{font-size:12px; color:var(--muted);}
+    :root{
+      --blue:#2f8be6; --dark-blue:#1763b1; --sidebar:#1f73c9; --muted:#777; --card-bg:#fff;
+      font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+    body{ margin:0; background:#f3f6f9; color:#222; }
+    header{ background:var(--blue); color:#fff; padding:18px 24px; text-align:center; font-size:34px; font-weight:700; }
+    .container{ display:flex; min-height:calc(100vh - 80px); }
+    .sidebar{ width:200px; background:var(--sidebar); color:#fff; padding-top:20px; box-shadow:2px 0 6px rgba(0,0,0,0.06); }
+    .sidebar ul{ list-style:none; padding:0; margin:0; }
+    .sidebar .menu-item{ padding:12px 18px; cursor:pointer; color:#fff; border-left:4px solid transparent; }
+    .sidebar .menu-item.active{ background: rgba(0,0,0,0.08); border-left-color:#0b4f85; }
+    .content{ flex:1; padding:22px 28px; }
+    h2{ margin-top:4px; color:#222; }
+    .content-section{ display:none; }
+    .content-section.active{ display:block; }
+    textarea{ width:100%; box-sizing:border-box; padding:10px; border:1px solid #ddd; border-radius:4px; }
+    .add-order-section{ background:#fff; padding:12px; border-radius:6px; box-shadow:0 1px 2px rgba(0,0,0,0.03); margin-bottom:12px; }
+    .status-message{ margin-top:8px; font-style:italic; }
+    .filter-group{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:12px; }
+    .filter-group label{ display:flex; flex-direction:column; font-size:13px; color:var(--muted); }
+    .filter-group input, .filter-group select{ padding:6px 8px; width:120px; border-radius:4px; border:1px solid #ddd; }
+    .filter-group button{ background:var(--blue); color:#fff; border:0; padding:6px 10px; border-radius:6px; cursor:pointer; }
+    table{ width:100%; border-collapse:collapse; background:#fff; border-radius:6px; overflow:hidden; box-shadow:0 1px 2px rgba(0,0,0,0.04); }
+    th{ background:var(--dark-blue); color:#fff; padding:8px; text-align:left; font-size:13px; }
+    td{ padding:8px; border-bottom:1px solid #eee; font-size:13px; vertical-align:middle; }
+    .action-btn{ margin-right:6px; padding:4px 8px; border-radius:4px; border:0; cursor:pointer; font-size:12px; }
+    .edit-btn{ background:#4da6ff; color:#fff; }
+    .save-btn{ background:#28a745; color:#fff; }
+    .cancel-btn{ background:#777; color:#fff; }
+    .delete-btn{ background:#e04b4b; color:#fff; }
+    .small{ font-size:12px; color:var(--muted); }
+    .hidden{ display:none; }
+    @media (max-width:900px){ .filter-group input, .filter-group select{ width:100px; } }
   </style>
 </head>
 <body>
@@ -48,7 +58,7 @@
     <!-- Upload -->
     <section id="upload" class="content-section active">
       <h2>Upload File</h2>
-      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px;">
         <label>
           <div class="small">Pilih Jenis File</div>
           <select id="file-select">
@@ -70,18 +80,39 @@
         </div>
       </div>
       <div id="upload-status" class="small"></div>
+      <div class="small" style="margin-top:10px;color:var(--muted)">
+        Catatan: Upload semua file sumber sebelum klik <strong>Lembar Kerja → Refresh</strong>.
+      </div>
     </section>
 
     <!-- Lembar Kerja -->
     <section id="lembar" class="content-section">
       <h2>Lembar Kerja</h2>
+      <div class="filter-group">
+        <label>Room: <input type="text" id="filter-room" placeholder="Filter Room" /></label>
+        <label>Order: <input type="text" id="filter-order" placeholder="Filter Order" /></label>
+        <label>CPH: <input type="text" id="filter-cph" placeholder="Filter CPH" /></label>
+        <label>MAT: <input type="text" id="filter-mat" placeholder="Filter MAT" /></label>
+        <label>Section: <input type="text" id="filter-section" placeholder="Filter Section" /></label>
+        <label>Month:
+          <select id="filter-month">
+            <option value="">-- All --</option>
+          </select>
+        </label>
+        <div style="margin-left:auto;display:flex;gap:8px;">
+          <button id="filter-btn">Filter</button>
+          <button id="reset-btn">Reset</button>
+          <button id="refresh-btn">Refresh</button>
+        </div>
+      </div>
       <div style="overflow:auto;max-height:520px;">
         <table id="output-table">
           <thead>
             <tr>
               <th>Room</th><th>Order Type</th><th>Order</th><th>Description</th><th>Created On</th>
-              <th>User Status</th><th>MAT</th><th>CPH</th><th>Section</th><th>Status Part</th><th>Aging</th>
-              <th>Month</th><th>Cost</th><th>Reman</th><th>Include</th><th>Exclude</th><th>Planning</th><th>Status AMT</th><th>Action</th>
+              <th>User Status</th><th>MAT</th><th>CPH</th><th>Section</th><th>Status Part</th>
+              <th>Aging</th><th>Month</th><th>Cost</th><th>Reman</th><th>Include</th>
+              <th>Exclude</th><th>Planning</th><th>Status AMT</th><th>Action</th>
             </tr>
           </thead>
           <tbody></tbody>
@@ -89,51 +120,57 @@
       </div>
     </section>
 
-    <!-- =====================Menu LOM GLOBAL ===================== -->
+    <!-- List Order Monthly (LOM) -->
     <section id="lom" class="content-section">
-      <h2>📋 List Order Monthly (LOM)</h2>
-      <div id="lom-add-section" style="margin-bottom:10px;">
-        <input type="text" id="lom-add-input" placeholder="Masukkan Order, bisa dipisah spasi atau koma" style="width:300px;">
-        <button id="lom-add-btn">Add Order</button>
+      <h2>List Order Monthly</h2>
+      <div class="add-order-section">
+        <label for="lom-add-order">Add Order (pisah koma atau enter)</label>
+        <textarea id="lom-add-order" rows="3" placeholder="ORD001, ORD002"></textarea>
+        <button id="lom-add-btn" style="margin-top:8px">Add Orders</button>
       </div>
-      <div id="lom-filter-section" style="margin-bottom:10px;">
-        <input type="text" id="lom-filter-order" placeholder="Filter Order..." style="width:200px;">
+      <div class="filter-group">
+        <label>Order: <input type="text" id="lom-filter-order" placeholder="Filter Order" /></label>
         <button id="lom-filter-btn">Filter</button>
+        <button id="lom-save-btn">Save</button>
+        <button id="lom-load-btn">Load</button>
       </div>
-      <div style="overflow:auto; max-height:400px;">
-        <table id="lom-table" border="1" cellpadding="5" cellspacing="0" style="border-collapse:collapse;width:100%;margin-bottom:10px;">
-          <thead style="background:#eee;">
+      <div style="overflow:auto; max-height:500px;">
+        <table id="lom-table">
+          <thead>
             <tr>
-              <th>Order</th>
-              <th>Month</th>
-              <th>Cost</th>
-              <th>Reman</th>
-              <th>Status</th>
+              <th>Order</th><th>Month</th><th>Cost</th><th>Reman</th>
+              <th>Status</th><th>Planning</th><th>Status AMT</th><th>Action</th>
             </tr>
           </thead>
           <tbody></tbody>
         </table>
       </div>
-      <div>
-        <button id="lom-save-btn">💾 Save LOM</button>
-        <span id="lom-status" style="margin-left:10px;color:green;"></span>
-      </div>
     </section>
 
-    <!-- Summary -->
     <section id="summary" class="content-section">
       <h2>Summary CRM</h2>
-      <p class="small">(Kosong dulu, nanti kita isi)</p>
+      <p class="small">(Kosong dulu)</p>
     </section>
 
-    <!-- Download -->
     <section id="download" class="content-section">
       <h2>Download Excel</h2>
-      <p class="small">(Nanti kita tambahin fitur export)</p>
+      <p class="small">(Nanti kita tambahkan fitur export)</p>
     </section>
   </main>
 </div>
 
 <script src="script.js"></script>
+<script>
+  // Sidebar menu click
+  document.querySelectorAll(".sidebar .menu-item").forEach(item=>{
+    item.addEventListener("click",()=>{
+      document.querySelectorAll(".sidebar .menu-item").forEach(i=>i.classList.remove("active"));
+      item.classList.add("active");
+      const menu = item.dataset.menu;
+      document.querySelectorAll(".content-section").forEach(s=>s.classList.remove("active"));
+      document.getElementById(menu)?.classList.add("active");
+    });
+  });
+</script>
 </body>
 </html>
