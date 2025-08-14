@@ -134,10 +134,22 @@ function excelDateToJS(serial) {
  */
 function formatDateDDMMMYYYY(input) {
   if (input === undefined || input === null || input === "") return "";
+
   let d = null;
 
-  if (typeof input === "number") d = excelDateToJS(input);
-  else d = toDateObj(input);
+  // Angka atau string angka → serial Excel
+  if (typeof input === "number") {
+    d = excelDateToJS(input);
+  } else if (!isNaN(Number(input))) {
+    d = excelDateToJS(Number(input));
+  } else {
+    d = new Date(input);
+    if (isNaN(d)) {
+      // coba ganti slash ke dash
+      const alt = new Date(String(input).replace(/\//g, "-"));
+      d = isNaN(alt) ? null : alt;
+    }
+  }
 
   if (!d || isNaN(d)) return "";
 
@@ -148,7 +160,6 @@ function formatDateDDMMMYYYY(input) {
 
   return `${day}-${mon}-${year}`;
 }
-
 /**
  * Format value untuk input[type=date] → yyyy-mm-dd
  */
@@ -809,6 +820,7 @@ function setupButtons() {
   const addOrderBtn = document.getElementById("add-order-btn");
   if (addOrderBtn) addOrderBtn.onclick = addOrders;
 }
+
 
 
 
