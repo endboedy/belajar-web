@@ -503,7 +503,7 @@ function updateMonthFilterOptions() {
 
 /* ===================== ADD ORDERS ===================== */
 function addOrders() {
-  const input = document.getElementById("add-order-input");
+  const input = document.getElementById("lom-add-order-input")
   const status = document.getElementById("add-order-status");
   const text = (input?.value || "").trim();
   if (!text) {
@@ -697,4 +697,5 @@ function asColoredStatusAMT(val) {
   }
   return safe(val);
 }
+
 
