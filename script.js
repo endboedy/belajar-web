@@ -523,11 +523,9 @@ function formatDateDDMMMYYYY(dateStr) {
 
 /* ===================== FILTER LOM ===================== */
 function filterLOM() {
-  // Ambil nilai filter dari dropdown/filter input
   const monthFilter = document.querySelector("#filter-month")?.value;
   const remanFilter = document.querySelector("#filter-reman")?.value;
 
-  // Filter data
   let filtered = lomData;
 
   if (monthFilter && monthFilter !== "All") {
@@ -537,9 +535,8 @@ function filterLOM() {
     filtered = filtered.filter(r => r.Reman === remanFilter);
   }
 
-  // Render tabel hasil filter
   renderLOMTable(filtered);
-  }
+}
 
 /* ===================== FILTERS ===================== */
 function filterData() {
@@ -750,6 +747,7 @@ function asColoredStatusAMT(val) {
   }
   return safe(val);
 }
+
 
 
 
