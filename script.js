@@ -426,9 +426,7 @@ function renderTable(dataToRender = mergedData) {
   });
 }
 
-/* ===================== MENU LOM ===================== */
-
-
+/* ===================== MENU LOM (LEMBAR ORDER MONTHLY) ===================== */
 function renderLOMTable(rows = lomData) {
   const tbody = document.querySelector("#lom-table tbody");
   if (!tbody) return;
@@ -453,6 +451,8 @@ function renderLOMTable(rows = lomData) {
       if (r.Month === m) option.selected = true;
       monthSelect.appendChild(option);
     });
+    // bind perubahan ke lomData
+    monthSelect.addEventListener("change", e => r.Month = e.target.value);
     tdMonth.appendChild(monthSelect);
     tr.appendChild(tdMonth);
 
@@ -463,6 +463,7 @@ function renderLOMTable(rows = lomData) {
     costInput.value = r.Cost ?? "";
     costInput.style.width = "100px";
     costInput.style.textAlign = "right";
+    costInput.addEventListener("input", e => r.Cost = parseFloat(e.target.value) || 0);
     tdCost.appendChild(costInput);
     tr.appendChild(tdCost);
 
@@ -473,24 +474,51 @@ function renderLOMTable(rows = lomData) {
       const option = document.createElement("option");
       option.value = opt;
       option.textContent = opt;
-      if (r.Reman === opt || r.Reman === "0,0") option.selected = true;
+      if (r.Reman === opt || r.Reman === "0,0" || !r.Reman) option.selected = true;
       remanSelect.appendChild(option);
     });
+    // bind perubahan ke lomData
+    remanSelect.addEventListener("change", e => r.Reman = e.target.value);
     tdReman.appendChild(remanSelect);
     tr.appendChild(tdReman);
 
-    // === Planning (tanggal dari Planning file) ===
+    // === Planning (lookup dari Excel) ===
     const tdPlanning = document.createElement("td");
-    tdPlanning.textContent = formatDateDDMMMYYYY(r.Planning);
+    // pastikan r.Order sudah ada, lakukan lookup
+    r.Planning = lookupPlanning(r.Order);
+    tdPlanning.textContent = r.Planning ? formatDateDDMMMYYYY(r.Planning) : "";
     tr.appendChild(tdPlanning);
 
-    // === Status (dari Planning file) ===
+    // === Status (lookup dari Excel) ===
     const tdStatus = document.createElement("td");
+    r.Status = lookupStatus(r.Order);
     tdStatus.textContent = r.Status ?? "";
     tr.appendChild(tdStatus);
 
     tbody.appendChild(tr);
   });
+}
+
+// ===================== Helper lookup Excel =====================
+function lookupPlanning(orderID) {
+  const row = excelData.find(r => r.OrderID === orderID);
+  return row ? row.EventStart : "";
+}
+function lookupStatus(orderID) {
+  const row = excelData.find(r => r.OrderID === orderID);
+  return row ? row.Status : "";
+}
+
+// ===================== Helper format tanggal =====================
+function formatDateDDMMMYYYY(dateStr) {
+  if (!dateStr) return "";
+  const d = new Date(dateStr);
+  if (isNaN(d)) return "";
+  const day = String(d.getDate()).padStart(2, "0");
+  const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  const month = monthNames[d.getMonth()];
+  const year = d.getFullYear();
+  return `${day}-${month}-${year}`;
 }
 
 /* ===================== FILTERS ===================== */
@@ -702,6 +730,7 @@ function asColoredStatusAMT(val) {
   }
   return safe(val);
 }
+
 
 
 
