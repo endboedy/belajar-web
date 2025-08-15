@@ -521,6 +521,7 @@ function formatDateDDMMMYYYY(dateStr) {
   return `${day}-${month}-${year}`;
 }
 
+
 /* ===================== FILTER LOM ===================== */
 function filterLOM() {
   const monthFilter = document.querySelector("#filter-month")?.value;
@@ -537,6 +538,27 @@ function filterLOM() {
 
   renderLOMTable(filtered);
 }
+
+function resetFilterLOM() {
+  // Reset dropdown ke "All"
+  const monthSelect = document.querySelector("#filter-month");
+  const remanSelect = document.querySelector("#filter-reman");
+
+  if (monthSelect) monthSelect.value = "All";
+  if (remanSelect) remanSelect.value = "All";
+
+  // Tampilkan semua data
+  renderLOMTable(lomData);
+}
+
+/* ===================== INISIALISASI TOMBOL FILTER ===================== */
+document.addEventListener("DOMContentLoaded", () => {
+  const lomFilterBtn = document.getElementById("lom-filter-btn");
+  if (lomFilterBtn) lomFilterBtn.onclick = filterLOM;
+
+  const lomResetBtn = document.getElementById("lom-reset-btn");
+  if (lomResetBtn) lomResetBtn.onclick = resetFilterLOM;
+});
 
 /* ===================== FILTERS ===================== */
 function filterData() {
@@ -747,6 +769,7 @@ function asColoredStatusAMT(val) {
   }
   return safe(val);
 }
+
 
 
 
