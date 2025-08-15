@@ -524,8 +524,7 @@ function addOrders() {
     renderLOMTable(lomData);
     document.getElementById("lom-add-order-input").value = "";
 }
-  });
-  if (added) {
+    if (added) {
     saveUserEdits();
     renderTable(mergedData);
     if (status) status.textContent = `${added} Order berhasil ditambahkan.`;
@@ -685,6 +684,7 @@ function asColoredStatusAMT(val) {
   }
   return safe(val);
 }
+
 
 
 
