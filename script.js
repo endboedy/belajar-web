@@ -528,7 +528,7 @@ function setupButtons() {
   document.getElementById("upload-btn").addEventListener("click", handleUpload);
   document.getElementById("clear-files-btn").addEventListener("click", clearAllData);
 
-  document.getElementById("filter-btn").addEventListener("click", applyFilters);
+  document.getElementById("filter-btn").addEventListener("click", filterData);
   document.getElementById("reset-btn").addEventListener("click", resetFilters);
   document.getElementById("refresh-btn").addEventListener("click", refreshData);
 
@@ -572,3 +572,4 @@ document.addEventListener("DOMContentLoaded", () => {
   setupButtons();
   styleStatusChips();
 });
+
