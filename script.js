@@ -503,39 +503,27 @@ function updateMonthFilterOptions() {
 
 /* ===================== ADD ORDERS ===================== */
 function addOrders() {
-  const input = document.getElementById("lom-add-order-input")
-  const status = document.getElementById("add-order-status");
-  const text = (input?.value || "").trim();
-  if (!text) {
-    alert("Masukkan Order terlebih dahulu.");
-    return;
-  }
-  const orders = text.split(/[\s,]+/).filter(Boolean);
-  let added = 0;
-  orders.forEach(o => {
-    if (!mergedData.some(r => r.Order === o)) {
-      mergedData.push({
-        Room: "",
-        "Order Type": "",
-        Order: o,
-        Description: "",
-        "Created On": "",
-        "User Status": "",
-        MAT: "",
-        CPH: "",
-        Section: "",
-        "Status Part": "",
-        Aging: "",
-        Month: "",
-        Cost: "-",
-        Reman: "",
-        Include: "-",
-        Exclude: "-",
-        Planning: "",
-        "Status AMT": ""
-      });
-      added++;
+    const ordersText = document.getElementById("lom-add-order-input").value.trim();
+    if (!ordersText) {
+        alert("Masukkan Order terlebih dahulu.");
+        return;
     }
+
+    const orders = ordersText.split(/[\s,]+/).filter(o => o);
+    orders.forEach(order => {
+        lomData.push({
+            Order: order,
+            Month: "",
+            Cost: 0,
+            Reman: "",
+            Planning: "",
+            Status: ""
+        });
+    });
+
+    renderLOMTable(lomData);
+    document.getElementById("lom-add-order-input").value = "";
+}
   });
   if (added) {
     saveUserEdits();
@@ -697,5 +685,6 @@ function asColoredStatusAMT(val) {
   }
   return safe(val);
 }
+
 
 
