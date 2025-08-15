@@ -433,7 +433,7 @@ function renderLOMTable(rows = lomData) {
   if (!tbody) return;
   tbody.innerHTML = "";
 
-  rows.forEach(r => {
+  rows.forEach((r, idx) => {
     const tr = document.createElement("tr");
 
     // === Order ===
@@ -452,22 +452,28 @@ function renderLOMTable(rows = lomData) {
       if (r.Month === m) option.selected = true;
       monthSelect.appendChild(option);
     });
-    monthSelect.addEventListener("change", e => r.Month = e.target.value);
+    monthSelect.addEventListener("change", e => {
+      r.Month = e.target.value;
+      saveLOM();
+    });
     tdMonth.appendChild(monthSelect);
     tr.appendChild(tdMonth);
 
-    // === Cost (editable input) ===
+    // === Cost ===
     const tdCost = document.createElement("td");
     const costInput = document.createElement("input");
     costInput.type = "number";
     costInput.value = r.Cost ?? "";
     costInput.style.width = "100px";
     costInput.style.textAlign = "right";
-    costInput.addEventListener("input", e => r.Cost = parseFloat(e.target.value) || 0);
+    costInput.addEventListener("input", e => {
+      r.Cost = parseFloat(e.target.value) || 0;
+      saveLOM();
+    });
     tdCost.appendChild(costInput);
     tr.appendChild(tdCost);
 
-    // === Reman (dropdown) ===
+    // === Reman ===
     const tdReman = document.createElement("td");
     const remanSelect = document.createElement("select");
     ["Reman", "-"].forEach(opt => {
@@ -477,21 +483,37 @@ function renderLOMTable(rows = lomData) {
       if (r.Reman === opt || r.Reman === "0,0" || !r.Reman) option.selected = true;
       remanSelect.appendChild(option);
     });
-    remanSelect.addEventListener("change", e => r.Reman = e.target.value);
+    remanSelect.addEventListener("change", e => {
+      r.Reman = e.target.value;
+      saveLOM();
+    });
     tdReman.appendChild(remanSelect);
     tr.appendChild(tdReman);
 
-    // === Planning (lookup dari Excel) ===
+    // === Planning ===
     const tdPlanning = document.createElement("td");
     r.Planning = lookupPlanning(r.Order);
     tdPlanning.textContent = r.Planning ? formatDateDDMMMYYYY(r.Planning) : "";
     tr.appendChild(tdPlanning);
 
-    // === Status (lookup dari Excel) ===
+    // === Status ===
     const tdStatus = document.createElement("td");
     r.Status = lookupStatus(r.Order);
     tdStatus.textContent = r.Status ?? "";
     tr.appendChild(tdStatus);
+
+    // === Delete button ===
+    const tdDelete = document.createElement("td");
+    const delBtn = document.createElement("button");
+    delBtn.textContent = "Delete";
+    delBtn.className = "btn btn-danger btn-sm";
+    delBtn.onclick = () => {
+      lomData.splice(idx,1);
+      renderLOMTable(lomData);
+      saveLOM();
+    };
+    tdDelete.appendChild(delBtn);
+    tr.appendChild(tdDelete);
 
     tbody.appendChild(tr);
   });
@@ -551,6 +573,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const lomRefreshBtn = document.getElementById("lom-refresh-btn");
   if (lomRefreshBtn) lomRefreshBtn.onclick = () => renderLOMTable(lomData);
+
+  loadLOM(); // load saved data saat halaman dibuka
 });
 
 /* ===================== FILTERS ===================== */
@@ -590,11 +614,27 @@ function updateMonthFilterOptions() {
 
 /* ===================== ADD ORDERS ===================== */
 function addOrders() {
-  // contoh: tambahkan 1 row baru
-  lomData.push({ Order: "", Month: "Jan", Cost: 0, Reman: "-", Planning: "", Status: "" });
+  const input = document.getElementById("lom-add-orders-textarea");
+  if (!input) return;
+  const orders = input.value.split(/[\n,]+/).map(o => o.trim()).filter(o => o);
+  orders.forEach(order => {
+    lomData.push({ Order: order, Month: "Jan", Cost: 0, Reman: "-", Planning: "", Status: "" });
+  });
+  input.value = ""; // ✨ clear textarea
   renderLOMTable(lomData);
+  saveLOM();
+}
+  
+/* ===================== SAVE / LOAD LOM ===================== */
+function saveLOM() {
+  localStorage.setItem("lomData", JSON.stringify(lomData));
 }
 
+function loadLOM() {
+  const data = localStorage.getItem("lomData");
+  if (data) lomData = JSON.parse(data);
+  renderLOMTable(lomData);
+}
 /* ===================== SAVE / LOAD JSON ===================== */
 function saveToJSON() {
   if (!mergedData.length) {
@@ -745,6 +785,7 @@ function asColoredStatusAMT(val) {
   }
   return safe(val);
 }
+
 
 
 
