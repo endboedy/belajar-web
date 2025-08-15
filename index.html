@@ -1,5 +1,3 @@
-html
-
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -10,7 +8,6 @@ html
   <!-- XLSX -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <style>
-    /* Simple styling mirip screenshot */
     :root{
       --blue:#2f8be6;
       --dark-blue:#1763b1;
@@ -44,9 +41,7 @@ html
       border-left:4px solid transparent;
     }
     .sidebar .menu-item.active{ background: rgba(0,0,0,0.08); border-left-color:#0b4f85; }
-    .content{
-      flex:1; padding:22px 28px;
-    }
+    .content{ flex:1; padding:22px 28px; }
     h2{ margin-top:4px; color:#222; }
     .content-section{ display:none; }
     .content-section.active{ display:block; }
@@ -78,12 +73,14 @@ html
       <ul>
         <li class="menu-item active" data-menu="upload">Upload File</li>
         <li class="menu-item" data-menu="lembar">Lembar Kerja</li>
+        <li class="menu-item" data-menu="lom">Lembar Order Monthly</li>
         <li class="menu-item" data-menu="summary">Summary CRM</li>
         <li class="menu-item" data-menu="download">Download Excel</li>
       </ul>
     </nav>
 
     <main class="content">
+
       <!-- Upload -->
       <section id="upload" class="content-section active">
         <h2>Upload File</h2>
@@ -97,6 +94,7 @@ html
               <option value="Budget">Budget</option>
               <option value="Data1">Data1</option>
               <option value="Data2">Data2</option>
+              <option value="LOM">LOM</option>
             </select>
           </label>
 
@@ -113,7 +111,7 @@ html
 
         <div id="upload-status" class="small"></div>
         <div class="small" style="margin-top:10px;color:var(--muted)">
-          Catatan: Upload semua file sumber (IW39, SUM57, Planning, Data1, Data2) sebelum klik <strong>Lembar Kerja → Refresh</strong>.
+          Catatan: Upload semua file sumber (IW39, SUM57, Planning, Data1, Data2, LOM) sebelum klik <strong>Lembar Kerja → Refresh</strong>.
         </div>
       </section>
 
@@ -138,7 +136,6 @@ html
           <label>Month:
             <select id="filter-month">
               <option value="">-- All --</option>
-              <!-- Options akan diisi otomatis -->
             </select>
           </label>
 
@@ -150,38 +147,7 @@ html
             <button id="load-btn">Load JSON</button>
           </div>
         </div>
-<!-- Lembar Order Monthly -->
-<section id="lom" class="content-section">
-  <h2>Lembar Order Monthly</h2>
-  <div class="filter-group">
-    <label>Order: 
-      <input type="text" id="lom-filter-order" placeholder="Filter Order" />
-    </label>
-    <div style="margin-left:auto;display:flex;gap:8px;">
-      <button id="lom-filter-btn">Filter</button>
-      <button id="lom-reset-btn">Reset</button>
-      <button id="lom-refresh-btn">Refresh</button>
-    </div>
-  </div>
 
-  <div style="overflow:auto;max-height:520px;">
-    <table id="lom-table">
-      <thead>
-        <tr>
-          <th>Order</th>
-          <th>Month</th>
-          <th>Cost</th>
-          <th>Reman</th>
-          <th>Planning</th>
-          <th>Status</th>
-        </tr>
-      </thead>
-      <tbody>
-        <!-- rows -->
-      </tbody>
-    </table>
-  </div>
-</section>
         <div style="overflow:auto;max-height:520px;">
           <table id="output-table">
             <thead>
@@ -207,9 +173,38 @@ html
                 <th>Action</th>
               </tr>
             </thead>
-            <tbody>
-              <!-- rows -->
-            </tbody>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Lembar Order Monthly -->
+      <section id="lom" class="content-section">
+        <h2>Lembar Order Monthly</h2>
+        <div class="filter-group">
+          <label>Order:
+            <input type="text" id="lom-filter-order" placeholder="Filter Order" />
+          </label>
+          <div style="margin-left:auto;display:flex;gap:8px;">
+            <button id="lom-filter-btn">Filter</button>
+            <button id="lom-reset-btn">Reset</button>
+            <button id="lom-refresh-btn">Refresh</button>
+          </div>
+        </div>
+
+        <div style="overflow:auto;max-height:520px;">
+          <table id="lom-table">
+            <thead>
+              <tr>
+                <th>Order</th>
+                <th>Month</th>
+                <th>Cost</th>
+                <th>Reman</th>
+                <th>Planning</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
           </table>
         </div>
       </section>
@@ -229,4 +224,3 @@ html
   <script src="script.js"></script>
 </body>
 </html>
-
