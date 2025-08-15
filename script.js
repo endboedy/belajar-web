@@ -524,6 +524,7 @@ function addOrders() {
     renderLOMTable(lomData);
     document.getElementById("lom-add-order-input").value = "";
 } // <-- cukup ini, jangan ada '});' ekstra
+
 /* ===================== SAVE / LOAD JSON ===================== */
 function saveToJSON() {
   if (!mergedData.length) {
@@ -674,6 +675,7 @@ function asColoredStatusAMT(val) {
   }
   return safe(val);
 }
+
 
 
 
