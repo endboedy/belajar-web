@@ -405,72 +405,23 @@ function renderTable(dataToRender = mergedData) {
     columns.forEach(col => {
       const td = document.createElement("td");
 
-      // === Kolom Month sebagai dropdown ===
-      if (col === "Month") {
-        const select = document.createElement("select");
-        const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-        months.forEach(m => {
-          const option = document.createElement("option");
-          option.value = m;
-          option.textContent = m;
-          if (row[col] === m) option.selected = true;
-          select.appendChild(option);
-        });
-        td.appendChild(select);
-      }
-
-      // === Kolom Cost bisa diedit manual ===
-      else if (col === "Cost") {
-        const input = document.createElement("input");
-        input.type = "number";
-        input.value = row[col] ?? "";
-        input.style.width = "100px";
-        input.style.textAlign = "right";
-        td.appendChild(input);
-      }
-
-      // === Kolom Reman sebagai dropdown ===
-      else if (col === "Reman") {
-        const select = document.createElement("select");
-        ["Reman", "-"].forEach(opt => {
-          const option = document.createElement("option");
-          option.value = opt;
-          option.textContent = opt;
-          if (row[col] === opt) option.selected = true;
-          select.appendChild(option);
-        });
-        td.appendChild(select);
-      }
-
-      // === Kolom Planning dari file Planning (Event Start) ===
-      else if (col === "Planning") {
-        td.textContent = formatDateDDMMMYYYY(row["Event Start"] ?? row[col]);
-      }
-
-      // === Kolom Status AMT dari file Planning (Status) ===
-      else if (col === "Status AMT") {
-        td.textContent = row["Status"] ?? row[col];
-      }
-
-      // === Kolom Created On tetap format tanggal ===
-      else if (col === "Created On") {
+      if (col === "Created On" || col === "Planning") {
         td.textContent = formatDateDDMMMYYYY(row[col]);
-      }
-
-      // === Kolom Include dan Exclude tetap format angka ===
-      else if (["Include", "Exclude"].includes(col)) {
+      } else if (["Cost", "Include", "Exclude"].includes(col)) {
         td.textContent = formatNumberID(row[col]);
         td.style.textAlign = "right";
-      }
-
-      // === Kolom lainnya default ===
-      else {
+      } else {
         td.textContent = row[col] ?? "";
       }
 
+      // style opsional untuk status chips
+      if (col === "User Status") {
+        // bisa diterapkan nanti kalau ingin chip warna
+      }
       tr.appendChild(td);
     });
 
+    // ⛔ Tidak ada kolom Action lagi (hapus edit/delete)
     tbody.appendChild(tr);
   });
 }
@@ -724,6 +675,7 @@ function asColoredStatusAMT(val) {
   }
   return safe(val);
 }
+
 
 
 
