@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Ndarboe.net</title>
   <link rel="stylesheet" href="style.css" />
-  <!-- XLSX -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <style>
     :root{
@@ -41,7 +40,9 @@
       border-left:4px solid transparent;
     }
     .sidebar .menu-item.active{ background: rgba(0,0,0,0.08); border-left-color:#0b4f85; }
-    .content{ flex:1; padding:22px 28px; }
+    .content{
+      flex:1; padding:22px 28px;
+    }
     h2{ margin-top:4px; color:#222; }
     .content-section{ display:none; }
     .content-section.active{ display:block; }
@@ -80,7 +81,6 @@
     </nav>
 
     <main class="content">
-
       <!-- Upload -->
       <section id="upload" class="content-section active">
         <h2>Upload File</h2>
@@ -118,14 +118,6 @@
       <!-- Lembar Kerja -->
       <section id="lembar" class="content-section">
         <h2>Lembar Kerja</h2>
-
-        <div class="add-order-section">
-          <label for="add-order-input">Masukkan Order (pisah dengan koma atau enter):</label><br />
-          <textarea id="add-order-input" rows="3" placeholder="Contoh: ORD004 ORD005 ORD006"></textarea>
-          <br />
-          <button id="add-order-btn" style="margin-top:8px">Add Orders</button>
-          <div id="add-order-status" class="status-message"></div>
-        </div>
 
         <div class="filter-group">
           <label>Room: <input type="text" id="filter-room" placeholder="Filter Room" /></label>
@@ -170,7 +162,6 @@
                 <th>Exclude</th>
                 <th>Planning</th>
                 <th>Status AMT</th>
-                <th>Action</th>
               </tr>
             </thead>
             <tbody></tbody>
@@ -181,10 +172,17 @@
       <!-- Lembar Order Monthly -->
       <section id="lom" class="content-section">
         <h2>Lembar Order Monthly</h2>
+
+        <div class="add-order-section">
+          <label for="lom-add-order-input">Masukkan Order (pisah dengan koma atau enter):</label><br />
+          <textarea id="lom-add-order-input" rows="3" placeholder="Contoh: ORD004 ORD005 ORD006"></textarea>
+          <br />
+          <button id="lom-add-order-btn" style="margin-top:8px">Add Orders</button>
+          <div id="lom-add-order-status" class="status-message"></div>
+        </div>
+
         <div class="filter-group">
-          <label>Order:
-            <input type="text" id="lom-filter-order" placeholder="Filter Order" />
-          </label>
+          <label>Order: <input type="text" id="lom-filter-order" placeholder="Filter Order" /></label>
           <div style="margin-left:auto;display:flex;gap:8px;">
             <button id="lom-filter-btn">Filter</button>
             <button id="lom-reset-btn">Reset</button>
