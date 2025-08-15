@@ -1,11 +1,14 @@
 /****************************************************
- * Ndarboe.net - FULL script.js (menu 1–4, >500 lines)
+ * Ndarboe.net - FULL script.js (Menu 1–5, revisi LOM)
  * --------------------------------------------------
- * - Upload 6 sumber (IW39, SUM57, Planning, Budget, Data1, Data2)
- * - Merge & render Lembar Kerja
- * - Filter, Add Order, Edit/Save/Delete, Save/Load JSON
- * - Pewarnaan kolom status
- * - Format tanggal dd-MMM-yyyy (Created On, Planning)
+ * - Upload 7 sumber (IW39, SUM57, Planning, Budget, Data1, Data2, LOM)
+ * - Merge & render Lembar Kerja (lookup Month/Cost/Reman dari LOM)
+ * - Cost: jika LOM.Cost == 0 → pakai perhitungan (plan-actual)/16500
+ * - Format angka (Cost/Include/Exclude) Indonesia, 1 desimal, rata kanan
+ * - Filter, Add Order, Save/Load JSON (tetap)
+ * - Pewarnaan kolom status (tetap)
+ * - Format tanggal dd-MMM-yyyy (Created On, Planning) (tetap)
+ * - Menu baru: LOM (filter Order + tabel Order, Month, Cost, Reman, Planning, Status)
  ****************************************************/
 
 /* ===================== GLOBAL STATE ===================== */
@@ -15,16 +18,18 @@ let planningData = [];
 let data1Data = [];
 let data2Data = [];
 let budgetData = [];
+let lomData = [];        // ⬅️ baru: sumber LOM
 let mergedData = [];
 
-const UI_LS_KEY = "ndarboe_ui_edits_v2";
+const UI_LS_KEY = "ndarboe_ui_edits_v3";
 
 /* ===================== DOM READY ===================== */
 document.addEventListener("DOMContentLoaded", () => {
   setupMenu();
   setupButtons();
-  renderTable([]);        // kosong dulu
+  renderTable([]);                 // kosong dulu
   updateMonthFilterOptions();
+  renderLOMTable(lomData);         // inisialisasi tampilan LOM (jika ada)
 });
 
 /* ===================== MENU HANDLER ===================== */
@@ -44,34 +49,26 @@ function setupMenu() {
   });
 }
 
-/* ===================== HELPERS: DATE PARSING/FORMATTING ===================== */
+/* ===================== HELPERS: SAFE / DATE / NUMBER ===================== */
+function safe(v) {
+  return String(v ?? "").replace(/[<>&"]/g, s => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[s]));
+}
 
-/**
- * Parse apa pun (Excel serial number / string MM/DD/YYYY / ISO yyyy-mm-dd / Date object) ke Date object (valid) atau null
- */
+/** Parse apapun ke Date object atau null */
 function toDateObj(anyDate) {
   if (anyDate == null || anyDate === "") return null;
 
-  // Numeric Excel serial
   if (typeof anyDate === "number") {
     return excelDateToJS(anyDate);
   }
-
-  // Already Date object
   if (anyDate instanceof Date && !isNaN(anyDate)) {
     return anyDate;
   }
-
-  // String parsing
   if (typeof anyDate === "string") {
     const s = anyDate.trim();
     if (!s) return null;
-
-    // ISO yyyy-mm-dd / yyyy-mm-ddTHH:mm:ss
     const iso = new Date(s);
     if (!isNaN(iso)) return iso;
-
-    // US format M/D/YYYY or M/D/YYYY HH:mm:ss AM/PM
     const parts = s.match(/(\d{1,4})/g);
     if (parts && parts.length >= 3) {
       const ampm = /am|pm/i.test(s) ? s.match(/am|pm/i)[0] : "";
@@ -80,11 +77,8 @@ function toDateObj(anyDate) {
       const p3 = parseInt(parts[2], 10);
       let year, month, day, hour = 0, min = 0, sec = 0;
 
-      if (p1 <= 12 && p2 <= 31) {
-        month = p1; day = p2; year = p3;
-      } else {
-        day = p1; month = p2; year = p3;
-      }
+      if (p1 <= 12 && p2 <= 31) { month = p1; day = p2; year = p3; }
+      else { day = p1; month = p2; year = p3; }
 
       if (parts.length >= 5) {
         hour = parseInt(parts[3], 10);
@@ -95,72 +89,50 @@ function toDateObj(anyDate) {
           if (/am/i.test(ampm) && hour === 12) hour = 0;
         }
       }
-
       const d = new Date(year, (month || 1) - 1, day || 1, hour, min, sec);
       if (!isNaN(d)) return d;
     }
   }
-
   return null;
 }
 
-/**
- * Convert Excel serial number (e.g. 45167) ke JS Date
- */
+/** Excel serial → JS Date */
 function excelDateToJS(serial) {
   if (!serial || isNaN(serial)) return null;
-  // Excel serial 1 → 1900-01-01
-  const utc_days = Math.floor(serial - 25569);
-  const utc_value = utc_days * 86400 * 1000; // milidetik
+  const utc_days  = Math.floor(serial - 25569);
+  const utc_value = utc_days * 86400 * 1000; 
   const date_info = new Date(utc_value);
-
-  // jam, menit, detik dari desimal
   const fractional_day = serial - Math.floor(serial);
   const totalSeconds = Math.round(86400 * fractional_day);
   const hours = Math.floor(totalSeconds / 3600);
   const minutes = Math.floor((totalSeconds % 3600) / 60);
   const seconds = totalSeconds % 60;
-
   date_info.setHours(hours, minutes, seconds, 0);
   return date_info;
 }
 
-/**
- * Format Date / Excel serial / string → dd-MMM-yyyy
- * Contoh: 5/20/2025 atau 45167 → 20-May-2025
- */
+/** Format → dd-MMM-yyyy */
 function formatDateDDMMMYYYY(input) {
   if (input === undefined || input === null || input === "") return "";
-
   let d = null;
-
-  // Angka atau string angka → serial Excel
-  if (typeof input === "number") {
-    d = excelDateToJS(input);
-  } else if (!isNaN(Number(input))) {
+  if (typeof input === "number" || !isNaN(Number(input))) {
     d = excelDateToJS(Number(input));
   } else {
     d = new Date(input);
     if (isNaN(d)) {
-      // coba ganti slash ke dash
       const alt = new Date(String(input).replace(/\//g, "-"));
       d = isNaN(alt) ? null : alt;
     }
   }
-
   if (!d || isNaN(d)) return "";
-
   const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
   const day = String(d.getDate()).padStart(2,"0");
   const mon = months[d.getMonth()];
   const year = d.getFullYear();
-
   return `${day}-${mon}-${year}`;
 }
 
-/**
- * Format value untuk input[type=date] → yyyy-mm-dd
- */
+/** Format → yyyy-mm-dd untuk input[type=date] */
 function formatDateISO(anyDate) {
   const d = toDateObj(anyDate);
   if (!d || isNaN(d)) return "";
@@ -170,55 +142,12 @@ function formatDateISO(anyDate) {
   return `${yyyy}-${mm}-${dd}`;
 }
 
-/* ===================== RENDER TABLE ===================== */
-function renderTable(dataToRender = mergedData) {
-  const tbody = document.querySelector("#output-table tbody");
-  if (!tbody) {
-    console.warn("Tabel #output-table tidak ditemukan.");
-    return;
-  }
-
-  tbody.innerHTML = ""; // reset tabel
-
-  dataToRender.forEach((row, index) => {
-    const tr = document.createElement("tr");
-    tr.dataset.index = index; // simpan index row
-
-    // Urutan kolom sesuai <thead>
-    const columns = [
-      "Room", "Order Type", "Order", "Description", "Created On",
-      "User Status", "MAT", "CPH", "Section", "Status Part", "Aging",
-      "Month", "Cost", "Reman", "Include", "Exclude", "Planning", "Status AMT"
-    ];
-
-    columns.forEach(col => {
-      const td = document.createElement("td");
-
-      // Format tanggal untuk Created On & Planning
-      if (col === "Created On" || col === "Planning") {
-        td.textContent = formatDateDDMMMYYYY(row[col]);
-      } else {
-        td.textContent = row[col] ?? "";
-      }
-
-      // Tambahkan class untuk kolom yang ingin diedit
-      if (col === "Month") td.classList.add("col-month");
-      if (col === "Cost") td.classList.add("col-cost");
-      if (col === "Reman") td.classList.add("col-reman");
-
-      tr.appendChild(td);
-    });
-
-    // Kolom Action terakhir
-    const actionTd = document.createElement("td");
-    actionTd.innerHTML = `
-      <button class="action-btn edit-btn" data-index="${index}">Edit</button>
-      <button class="action-btn delete-btn" data-index="${index}">Delete</button>
-    `;
-    tr.appendChild(actionTd);
-
-    tbody.appendChild(tr);
-  });
+/** Format angka Indonesia (1 desimal, titik ribuan) */
+function formatNumberID(num) {
+  if (num === "-" || num === "" || num === null || num === undefined) return num ?? "-";
+  const n = typeof num === "string" ? Number(num.toString().replace(/[^\d.-]/g,"")) : Number(num);
+  if (!isFinite(n)) return "-";
+  return n.toLocaleString("id-ID", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 }
 
 /* ===================== UPLOAD & PARSE EXCEL ===================== */
@@ -240,12 +169,10 @@ async function parseFile(file, jenis) {
         const ws = workbook.Sheets[sheetName];
         if (!ws) throw new Error(`Sheet "${sheetName}" tidak ditemukan di file.`);
 
-        // important: raw:false agar tanggal string tetap bisa di-parse manual
+        // raw:false agar tanggal string tetap bisa di-parse manual
         const json = XLSX.utils.sheet_to_json(ws, { defval: "", raw: false });
         resolve(json);
-      } catch (err) {
-        reject(err);
-      }
+      } catch (err) { reject(err); }
     };
     reader.onerror = err => reject(err);
     reader.readAsArrayBuffer(file);
@@ -257,6 +184,7 @@ async function handleUpload() {
   const fileInput = document.getElementById("file-input");
   const status = document.getElementById("upload-status");
 
+  if (!fileInput || !fileSelect) return;
   if (!fileInput.files.length) {
     alert("Pilih file terlebih dahulu.");
     return;
@@ -274,19 +202,56 @@ async function handleUpload() {
       case "Data1":    data1Data = json; break;
       case "Data2":    data2Data = json; break;
       case "Budget":   budgetData = json; break;
+      case "LOM":      lomData = normalizeLOM(json); break;   // ⬅️ baru
       default: break;
     }
     status.textContent = `File ${file.name} berhasil diupload sebagai ${jenis} (rows: ${json.length}).`;
-
-    // clear file input agar bisa upload file yang sama lagi
     fileInput.value = "";
+
+    // auto re-render LOM table kalau upload LOM
+    if (jenis === "LOM") renderLOMTable(lomData);
 
   } catch (e) {
     status.textContent = `Error saat membaca file: ${e.message}`;
   }
 }
 
-/* ===================== MERGE ===================== */
+/* ===================== NORMALIZE LOM ===================== */
+/** 
+ * Normalisasi data LOM agar kolom-kolom penting tersedia:
+ * - Order
+ * - Month (Jan, Feb, ... Dec)
+ * - Cost (number)
+ * - Reman (string)
+ * - Planning (ambil dari Planning file via Order kalau kolom ini kosong)
+ * - Status   (ambil dari Planning file via Order kalau kolom ini kosong)
+ */
+function normalizeLOM(rows) {
+  const mapMonth = m => {
+    const t = (m || "").toString().trim().slice(0,3).toLowerCase();
+    const dict = { jan:"Jan",feb:"Feb",mar:"Mar",apr:"Apr",may:"May",jun:"Jun",jul:"Jul",aug:"Aug",sep:"Sep",oct:"Oct",nov:"Nov",dec:"Dec" };
+    return dict[t] || (m || "");
+  };
+  return rows.map(r => {
+    const order = (r.Order || r.ORDER || r.order || "").toString().trim();
+    const month = mapMonth(r.Month || r.MONTH || r.month || "");
+    const cost = Number((r.Cost || r.COST || r.cost || "0").toString().replace(/[^\d.-]/g,"")) || 0;
+    const reman = (r.Reman || r.REMAN || r.reman || r["Reman Status"] || "").toString();
+    let planning = r.Planning || r["Event Start"] || "";
+    let status   = r.Status   || r["Status"]      || "";
+
+    if (!planning || !status) {
+      const pl = planningData.find(p => (p.Order || "").toString() === order);
+      if (pl) {
+        if (!planning) planning = pl["Event Start"] || "";
+        if (!status)   status   = (pl.Status || "").toString();
+      }
+    }
+    return { Order: order, Month: month, Cost: cost, Reman: reman, Planning: planning, Status: status };
+  }).filter(x => x.Order);
+}
+
+/* ===================== MERGE (LEMBAR KERJA) ===================== */
 function mergeData() {
   if (!iw39Data.length) {
     alert("Upload data IW39 dulu sebelum refresh.");
@@ -299,16 +264,16 @@ function mergeData() {
     "Order Type": (row["Order Type"] || "").toString(),
     Order: (row.Order || "").toString(),
     Description: (row.Description || "").toString(),
-    "Created On": row["Created On"] || "",          // raw, nanti format saat render
+    "Created On": row["Created On"] || "",
     "User Status": (row["User Status"] || "").toString(),
     MAT: (row.MAT || "").toString(),
     CPH: "",
     Section: "",
     "Status Part": "",
     Aging: "",
-    Month: (row.Month || "").toString(),
-    Cost: "-",
-    Reman: (row.Reman || "").toString(),
+    Month: (row.Month || "").toString(), // default (bisa ditimpa LOM)
+    Cost: "-",                            // default (akan dihitung/lookup)
+    Reman: (row.Reman || "").toString(),  // default (bisa ditimpa LOM)
     Include: "-",
     Exclude: "-",
     Planning: "",                // Event Start (Planning)
@@ -344,12 +309,12 @@ function mergeData() {
   mergedData.forEach(md => {
     const pl = planningData.find(p => (p.Order || "").toString() === md.Order);
     if (pl) {
-      md.Planning = pl["Event Start"] || "";           // raw, format saat render
+      md.Planning = pl["Event Start"] || "";
       md["Status AMT"] = (pl.Status || "").toString();
     }
   });
 
-  // Hitung Cost/Include/Exclude dari IW39 plan vs actual
+  // Hitung Cost default (plan-actual)/16500
   mergedData.forEach(md => {
     const src = iw39Data.find(i => (i.Order || "").toString() === md.Order);
     if (!src) return;
@@ -357,24 +322,47 @@ function mergeData() {
     const plan = parseFloat((src["Total sum (plan)"] || "").toString().replace(/,/g,"")) || 0;
     const actual = parseFloat((src["Total sum (actual)"] || "").toString().replace(/,/g,"")) || 0;
     let cost = (plan - actual) / 16500;
+
     if (!isFinite(cost) || cost < 0) {
       md.Cost = "-";
       md.Include = "-";
       md.Exclude = md["Order Type"] === "PM38" ? "-" : "-";
     } else {
-      // 2 decimal
-      const costStr = cost.toFixed(2);
-      md.Cost = costStr;
-
+      md.Cost = Number(cost.toFixed(1)); // simpan numeric 1 desimal (render akan format ID)
       const isReman = (md.Reman || "").toLowerCase().includes("reman");
       const includeNum = isReman ? (cost * 0.25) : cost;
-      md.Include = includeNum.toFixed(2);
-
-      md.Exclude = (md["Order Type"] === "PM38") ? "-" : md.Include;
+      md.Include = Number(includeNum.toFixed(1));
+      md.Exclude = (md["Order Type"] === "PM38") ? "-" : Number(includeNum.toFixed(1));
     }
   });
 
-  // Restore user edits → HANYA Month / Cost / Reman
+  // Lookup dari LOM (Month / Reman / Cost override jika ≠ 0)
+  if (lomData.length) {
+    const lomMap = {};
+    lomData.forEach(l => { if (l && l.Order) lomMap[l.Order] = l; });
+
+    mergedData.forEach(md => {
+      const lom = lomMap[md.Order];
+      if (!lom) return;
+
+      // Month & Reman langsung ambil dari LOM jika ada
+      if (lom.Month) md.Month = lom.Month;
+      if (lom.Reman) md.Reman = lom.Reman;
+
+      // Cost: jika LOM.Cost bukan 0 → override; jika 0 → biarkan perhitungan lama
+      const lomCostNum = Number(lom.Cost) || 0;
+      if (lomCostNum !== 0) {
+        md.Cost = Number(lomCostNum.toFixed(1));
+        // Recalculate Include/Exclude berdasar Cost baru
+        const isReman = (md.Reman || "").toLowerCase().includes("reman");
+        const includeNum = isReman ? (lomCostNum * 0.25) : lomCostNum;
+        md.Include = Number(includeNum.toFixed(1));
+        md.Exclude = (md["Order Type"] === "PM38") ? "-" : Number(includeNum.toFixed(1));
+      }
+    });
+  }
+
+  // Restore user edits lama (jika ada) — tetapi hanya untuk Month/Cost/Reman (kompat)
   try {
     const raw = localStorage.getItem(UI_LS_KEY);
     if (raw) {
@@ -382,13 +370,21 @@ function mergeData() {
       if (saved && Array.isArray(saved.userEdits)) {
         const editMap = {};
         saved.userEdits.forEach(edit => { editMap[edit.Order] = edit; });
-
         mergedData.forEach(md => {
           const e = editMap[md.Order];
           if (e) {
-            md.Month  = e.Month  ?? md.Month;
-            md.Cost   = e.Cost   ?? md.Cost;
-            md.Reman  = e.Reman  ?? md.Reman;
+            if (e.Month)  md.Month  = e.Month;
+            if (e.Reman)  md.Reman  = e.Reman;
+            if (e.Cost !== undefined && e.Cost !== "-" && e.Cost !== "") {
+              const n = Number(e.Cost);
+              if (isFinite(n)) {
+                md.Cost = Number(n.toFixed(1));
+                const isReman = (md.Reman || "").toLowerCase().includes("reman");
+                const includeNum = isReman ? (n * 0.25) : n;
+                md.Include = Number(includeNum.toFixed(1));
+                md.Exclude = (md["Order Type"] === "PM38") ? "-" : Number(includeNum.toFixed(1));
+              }
+            }
           }
         });
       }
@@ -398,38 +394,17 @@ function mergeData() {
   updateMonthFilterOptions();
 }
 
-
-/* ===================== HELPER: EXCEL SERIAL → JS DATE ===================== */
-function excelDateToJS(serial) {
-  // Excel 1900 date system
-  const utc_days  = Math.floor(serial - 25569);
-  const utc_value = utc_days * 86400; 
-  const date_info = new Date(utc_value * 1000);
-  const fractional_day = serial - Math.floor(serial) + 0.0000001;
-  let total_seconds = Math.floor(86400 * fractional_day);
-  const seconds = total_seconds % 60;
-  total_seconds -= seconds;
-  const hours = Math.floor(total_seconds / 3600);
-  const minutes = Math.floor((total_seconds - (hours*3600))/60);
-  date_info.setHours(hours);
-  date_info.setMinutes(minutes);
-  date_info.setSeconds(seconds);
-  return date_info;
-}
-
-/* ===================== RENDER TABLE ===================== */
+/* ===================== RENDER TABLE: LEMBAR KERJA ===================== */
 function renderTable(dataToRender = mergedData) {
   const tbody = document.querySelector("#output-table tbody");
   if (!tbody) {
     console.warn("Tabel #output-table tidak ditemukan.");
     return;
   }
+  tbody.innerHTML = "";
 
-  tbody.innerHTML = ""; // reset tabel
-
-  dataToRender.forEach((row, index) => {
+  dataToRender.forEach((row) => {
     const tr = document.createElement("tr");
-    tr.dataset.index = index; // simpan index row
 
     const columns = [
       "Room", "Order Type", "Order", "Description", "Created On",
@@ -440,251 +415,75 @@ function renderTable(dataToRender = mergedData) {
     columns.forEach(col => {
       const td = document.createElement("td");
 
-      // Format tanggal untuk "Created On" & "Planning"
       if (col === "Created On" || col === "Planning") {
         td.textContent = formatDateDDMMMYYYY(row[col]);
+      } else if (["Cost", "Include", "Exclude"].includes(col)) {
+        td.textContent = formatNumberID(row[col]);
+        td.style.textAlign = "right";
       } else {
         td.textContent = row[col] ?? "";
       }
 
-      // Tambahkan class untuk kolom yang bisa diedit
-      if (col === "Month") td.classList.add("col-month");
-      if (col === "Cost") td.classList.add("col-cost");
-      if (col === "Reman") td.classList.add("col-reman");
-
+      // style opsional untuk status chips
+      if (col === "User Status") {
+        // bisa diterapkan nanti kalau ingin chip warna
+      }
       tr.appendChild(td);
     });
 
-    // Kolom Action terakhir
-    const actionTd = document.createElement("td");
-    actionTd.innerHTML = `
-      <button class="action-btn edit-btn" data-index="${index}">Edit</button>
-      <button class="action-btn delete-btn" data-index="${index}">Delete</button>
-    `;
-    tr.appendChild(actionTd);
-
+    // ⛔ Tidak ada kolom Action lagi (hapus edit/delete)
     tbody.appendChild(tr);
   });
-
-  attachTableEvents();
 }
 
-/* ===================== ACTIVATE EDIT ===================== */
-function activateEdit(tr, index) {
-  const tdMonth = tr.querySelector("td.col-month");
-  const tdCost  = tr.querySelector("td.col-cost");
-  const tdReman = tr.querySelector("td.col-reman");
-  const tdAction = tr.querySelector("td:last-child");
+/* ===================== MENU LOM (LEMBAR ORDER MONTHLY) ===================== */
+function renderLOMTable(rows = lomData) {
+  const tbody = document.querySelector("#lom-table tbody");
+  if (!tbody) return; // kalau halaman belum punya tabel LOM, skip
+  tbody.innerHTML = "";
 
-  const currentMonth = tdMonth.textContent.trim();
-  const currentCost  = tdCost.textContent.trim();
-  const currentReman = tdReman.textContent.trim();
-
-  // Dropdown Month
-  const monthOptions = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
-    .map(m => `<option value="${m}" ${m===currentMonth?"selected":""}>${m}</option>`).join("");
-  tdMonth.innerHTML = `<select class="edit-month">${monthOptions}</select>`;
-
-  // Input Cost
-  tdCost.innerHTML = `<input type="text" class="edit-cost" value="${currentCost}" style="width:80px;text-align:right;">`;
-
-  // Dropdown Reman
-  tdReman.innerHTML = `
-    <select class="edit-reman">
-      <option value="Reman" ${currentReman==="Reman"?"selected":""}>Reman</option>
-      <option value="-" ${currentReman==="-"?"selected":""}>-</option>
-    </select>`;
-
-  // Tombol Save & Cancel
-  tdAction.innerHTML = `
-    <button class="action-btn save-btn" data-index="${index}">Save</button>
-    <button class="action-btn cancel-btn">Cancel</button>`;
-}
-
-/* ===================== EVENT DELEGATION ===================== */
-document.addEventListener("DOMContentLoaded", () => {
-  renderTable(); // render awal
-
-  const tbody = document.querySelector("#output-table tbody");
-
-  tbody.addEventListener("click", function(e) {
-    const btn = e.target;
-    const tr = btn.closest("tr");
-    if (!tr) return;
-    const index = btn.dataset.index;
-    if (index === undefined) return; // pastikan ada index
-
-    // Tombol Edit → hanya 3 kolom
-    if (btn.classList.contains("edit-btn")) {
-      activateEdit(tr, index);
-    }
-
-    // Tombol Delete
-    else if (btn.classList.contains("delete-btn")) {
-      if (confirm("Yakin mau hapus data ini?")) {
-        mergedData.splice(index, 1);
-        saveUserEdits();
-        renderTable();
-      }
-    }
-
-    // Tombol Save → hanya 3 kolom
-    else if (btn.classList.contains("save-btn")) {
-      const tdMonth = tr.querySelector("td.col-month select");
-      const tdCost  = tr.querySelector("td.col-cost input");
-      const tdReman = tr.querySelector("td.col-reman select");
-
-      if (tdMonth && tdCost && tdReman) {
-        mergedData[index]["Month"] = tdMonth.value;
-        mergedData[index]["Cost"]  = tdCost.value;
-        mergedData[index]["Reman"] = tdReman.value;
-
-        saveUserEdits();  // pastikan tersimpan
-        renderTable();    // render ulang tabel
-      }
-    }
-
-    // Tombol Cancel
-    else if (btn.classList.contains("cancel-btn")) {
-      renderTable();
-    }
-  });
-});
-
-/* ===================== CELL COLORING ===================== */
-function asColoredStatusUser(val) {
-  const v = (val || "").toString().toUpperCase();
-  let bg = "", fg = "";
-  if (v === "OUTS") { bg = "#ffeb3b"; fg = "#000"; }
-  else if (v === "RELE") { bg = "#2e7d32"; fg = "#fff"; }
-  else if (v === "PROG") { bg = "#1976d2"; fg = "#fff"; }
-  else if (v === "COMP") { bg = "#000"; fg = "#fff"; }
-  else return safe(val);
-  return `<span style="display:inline-block;padding:2px 6px;border-radius:4px;background:${bg};color:${fg};">${safe(val)}</span>`;
-}
-
-function asColoredStatusPart(val) {
-  const s = (val || "").toString().toLowerCase();
-  if (s === "complete") {
-    return `<span style="display:inline-block;padding:2px 6px;border-radius:4px;background:#1976d2;color:#fff;">${safe(val)}</span>`;
-  }
-  if (s === "not complete") {
-    return `<span style="display:inline-block;padding:2px 6px;border-radius:4px;background:#d32f2f;color:#fff;">${safe(val)}</span>`;
-  }
-  return safe(val);
-}
-
-function asColoredStatusAMT(val) {
-  const v = (val || "").toString().toUpperCase();
-  if (v === "O") {
-    return `<span style="display:inline-block;padding:2px 6px;border-radius:4px;background:#ffeb3b;color:#000;">${safe(val)}</span>`;
-  }
-  if (v === "IP") {
-    return `<span style="display:inline-block;padding:2px 6px;border-radius:4px;background:#1976d2;color:#fff;">${safe(val)}</span>`;
-  }
-  if (v === "YTS") {
-    return `<span style="display:inline-block;padding:2px 6px;border-radius:4px;background:#2e7d32;color:#fff;">${safe(val)}</span>`;
-  }
-  return safe(val);
-}
-
-/* ===================== EDIT / DELETE ===================== */
-function attachTableEvents() {
-  document.querySelectorAll(".edit-btn").forEach(btn => {
-    btn.onclick = () => startEdit(btn.dataset.order);
-  });
-  document.querySelectorAll(".delete-btn").forEach(btn => {
-    btn.onclick = () => deleteOrder(btn.dataset.order);
+  rows.forEach(r => {
+    const tr = document.createElement("tr");
+    const cols = [
+      r.Order,
+      r.Month,
+      formatNumberID(r.Cost),
+      r.Reman ?? "",
+      formatDateDDMMMYYYY(r.Planning),
+      r.Status ?? ""
+    ];
+    cols.forEach((val, idx) => {
+      const td = document.createElement("td");
+      if (idx === 2) td.style.textAlign = "right"; // Cost
+      td.textContent = val ?? "";
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
   });
 }
 
-function startEdit(order) {
-  const rowIndex = mergedData.findIndex(r => r.Order === order);
-  if (rowIndex === -1) return;
-  const tbody = document.querySelector("#output-table tbody");
-  const tr = tbody.children[rowIndex];
-  const row = mergedData[rowIndex];
-
-  const months = Array.from(new Set(mergedData.map(d => d.Month).filter(m => m && m.trim() !== ""))).sort();
-  const monthOptions = [`<option value="">--Select Month--</option>`, ...months.map(m => `<option value="${m}">${m}</option>`)].join("");
-
-  tr.innerHTML = `
-    <td><input type="text" value="${safe(row.Room)}" data-field="Room"/></td>
-    <td><input type="text" value="${safe(row["Order Type"])}" data-field="Order Type"/></td>
-    <td>${safe(row.Order)}</td>
-    <td><input type="text" value="${safe(row.Description)}" data-field="Description"/></td>
-    <td><input type="date" value="${formatDateISO(row["Created On"])}" data-field="Created On"/></td>
-    <td><input type="text" value="${safe(row["User Status"])}" data-field="User Status"/></td>
-    <td><input type="text" value="${safe(row.MAT)}" data-field="MAT"/></td>
-    <td><input type="text" value="${safe(row.CPH)}" data-field="CPH"/></td>
-    <td><input type="text" value="${safe(row.Section)}" data-field="Section"/></td>
-    <td><input type="text" value="${safe(row["Status Part"])}" data-field="Status Part"/></td>
-    <td><input type="text" value="${safe(row.Aging)}" data-field="Aging"/></td>
-    <td>
-      <select data-field="Month">${monthOptions}</select>
-    </td>
-    <td><input type="text" value="${safe(row.Cost)}" data-field="Cost" readonly style="text-align:right;background:#eee;"/></td>
-    <td><input type="text" value="${safe(row.Reman)}" data-field="Reman"/></td>
-    <td><input type="text" value="${safe(row.Include)}" data-field="Include" readonly style="text-align:right;background:#eee;"/></td>
-    <td><input type="text" value="${safe(row.Exclude)}" data-field="Exclude" readonly style="text-align:right;background:#eee;"/></td>
-    <td><input type="date" value="${formatDateISO(row.Planning)}" data-field="Planning"/></td>
-    <td><input type="text" value="${safe(row["Status AMT"])}" data-field="Status AMT"/></td>
-    <td>
-      <button class="action-btn save-btn" data-order="${safe(order)}">Save</button>
-      <button class="action-btn cancel-btn" data-order="${safe(order)}">Cancel</button>
-    </td>
-  `;
-
-  // Set selected month
-  const monthSel = tr.querySelector("select[data-field='Month']");
-  monthSel.value = row.Month || "";
-
-  tr.querySelector(".save-btn").onclick = () => saveEdit(order);
-  tr.querySelector(".cancel-btn").onclick = () => cancelEdit();
+function filterLOM() {
+  const input = document.getElementById("lom-filter-order");
+  if (!input) return;
+  const q = (input.value || "").trim().toLowerCase();
+  const filtered = lomData.filter(r => (r.Order || "").toLowerCase().includes(q));
+  renderLOMTable(filtered);
 }
 
-function cancelEdit() {
-  renderTable(mergedData);
+function resetFilterLOM() {
+  const input = document.getElementById("lom-filter-order");
+  if (input) input.value = "";
+  renderLOMTable(lomData);
 }
 
-function saveEdit(order) {
-  const rowIndex = mergedData.findIndex(r => r.Order === order);
-  if (rowIndex === -1) return;
-  const tbody = document.querySelector("#output-table tbody");
-  const tr = tbody.children[rowIndex];
-
-  const inputs = tr.querySelectorAll("input[data-field], select[data-field]");
-  inputs.forEach(input => {
-    const field = input.dataset.field;
-    let val = input.value;
-    mergedData[rowIndex][field] = val;
-  });
-
-  // persist
-  saveUserEdits();
-
-  // re-merge utk kalkulasi & render ulang
-  mergeData();
-  renderTable(mergedData);
-}
-
-function deleteOrder(order) {
-  const idx = mergedData.findIndex(r => r.Order === order);
-  if (idx === -1) return;
-  if (!confirm(`Hapus data order ${order} ?`)) return;
-  mergedData.splice(idx, 1);
-  saveUserEdits();
-  renderTable(mergedData);
-}
-
-/* ===================== FILTERS ===================== */
+/* ===================== FILTERS (LEMBAR KERJA) ===================== */
 function filterData() {
-  const roomFilter    = (document.getElementById("filter-room").value || "").trim().toLowerCase();
-  const orderFilter   = (document.getElementById("filter-order").value || "").trim().toLowerCase();
-  const cphFilter     = (document.getElementById("filter-cph").value || "").trim().toLowerCase();
-  const matFilter     = (document.getElementById("filter-mat").value || "").trim().toLowerCase();
-  const sectionFilter = (document.getElementById("filter-section").value || "").trim().toLowerCase();
-  const monthFilter   = (document.getElementById("filter-month").value || "").trim().toLowerCase();
+  const roomFilter    = (document.getElementById("filter-room")?.value || "").trim().toLowerCase();
+  const orderFilter   = (document.getElementById("filter-order")?.value || "").trim().toLowerCase();
+  const cphFilter     = (document.getElementById("filter-cph")?.value || "").trim().toLowerCase();
+  const matFilter     = (document.getElementById("filter-mat")?.value || "").trim().toLowerCase();
+  const sectionFilter = (document.getElementById("filter-section")?.value || "").trim().toLowerCase();
+  const monthFilter   = (document.getElementById("filter-month")?.value || "").trim().toLowerCase();
 
   const filtered = mergedData.filter(row => {
     if (roomFilter && !String(row.Room).toLowerCase().includes(roomFilter)) return false;
@@ -700,12 +499,8 @@ function filterData() {
 }
 
 function resetFilters() {
-  document.getElementById("filter-room").value = "";
-  document.getElementById("filter-order").value = "";
-  document.getElementById("filter-cph").value = "";
-  document.getElementById("filter-mat").value = "";
-  document.getElementById("filter-section").value = "";
-  document.getElementById("filter-month").value = "";
+  const ids = ["filter-room","filter-order","filter-cph","filter-mat","filter-section","filter-month"];
+  ids.forEach(id => { const el = document.getElementById(id); if (el) el.value = ""; });
   renderTable(mergedData);
 }
 
@@ -716,11 +511,11 @@ function updateMonthFilterOptions() {
   monthSelect.innerHTML = `<option value="">-- All --</option>` + months.map(m => `<option value="${m.toLowerCase()}">${m}</option>`).join("");
 }
 
-/* ===================== ADD ORDERS ===================== */
+/* ===================== ADD ORDERS (tetap) ===================== */
 function addOrders() {
   const input = document.getElementById("add-order-input");
   const status = document.getElementById("add-order-status");
-  const text = (input.value || "").trim();
+  const text = (input?.value || "").trim();
   if (!text) {
     alert("Masukkan Order terlebih dahulu.");
     return;
@@ -755,11 +550,11 @@ function addOrders() {
   if (added) {
     saveUserEdits();
     renderTable(mergedData);
-    status.textContent = `${added} Order berhasil ditambahkan.`;
+    if (status) status.textContent = `${added} Order berhasil ditambahkan.`;
   } else {
-    status.textContent = "Order sudah ada di data.";
+    if (status) status.textContent = "Order sudah ada di data.";
   }
-  input.value = "";
+  if (input) input.value = "";
 }
 
 /* ===================== SAVE / LOAD JSON (export/import) ===================== */
@@ -803,23 +598,9 @@ function saveUserEdits() {
   try {
     const userEdits = mergedData.map(item => ({
       Order: item.Order,
-      Room: item.Room,
-      "Order Type": item["Order Type"],
-      Description: item.Description,
-      "Created On": item["Created On"],
-      "User Status": item["User Status"],
-      MAT: item.MAT,
-      CPH: item.CPH,
-      Section: item.Section,
-      "Status Part": item["Status Part"],
-      Aging: item.Aging,
       Month: item.Month,
       Cost: item.Cost,
-      Reman: item.Reman,
-      Include: item.Include,
-      Exclude: item.Exclude,
-      Planning: item.Planning,
-      "Status AMT": item["Status AMT"]
+      Reman: item.Reman
     }));
     localStorage.setItem(UI_LS_KEY, JSON.stringify({ userEdits }));
   } catch {}
@@ -834,15 +615,18 @@ function clearAllData() {
   data1Data = [];
   data2Data = [];
   budgetData = [];
+  lomData = [];
   mergedData = [];
   renderTable([]);
-  document.getElementById("upload-status").textContent = "Data dihapus.";
+  renderLOMTable([]);
+  const statusEl = document.getElementById("upload-status");
+  if (statusEl) statusEl.textContent = "Data dihapus.";
   updateMonthFilterOptions();
 }
 
 /* ===================== BUTTON WIRING ===================== */
 function setupButtons() {
-  // Upload
+  // Upload umum (Menu Upload)
   const uploadBtn = document.getElementById("upload-btn");
   if (uploadBtn) uploadBtn.onclick = handleUpload;
 
@@ -877,23 +661,51 @@ function setupButtons() {
 
   const addOrderBtn = document.getElementById("add-order-btn");
   if (addOrderBtn) addOrderBtn.onclick = addOrders;
+
+  // LOM (Menu 3 baru)
+  const lomFilterBtn = document.getElementById("lom-filter-btn");
+  if (lomFilterBtn) lomFilterBtn.onclick = filterLOM;
+
+  const lomResetBtn = document.getElementById("lom-reset-btn");
+  if (lomResetBtn) lomResetBtn.onclick = resetFilterLOM;
+
+  const lomRefreshBtn = document.getElementById("lom-refresh-btn");
+  if (lomRefreshBtn) lomRefreshBtn.onclick = () => renderLOMTable(lomData);
 }
 
+/* ===================== (Opsional) Pewarnaan status chips ===================== */
+function asColoredStatusUser(val) {
+  const v = (val || "").toString().toUpperCase();
+  let bg = "", fg = "";
+  if (v === "OUTS") { bg = "#ffeb3b"; fg = "#000"; }
+  else if (v === "RELE") { bg = "#2e7d32"; fg = "#fff"; }
+  else if (v === "PROG") { bg = "#1976d2"; fg = "#fff"; }
+  else if (v === "COMP") { bg = "#000"; fg = "#fff"; }
+  else return safe(val);
+  return `<span style="display:inline-block;padding:2px 6px;border-radius:4px;background:${bg};color:${fg};">${safe(val)}</span>`;
+}
 
+function asColoredStatusPart(val) {
+  const s = (val || "").toString().toLowerCase();
+  if (s === "complete") {
+    return `<span style="display:inline-block;padding:2px 6px;border-radius:4px;background:#1976d2;color:#fff;">${safe(val)}</span>`;
+  }
+  if (s === "not complete") {
+    return `<span style="display:inline-block;padding:2px 6px;border-radius:4px;background:#d32f2f;color:#fff;">${safe(val)}</span>`;
+  }
+  return safe(val);
+}
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+function asColoredStatusAMT(val) {
+  const v = (val || "").toString().toUpperCase();
+  if (v === "O") {
+    return `<span style="display:inline-block;padding:2px 6px;border-radius:4px;background:#ffeb3b;color:#000;">${safe(val)}</span>`;
+  }
+  if (v === "IP") {
+    return `<span style="display:inline-block;padding:2px 6px;border-radius:4px;background:#1976d2;color:#fff;">${safe(val)}</span>`;
+  }
+  if (v === "YTS") {
+    return `<span style="display:inline-block;padding:2px 6px;border-radius:4px;background:#2e7d32;color:#fff;">${safe(val)}</span>`;
+  }
+  return safe(val);
+}
