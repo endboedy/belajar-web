@@ -5,7 +5,7 @@
  * - Merge & render Lembar Kerja (lookup Month/Cost/Reman dari LOM)
  * - Cost: jika LOM.Cost == 0 → pakai perhitungan (plan-actual)/16500
  * - Format angka (Cost/Include/Exclude) Indonesia, 1 desimal, rata kanan
- * - Filter, Add Order, Save/Load JSON (tetap)
+ * - Filter, Add Order (pindah ke Menu 3), Save/Load JSON (tetap)
  * - Pewarnaan kolom status (tetap)
  * - Format tanggal dd-MMM-yyyy (Created On, Planning) (tetap)
  * - Menu baru: LOM (filter Order + tabel Order, Month, Cost, Reman, Planning, Status)
@@ -18,7 +18,7 @@ let planningData = [];
 let data1Data = [];
 let data2Data = [];
 let budgetData = [];
-let lomData = [];        // ⬅️ baru: sumber LOM
+let lomData = [];
 let mergedData = [];
 
 const UI_LS_KEY = "ndarboe_ui_edits_v3";
@@ -27,9 +27,9 @@ const UI_LS_KEY = "ndarboe_ui_edits_v3";
 document.addEventListener("DOMContentLoaded", () => {
   setupMenu();
   setupButtons();
-  renderTable([]);                 // kosong dulu
+  renderTable([]);
   updateMonthFilterOptions();
-  renderLOMTable(lomData);         // inisialisasi tampilan LOM (jika ada)
+  renderLOMTable(lomData);
 });
 
 /* ===================== MENU HANDLER ===================== */
@@ -49,21 +49,15 @@ function setupMenu() {
   });
 }
 
-/* ===================== HELPERS: SAFE / DATE / NUMBER ===================== */
+/* ===================== HELPERS ===================== */
 function safe(v) {
   return String(v ?? "").replace(/[<>&"]/g, s => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[s]));
 }
 
-/** Parse apapun ke Date object atau null */
 function toDateObj(anyDate) {
   if (anyDate == null || anyDate === "") return null;
-
-  if (typeof anyDate === "number") {
-    return excelDateToJS(anyDate);
-  }
-  if (anyDate instanceof Date && !isNaN(anyDate)) {
-    return anyDate;
-  }
+  if (typeof anyDate === "number") return excelDateToJS(anyDate);
+  if (anyDate instanceof Date && !isNaN(anyDate)) return anyDate;
   if (typeof anyDate === "string") {
     const s = anyDate.trim();
     if (!s) return null;
@@ -76,10 +70,8 @@ function toDateObj(anyDate) {
       const p2 = parseInt(parts[1], 10);
       const p3 = parseInt(parts[2], 10);
       let year, month, day, hour = 0, min = 0, sec = 0;
-
       if (p1 <= 12 && p2 <= 31) { month = p1; day = p2; year = p3; }
       else { day = p1; month = p2; year = p3; }
-
       if (parts.length >= 5) {
         hour = parseInt(parts[3], 10);
         min  = parseInt(parts[4], 10);
@@ -96,11 +88,10 @@ function toDateObj(anyDate) {
   return null;
 }
 
-/** Excel serial → JS Date */
 function excelDateToJS(serial) {
   if (!serial || isNaN(serial)) return null;
   const utc_days  = Math.floor(serial - 25569);
-  const utc_value = utc_days * 86400 * 1000; 
+  const utc_value = utc_days * 86400 * 1000;
   const date_info = new Date(utc_value);
   const fractional_day = serial - Math.floor(serial);
   const totalSeconds = Math.round(86400 * fractional_day);
@@ -111,7 +102,6 @@ function excelDateToJS(serial) {
   return date_info;
 }
 
-/** Format → dd-MMM-yyyy */
 function formatDateDDMMMYYYY(input) {
   if (input === undefined || input === null || input === "") return "";
   let d = null;
@@ -132,7 +122,6 @@ function formatDateDDMMMYYYY(input) {
   return `${day}-${mon}-${year}`;
 }
 
-/** Format → yyyy-mm-dd untuk input[type=date] */
 function formatDateISO(anyDate) {
   const d = toDateObj(anyDate);
   if (!d || isNaN(d)) return "";
@@ -142,7 +131,6 @@ function formatDateISO(anyDate) {
   return `${yyyy}-${mm}-${dd}`;
 }
 
-/** Format angka Indonesia (1 desimal, titik ribuan) */
 function formatNumberID(num) {
   if (num === "-" || num === "" || num === null || num === undefined) return num ?? "-";
   const n = typeof num === "string" ? Number(num.toString().replace(/[^\d.-]/g,"")) : Number(num);
@@ -158,18 +146,15 @@ async function parseFile(file, jenis) {
       try {
         const data = new Uint8Array(e.target.result);
         const workbook = XLSX.read(data, { type: "array" });
-
         let sheetName = "";
         if (workbook.SheetNames.includes(jenis)) {
           sheetName = jenis;
         } else {
-          sheetName = workbook.SheetNames[0]; // fallback
+          sheetName = workbook.SheetNames[0];
           console.warn(`Sheet "${jenis}" tidak ditemukan, pakai sheet pertama: ${sheetName}`);
         }
         const ws = workbook.Sheets[sheetName];
         if (!ws) throw new Error(`Sheet "${sheetName}" tidak ditemukan di file.`);
-
-        // raw:false agar tanggal string tetap bisa di-parse manual
         const json = XLSX.utils.sheet_to_json(ws, { defval: "", raw: false });
         resolve(json);
       } catch (err) { reject(err); }
@@ -183,7 +168,6 @@ async function handleUpload() {
   const fileSelect = document.getElementById("file-select");
   const fileInput = document.getElementById("file-input");
   const status = document.getElementById("upload-status");
-
   if (!fileInput || !fileSelect) return;
   if (!fileInput.files.length) {
     alert("Pilih file terlebih dahulu.");
@@ -191,7 +175,6 @@ async function handleUpload() {
   }
   const file = fileInput.files[0];
   const jenis = fileSelect.value;
-
   status.textContent = `Memproses file ${file.name} sebagai ${jenis}...`;
   try {
     const json = await parseFile(file, jenis);
@@ -202,30 +185,18 @@ async function handleUpload() {
       case "Data1":    data1Data = json; break;
       case "Data2":    data2Data = json; break;
       case "Budget":   budgetData = json; break;
-      case "LOM":      lomData = normalizeLOM(json); break;   // ⬅️ baru
+      case "LOM":      lomData = normalizeLOM(json); break;
       default: break;
     }
     status.textContent = `File ${file.name} berhasil diupload sebagai ${jenis} (rows: ${json.length}).`;
     fileInput.value = "";
-
-    // auto re-render LOM table kalau upload LOM
     if (jenis === "LOM") renderLOMTable(lomData);
-
   } catch (e) {
     status.textContent = `Error saat membaca file: ${e.message}`;
   }
 }
 
 /* ===================== NORMALIZE LOM ===================== */
-/** 
- * Normalisasi data LOM agar kolom-kolom penting tersedia:
- * - Order
- * - Month (Jan, Feb, ... Dec)
- * - Cost (number)
- * - Reman (string)
- * - Planning (ambil dari Planning file via Order kalau kolom ini kosong)
- * - Status   (ambil dari Planning file via Order kalau kolom ini kosong)
- */
 function normalizeLOM(rows) {
   const mapMonth = m => {
     const t = (m || "").toString().trim().slice(0,3).toLowerCase();
@@ -239,7 +210,6 @@ function normalizeLOM(rows) {
     const reman = (r.Reman || r.REMAN || r.reman || r["Reman Status"] || "").toString();
     let planning = r.Planning || r["Event Start"] || "";
     let status   = r.Status   || r["Status"]      || "";
-
     if (!planning || !status) {
       const pl = planningData.find(p => (p.Order || "").toString() === order);
       if (pl) {
@@ -251,461 +221,354 @@ function normalizeLOM(rows) {
   }).filter(x => x.Order);
 }
 
-/* ===================== MERGE (LEMBAR KERJA) ===================== */
-function mergeData() {
-  if (!iw39Data.length) {
-    alert("Upload data IW39 dulu sebelum refresh.");
-    return;
-  }
-
-  // base rows dari IW39
-  mergedData = iw39Data.map(row => ({
-    Room: (row.Room || "").toString(),
-    "Order Type": (row["Order Type"] || "").toString(),
-    Order: (row.Order || "").toString(),
-    Description: (row.Description || "").toString(),
-    "Created On": row["Created On"] || "",
-    "User Status": (row["User Status"] || "").toString(),
-    MAT: (row.MAT || "").toString(),
-    CPH: "",
-    Section: "",
-    "Status Part": "",
-    Aging: "",
-    Month: (row.Month || "").toString(), // default (bisa ditimpa LOM)
-    Cost: "-",                            // default (akan dihitung/lookup)
-    Reman: (row.Reman || "").toString(),  // default (bisa ditimpa LOM)
-    Include: "-",
-    Exclude: "-",
-    Planning: "",                // Event Start (Planning)
-    "Status AMT": ""             // Status (Planning)
-  }));
-
-  // CPH: Description startsWith JR → "External Job", else lookup Data2 by MAT
-  mergedData.forEach(md => {
-    if ((md.Description || "").trim().toUpperCase().startsWith("JR")) {
-      md.CPH = "External Job";
-    } else {
-      const d2 = data2Data.find(d => (d.MAT || "").toString().trim() === md.MAT.trim());
-      md.CPH = d2 ? (d2.CPH || "").toString() : "";
-    }
-  });
-
-  // Section: Data1 via Room
-  mergedData.forEach(md => {
-    const d1 = data1Data.find(d => (d.Room || "").toString().trim() === md.Room.trim());
-    md.Section = d1 ? (d1.Section || "").toString() : "";
-  });
-
-  // SUM57: Aging & Status Part via Order
-  mergedData.forEach(md => {
-    const s57 = sum57Data.find(s => (s.Order || "").toString() === md.Order);
-    if (s57) {
-      md.Aging = (s57.Aging || "").toString();
-      md["Status Part"] = (s57["Part Complete"] || "").toString();
-    }
-  });
-
-  // Planning: Planning(Event Start) & Status AMT(Status) by Order
-  mergedData.forEach(md => {
-    const pl = planningData.find(p => (p.Order || "").toString() === md.Order);
-    if (pl) {
-      md.Planning = pl["Event Start"] || "";
-      md["Status AMT"] = (pl.Status || "").toString();
-    }
-  });
-
-  // Hitung Cost default (plan-actual)/16500
-  mergedData.forEach(md => {
-    const src = iw39Data.find(i => (i.Order || "").toString() === md.Order);
-    if (!src) return;
-
-    const plan = parseFloat((src["Total sum (plan)"] || "").toString().replace(/,/g,"")) || 0;
-    const actual = parseFloat((src["Total sum (actual)"] || "").toString().replace(/,/g,"")) || 0;
-    let cost = (plan - actual) / 16500;
-
-    if (!isFinite(cost) || cost < 0) {
-      md.Cost = "-";
-      md.Include = "-";
-      md.Exclude = md["Order Type"] === "PM38" ? "-" : "-";
-    } else {
-      md.Cost = Number(cost.toFixed(1)); // simpan numeric 1 desimal (render akan format ID)
-      const isReman = (md.Reman || "").toLowerCase().includes("reman");
-      const includeNum = isReman ? (cost * 0.25) : cost;
-      md.Include = Number(includeNum.toFixed(1));
-      md.Exclude = (md["Order Type"] === "PM38") ? "-" : Number(includeNum.toFixed(1));
-    }
-  });
-
-  // Lookup dari LOM (Month / Reman / Cost override jika ≠ 0)
-  if (lomData.length) {
-    const lomMap = {};
-    lomData.forEach(l => { if (l && l.Order) lomMap[l.Order] = l; });
-
-    mergedData.forEach(md => {
-      const lom = lomMap[md.Order];
-      if (!lom) return;
-
-      // Month & Reman langsung ambil dari LOM jika ada
-      if (lom.Month) md.Month = lom.Month;
-      if (lom.Reman) md.Reman = lom.Reman;
-
-      // Cost: jika LOM.Cost bukan 0 → override; jika 0 → biarkan perhitungan lama
-      const lomCostNum = Number(lom.Cost) || 0;
-      if (lomCostNum !== 0) {
-        md.Cost = Number(lomCostNum.toFixed(1));
-        // Recalculate Include/Exclude berdasar Cost baru
-        const isReman = (md.Reman || "").toLowerCase().includes("reman");
-        const includeNum = isReman ? (lomCostNum * 0.25) : lomCostNum;
-        md.Include = Number(includeNum.toFixed(1));
-        md.Exclude = (md["Order Type"] === "PM38") ? "-" : Number(includeNum.toFixed(1));
-      }
-    });
-  }
-
-  // Restore user edits lama (jika ada) — tetapi hanya untuk Month/Cost/Reman (kompat)
-  try {
-    const raw = localStorage.getItem(UI_LS_KEY);
-    if (raw) {
-      const saved = JSON.parse(raw);
-      if (saved && Array.isArray(saved.userEdits)) {
-        const editMap = {};
-        saved.userEdits.forEach(edit => { editMap[edit.Order] = edit; });
-        mergedData.forEach(md => {
-          const e = editMap[md.Order];
-          if (e) {
-            if (e.Month)  md.Month  = e.Month;
-            if (e.Reman)  md.Reman  = e.Reman;
-            if (e.Cost !== undefined && e.Cost !== "-" && e.Cost !== "") {
-              const n = Number(e.Cost);
-              if (isFinite(n)) {
-                md.Cost = Number(n.toFixed(1));
-                const isReman = (md.Reman || "").toLowerCase().includes("reman");
-                const includeNum = isReman ? (n * 0.25) : n;
-                md.Include = Number(includeNum.toFixed(1));
-                md.Exclude = (md["Order Type"] === "PM38") ? "-" : Number(includeNum.toFixed(1));
-              }
-            }
-          }
-        });
-      }
-    }
-  } catch {}
-
-  updateMonthFilterOptions();
-}
-
-/* ===================== RENDER TABLE: LEMBAR KERJA ===================== */
-function renderTable(dataToRender = mergedData) {
-  const tbody = document.querySelector("#output-table tbody");
-  if (!tbody) {
-    console.warn("Tabel #output-table tidak ditemukan.");
-    return;
-  }
-  tbody.innerHTML = "";
-
-  dataToRender.forEach((row) => {
-    const tr = document.createElement("tr");
-
-    const columns = [
-      "Room", "Order Type", "Order", "Description", "Created On",
-      "User Status", "MAT", "CPH", "Section", "Status Part", "Aging",
-      "Month", "Cost", "Reman", "Include", "Exclude", "Planning", "Status AMT"
-    ];
-
-    columns.forEach(col => {
-      const td = document.createElement("td");
-
-      if (col === "Created On" || col === "Planning") {
-        td.textContent = formatDateDDMMMYYYY(row[col]);
-      } else if (["Cost", "Include", "Exclude"].includes(col)) {
-        td.textContent = formatNumberID(row[col]);
-        td.style.textAlign = "right";
-      } else {
-        td.textContent = row[col] ?? "";
-      }
-
-      // style opsional untuk status chips
-      if (col === "User Status") {
-        // bisa diterapkan nanti kalau ingin chip warna
-      }
-      tr.appendChild(td);
-    });
-
-    // ⛔ Tidak ada kolom Action lagi (hapus edit/delete)
-    tbody.appendChild(tr);
-  });
-}
-
-/* ===================== MENU LOM (LEMBAR ORDER MONTHLY) ===================== */
-function renderLOMTable(rows = lomData) {
+/* ===================== RENDER LOM TABLE ===================== */
+function renderLOMTable(data) {
   const tbody = document.querySelector("#lom-table tbody");
-  if (!tbody) return; // kalau halaman belum punya tabel LOM, skip
+  if (!tbody) return;
   tbody.innerHTML = "";
-
-  rows.forEach(r => {
+  data.forEach(row => {
     const tr = document.createElement("tr");
-    const cols = [
-      r.Order,
-      r.Month,
-      formatNumberID(r.Cost),
-      r.Reman ?? "",
-      formatDateDDMMMYYYY(r.Planning),
-      r.Status ?? ""
-    ];
-    cols.forEach((val, idx) => {
-      const td = document.createElement("td");
-      if (idx === 2) td.style.textAlign = "right"; // Cost
-      td.textContent = val ?? "";
-      tr.appendChild(td);
-    });
+    tr.innerHTML = `
+      <td>${safe(row.Order)}</td>
+      <td>${safe(row.Month)}</td>
+      <td style="text-align:right;">${formatNumberID(row.Cost)}</td>
+      <td>${safe(row.Reman)}</td>
+      <td>${safe(formatDateDDMMMYYYY(row.Planning))}</td>
+      <td>${safe(row.Status)}</td>
+    `;
     tbody.appendChild(tr);
   });
 }
 
-function filterLOM() {
-  const input = document.getElementById("lom-filter-order");
-  if (!input) return;
-  const q = (input.value || "").trim().toLowerCase();
-  const filtered = lomData.filter(r => (r.Order || "").toLowerCase().includes(q));
-  renderLOMTable(filtered);
-}
+/* ===================== MERGE DATA ===================== */
+function mergeAllData() {
+  if (!iw39Data.length) return [];
+  mergedData = iw39Data.map(row => {
+    const orderNum = (row.Order || row.ORDER || "").toString().trim();
+    const sum57Row = sum57Data.find(s => (s.Order || s.ORDER || "").toString().trim() === orderNum) || {};
+    const planRow  = planningData.find(p => (p.Order || "").toString().trim() === orderNum) || {};
+    const lomRow   = lomData.find(l => (l.Order || "").toString().trim() === orderNum) || {};
 
-function resetFilterLOM() {
-  const input = document.getElementById("lom-filter-order");
-  if (input) input.value = "";
-  renderLOMTable(lomData);
-}
+    let month = lomRow.Month || planRow.Month || row.Month || "";
+    let cost  = 0;
+    if (lomRow && lomRow.Cost && lomRow.Cost !== 0) {
+      cost = lomRow.Cost;
+    } else {
+      // perhitungan lama
+      const actual = Number(sum57Row["Actual Cost"] || 0);
+      const plan   = Number(sum57Row["Planned Cost"] || 0);
+      cost = (plan - actual) / 16500;
+    }
+    const reman   = lomRow.Reman || planRow.Reman || "";
+    const include = Number(sum57Row.Include || 0);
+    const exclude = Number(sum57Row.Exclude || 0);
+    const planning = lomRow.Planning || planRow.Planning || "";
+    const statusAMT = lomRow.Status || planRow.Status || "";
 
-/* ===================== FILTERS (LEMBAR KERJA) ===================== */
-function filterData() {
-  const roomFilter    = (document.getElementById("filter-room")?.value || "").trim().toLowerCase();
-  const orderFilter   = (document.getElementById("filter-order")?.value || "").trim().toLowerCase();
-  const cphFilter     = (document.getElementById("filter-cph")?.value || "").trim().toLowerCase();
-  const matFilter     = (document.getElementById("filter-mat")?.value || "").trim().toLowerCase();
-  const sectionFilter = (document.getElementById("filter-section")?.value || "").trim().toLowerCase();
-  const monthFilter   = (document.getElementById("filter-month")?.value || "").trim().toLowerCase();
-
-  const filtered = mergedData.filter(row => {
-    if (roomFilter && !String(row.Room).toLowerCase().includes(roomFilter)) return false;
-    if (orderFilter && !String(row.Order).toLowerCase().includes(orderFilter)) return false;
-    if (cphFilter && !String(row.CPH).toLowerCase().includes(cphFilter)) return false;
-    if (matFilter && !String(row.MAT).toLowerCase().includes(matFilter)) return false;
-    if (sectionFilter && !String(row.Section).toLowerCase().includes(sectionFilter)) return false;
-    if (monthFilter && String(row.Month).toLowerCase() !== monthFilter) return false;
-    return true;
+    return {
+      Room: row.Room || "",
+      OrderType: row["Order Type"] || "",
+      Order: orderNum,
+      Description: row.Description || "",
+      CreatedOn: row["Created On"] || "",
+      UserStatus: row["User Status"] || "",
+      MAT: row.MAT || "",
+      CPH: row.CPH || "",
+      Section: row.Section || "",
+      StatusPart: row["Status Part"] || "",
+      Aging: row.Aging || "",
+      Month: month,
+      Cost: cost,
+      Reman: reman,
+      Include: include,
+      Exclude: exclude,
+      Planning: planning,
+      StatusAMT: statusAMT
+    };
   });
+  return mergedData;
+}
 
+/* ===================== RENDER MAIN TABLE ===================== */
+function renderTable(data) {
+  const tbody = document.querySelector("#output-table tbody");
+  if (!tbody) return;
+  tbody.innerHTML = "";
+  data.forEach(row => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${safe(row.Room)}</td>
+      <td>${safe(row.OrderType)}</td>
+      <td>${safe(row.Order)}</td>
+      <td>${safe(row.Description)}</td>
+      <td>${safe(formatDateDDMMMYYYY(row.CreatedOn))}</td>
+      <td>${safe(row.UserStatus)}</td>
+      <td>${safe(row.MAT)}</td>
+      <td>${safe(row.CPH)}</td>
+      <td>${safe(row.Section)}</td>
+      <td>${safe(row.StatusPart)}</td>
+      <td>${safe(row.Aging)}</td>
+      <td>${safe(row.Month)}</td>
+      <td style="text-align:right;">${formatNumberID(row.Cost)}</td>
+      <td>${safe(row.Reman)}</td>
+      <td style="text-align:right;">${formatNumberID(row.Include)}</td>
+      <td style="text-align:right;">${formatNumberID(row.Exclude)}</td>
+      <td>${safe(formatDateDDMMMYYYY(row.Planning))}</td>
+      <td>${safe(row.StatusAMT)}</td>
+      <td>
+        <button class="action-btn edit-btn" data-order="${safe(row.Order)}">Edit</button>
+        <button class="action-btn delete-btn" data-order="${safe(row.Order)}">Delete</button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+/* ===================== FILTER ===================== */
+function applyFilter() {
+  const room = document.getElementById("filter-room").value.trim().toLowerCase();
+  const order = document.getElementById("filter-order").value.trim().toLowerCase();
+  const cph = document.getElementById("filter-cph").value.trim().toLowerCase();
+  const mat = document.getElementById("filter-mat").value.trim().toLowerCase();
+  const section = document.getElementById("filter-section").value.trim().toLowerCase();
+  const month = document.getElementById("filter-month").value;
+
+  const filtered = mergedData.filter(row =>
+    (!room || (row.Room || "").toLowerCase().includes(room)) &&
+    (!order || (row.Order || "").toLowerCase().includes(order)) &&
+    (!cph || (row.CPH || "").toLowerCase().includes(cph)) &&
+    (!mat || (row.MAT || "").toLowerCase().includes(mat)) &&
+    (!section || (row.Section || "").toLowerCase().includes(section)) &&
+    (!month || (row.Month || "") === month)
+  );
   renderTable(filtered);
 }
 
-function resetFilters() {
-  const ids = ["filter-room","filter-order","filter-cph","filter-mat","filter-section","filter-month"];
-  ids.forEach(id => { const el = document.getElementById(id); if (el) el.value = ""; });
+function resetFilter() {
+  document.getElementById("filter-room").value = "";
+  document.getElementById("filter-order").value = "";
+  document.getElementById("filter-cph").value = "";
+  document.getElementById("filter-mat").value = "";
+  document.getElementById("filter-section").value = "";
+  document.getElementById("filter-month").value = "";
   renderTable(mergedData);
 }
 
 function updateMonthFilterOptions() {
-  const monthSelect = document.getElementById("filter-month");
-  if (!monthSelect) return;
-  const months = Array.from(new Set(mergedData.map(d => d.Month).filter(m => m && m.trim() !== ""))).sort();
-  monthSelect.innerHTML = `<option value="">-- All --</option>` + months.map(m => `<option value="${m.toLowerCase()}">${m}</option>`).join("");
+  const sel = document.getElementById("filter-month");
+  if (!sel) return;
+  const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  sel.innerHTML = `<option value="">-- All --</option>` +
+    months.map(m => `<option value="${m}">${m}</option>`).join("");
 }
 
-/* ===================== ADD ORDERS (tetap) ===================== */
-function addOrders() {
-  const input = document.getElementById("add-order-input");
-  const status = document.getElementById("add-order-status");
-  const text = (input?.value || "").trim();
-  if (!text) {
-    alert("Masukkan Order terlebih dahulu.");
+/* ===================== FILTER LOM ===================== */
+function applyLOMFilter() {
+  const order = document.getElementById("lom-filter-order").value.trim().toLowerCase();
+  const filtered = lomData.filter(row =>
+    (!order || (row.Order || "").toLowerCase().includes(order))
+  );
+  renderLOMTable(filtered);
+}
+
+function resetLOMFilter() {
+  document.getElementById("lom-filter-order").value = "";
+  renderLOMTable(lomData);
+}
+
+/* ===================== ADD ORDER (PINDAH KE LOM) ===================== */
+function addOrderToLOM() {
+  const input = document.getElementById("add-order-input-lom");
+  if (!input) return;
+  const orders = input.value
+    .split(/[\s,]+/)
+    .map(o => o.trim())
+    .filter(o => o.length > 0);
+
+  if (!orders.length) {
+    document.getElementById("add-order-status-lom").textContent = "Tidak ada order yang valid.";
     return;
   }
-  const orders = text.split(/[\s,]+/).filter(Boolean);
-  let added = 0;
-  orders.forEach(o => {
-    if (!mergedData.some(r => r.Order === o)) {
-      mergedData.push({
-        Room: "",
-        "Order Type": "",
-        Order: o,
-        Description: "",
-        "Created On": "",
-        "User Status": "",
-        MAT: "",
-        CPH: "",
-        Section: "",
-        "Status Part": "",
-        Aging: "",
-        Month: "",
-        Cost: "-",
-        Reman: "",
-        Include: "-",
-        Exclude: "-",
-        Planning: "",
-        "Status AMT": ""
-      });
-      added++;
-    }
+
+  orders.forEach(orderNum => {
+    lomData.push({
+      Order: orderNum,
+      Month: "",
+      Cost: 0,
+      Reman: "",
+      Planning: "",
+      Status: ""
+    });
   });
-  if (added) {
-    saveUserEdits();
-    renderTable(mergedData);
-    if (status) status.textContent = `${added} Order berhasil ditambahkan.`;
-  } else {
-    if (status) status.textContent = "Order sudah ada di data.";
-  }
-  if (input) input.value = "";
+
+  input.value = "";
+  document.getElementById("add-order-status-lom").textContent = "Order berhasil ditambahkan ke LOM.";
+  renderLOMTable(lomData);
 }
 
-/* ===================== SAVE / LOAD JSON (export/import) ===================== */
-function saveToJSON() {
-  if (!mergedData.length) {
-    alert("Tidak ada data untuk disimpan.");
-    return;
-  }
-  const dataStr = JSON.stringify({ mergedData, timestamp: new Date().toISOString() }, null, 2);
-  const blob = new Blob([dataStr], { type: "application/json" });
+/* ===================== SAVE / LOAD JSON ===================== */
+function saveJSON() {
+  const blob = new Blob([JSON.stringify(mergedData, null, 2)], {type: "application/json"});
   const url = URL.createObjectURL(blob);
-
   const a = document.createElement("a");
   a.href = url;
-  a.download = `ndarboe_data_${new Date().toISOString().slice(0,10)}.json`;
+  a.download = "data.json";
   document.body.appendChild(a);
   a.click();
-  a.remove();
+  document.body.removeChild(a);
   URL.revokeObjectURL(url);
 }
 
-async function loadFromJSON(file) {
-  try {
-    const text = await file.text();
-    const obj = JSON.parse(text);
-    if (obj.mergedData && Array.isArray(obj.mergedData)) {
-      mergedData = obj.mergedData;
-      renderTable(mergedData);
-      updateMonthFilterOptions();
-      alert("Data berhasil dimuat dari JSON.");
-    } else {
-      alert("File JSON tidak valid.");
+function loadJSON(evt) {
+  const file = evt.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (Array.isArray(data)) {
+        mergedData = data;
+        renderTable(mergedData);
+      } else {
+        alert("Format JSON tidak valid.");
+      }
+    } catch (err) {
+      alert("Gagal memuat JSON.");
     }
-  } catch (e) {
-    alert("Gagal membaca file JSON: " + e.message);
+  };
+  reader.readAsText(file);
+}
+
+/* ===================== EDIT / DELETE ===================== */
+function handleTableClick(evt) {
+  const target = evt.target;
+  if (target.classList.contains("edit-btn")) {
+    startEditRow(target.dataset.order);
+  } else if (target.classList.contains("delete-btn")) {
+    deleteRow(target.dataset.order);
+  } else if (target.classList.contains("save-btn")) {
+    saveEditRow(target.dataset.order);
+  } else if (target.classList.contains("cancel-btn")) {
+    cancelEditRow(target.dataset.order);
   }
 }
 
-/* ===================== USER EDITS PERSISTENCE ===================== */
-function saveUserEdits() {
-  try {
-    const userEdits = mergedData.map(item => ({
-      Order: item.Order,
-      Month: item.Month,
-      Cost: item.Cost,
-      Reman: item.Reman
-    }));
-    localStorage.setItem(UI_LS_KEY, JSON.stringify({ userEdits }));
-  } catch {}
+function startEditRow(orderNum) {
+  const tbody = document.querySelector("#output-table tbody");
+  const tr = Array.from(tbody.querySelectorAll("tr")).find(row =>
+    row.children[2].textContent.trim() === orderNum
+  );
+  if (!tr) return;
+
+  const rowData = mergedData.find(r => r.Order === orderNum);
+  if (!rowData) return;
+
+  const editableCols = ["Month","Cost","Reman"];
+  Array.from(tr.children).forEach((td, idx) => {
+    const colName = document.querySelector(`#output-table thead tr`).children[idx].textContent;
+    if (editableCols.includes(colName)) {
+      td.innerHTML = `<input type="text" value="${rowData[colName]}" data-field="${colName}" />`;
+    }
+  });
+
+  tr.children[18].innerHTML = `
+    <button class="action-btn save-btn" data-order="${orderNum}">Save</button>
+    <button class="action-btn cancel-btn" data-order="${orderNum}">Cancel</button>
+  `;
 }
 
-/* ===================== CLEAR ALL ===================== */
+function saveEditRow(orderNum) {
+  const tbody = document.querySelector("#output-table tbody");
+  const tr = Array.from(tbody.querySelectorAll("tr")).find(row =>
+    row.children[2].textContent.trim() === orderNum
+  );
+  if (!tr) return;
+
+  const rowData = mergedData.find(r => r.Order === orderNum);
+  if (!rowData) return;
+
+  const inputs = tr.querySelectorAll("input[data-field]");
+  inputs.forEach(input => {
+    const field = input.dataset.field;
+    let val = input.value;
+    if (field === "Cost" || field === "Include" || field === "Exclude") {
+      val = parseFloat(val) || 0;
+    }
+    rowData[field] = val;
+  });
+
+  renderTable(mergedData);
+}
+
+function cancelEditRow(orderNum) {
+  renderTable(mergedData);
+}
+
+function deleteRow(orderNum) {
+  mergedData = mergedData.filter(r => r.Order !== orderNum);
+  renderTable(mergedData);
+}
+
+/* ===================== CLEAR ALL DATA ===================== */
 function clearAllData() {
-  if (!confirm("Yakin ingin menghapus semua data yang telah diupload?")) return;
   iw39Data = [];
   sum57Data = [];
   planningData = [];
-  data1Data = [];
-  data2Data = [];
   budgetData = [];
+  data1 = [];
+  data2 = [];
   lomData = [];
   mergedData = [];
   renderTable([]);
   renderLOMTable([]);
-  const statusEl = document.getElementById("upload-status");
-  if (statusEl) statusEl.textContent = "Data dihapus.";
-  updateMonthFilterOptions();
 }
 
-/* ===================== BUTTON WIRING ===================== */
+/* ===================== SETUP BUTTONS ===================== */
 function setupButtons() {
-  // Upload umum (Menu Upload)
-  const uploadBtn = document.getElementById("upload-btn");
-  if (uploadBtn) uploadBtn.onclick = handleUpload;
+  document.getElementById("upload-btn").addEventListener("click", handleUpload);
+  document.getElementById("clear-files-btn").addEventListener("click", clearAllData);
 
-  const clearBtn = document.getElementById("clear-files-btn");
-  if (clearBtn) clearBtn.onclick = clearAllData;
+  document.getElementById("filter-btn").addEventListener("click", applyFilters);
+  document.getElementById("reset-btn").addEventListener("click", resetFilters);
+  document.getElementById("refresh-btn").addEventListener("click", refreshData);
 
-  // Lembar Kerja
-  const refreshBtn = document.getElementById("refresh-btn");
-  if (refreshBtn) refreshBtn.onclick = () => { mergeData(); renderTable(mergedData); };
+  document.getElementById("lom-filter-btn").addEventListener("click", applyLOMFilter);
+  document.getElementById("lom-reset-btn").addEventListener("click", resetLOMFilter);
+  document.getElementById("lom-refresh-btn").addEventListener("click", refreshData);
 
-  const filterBtn = document.getElementById("filter-btn");
-  if (filterBtn) filterBtn.onclick = filterData;
-
-  const resetBtn = document.getElementById("reset-btn");
-  if (resetBtn) resetBtn.onclick = resetFilters;
-
-  const saveBtn = document.getElementById("save-btn");
-  if (saveBtn) saveBtn.onclick = saveToJSON;
-
-  const loadBtn = document.getElementById("load-btn");
-  if (loadBtn) {
-    loadBtn.onclick = () => {
-      const input = document.createElement("input");
-      input.type = "file";
-      input.accept = "application/json";
-      input.onchange = () => {
-        if (input.files.length) loadFromJSON(input.files[0]);
-      };
-      input.click();
-    };
+  const addOrderBtnLom = document.getElementById("add-order-btn-lom");
+  if (addOrderBtnLom) {
+    addOrderBtnLom.addEventListener("click", addOrderToLOM);
   }
 
-  const addOrderBtn = document.getElementById("add-order-btn");
-  if (addOrderBtn) addOrderBtn.onclick = addOrders;
+  document.getElementById("save-btn").addEventListener("click", saveJSON);
+  document.getElementById("load-btn").addEventListener("change", loadJSON);
 
-  // LOM (Menu 3 baru)
-  const lomFilterBtn = document.getElementById("lom-filter-btn");
-  if (lomFilterBtn) lomFilterBtn.onclick = filterLOM;
-
-  const lomResetBtn = document.getElementById("lom-reset-btn");
-  if (lomResetBtn) lomResetBtn.onclick = resetFilterLOM;
-
-  const lomRefreshBtn = document.getElementById("lom-refresh-btn");
-  if (lomRefreshBtn) lomRefreshBtn.onclick = () => renderLOMTable(lomData);
+  document.querySelector("#output-table tbody").addEventListener("click", handleTableClick);
 }
 
-/* ===================== (Opsional) Pewarnaan status chips ===================== */
-function asColoredStatusUser(val) {
-  const v = (val || "").toString().toUpperCase();
-  let bg = "", fg = "";
-  if (v === "OUTS") { bg = "#ffeb3b"; fg = "#000"; }
-  else if (v === "RELE") { bg = "#2e7d32"; fg = "#fff"; }
-  else if (v === "PROG") { bg = "#1976d2"; fg = "#fff"; }
-  else if (v === "COMP") { bg = "#000"; fg = "#fff"; }
-  else return safe(val);
-  return `<span style="display:inline-block;padding:2px 6px;border-radius:4px;background:${bg};color:${fg};">${safe(val)}</span>`;
+/* ===================== STATUS CHIP COLORS ===================== */
+function styleStatusChips() {
+  document.querySelectorAll("#output-table tbody tr").forEach(tr => {
+    const statusCell = tr.children[5];
+    if (statusCell) {
+      const status = statusCell.textContent.trim().toUpperCase();
+      if (status === "OUTS") {
+        statusCell.style.background = "yellow";
+        statusCell.style.color = "black";
+      } else if (status === "RELE") {
+        statusCell.style.background = "green";
+        statusCell.style.color = "white";
+      } else if (status === "PROG") {
+        statusCell.style.background = "orange";
+        statusCell.style.color = "black";
+      }
+    }
+  });
 }
 
-function asColoredStatusPart(val) {
-  const s = (val || "").toString().toLowerCase();
-  if (s === "complete") {
-    return `<span style="display:inline-block;padding:2px 6px;border-radius:4px;background:#1976d2;color:#fff;">${safe(val)}</span>`;
-  }
-  if (s === "not complete") {
-    return `<span style="display:inline-block;padding:2px 6px;border-radius:4px;background:#d32f2f;color:#fff;">${safe(val)}</span>`;
-  }
-  return safe(val);
-}
-
-function asColoredStatusAMT(val) {
-  const v = (val || "").toString().toUpperCase();
-  if (v === "O") {
-    return `<span style="display:inline-block;padding:2px 6px;border-radius:4px;background:#ffeb3b;color:#000;">${safe(val)}</span>`;
-  }
-  if (v === "IP") {
-    return `<span style="display:inline-block;padding:2px 6px;border-radius:4px;background:#1976d2;color:#fff;">${safe(val)}</span>`;
-  }
-  if (v === "YTS") {
-    return `<span style="display:inline-block;padding:2px 6px;border-radius:4px;background:#2e7d32;color:#fff;">${safe(val)}</span>`;
-  }
-  return safe(val);
-}
+/* ===================== INIT ===================== */
+document.addEventListener("DOMContentLoaded", () => {
+  setupButtons();
+  styleStatusChips();
+});
