@@ -427,6 +427,7 @@ function renderTable(dataToRender = mergedData) {
 }
 
 /* ===================== MENU LOM ===================== */
+
 function renderLOMTable(rows = lomData) {
   const tbody = document.querySelector("#lom-table tbody");
   if (!tbody) return; // kalau halaman belum punya tabel LOM, skip
@@ -434,36 +435,61 @@ function renderLOMTable(rows = lomData) {
 
   rows.forEach(r => {
     const tr = document.createElement("tr");
-    const cols = [
-      r.Order,
-      r.Month,
-      formatNumberID(r.Cost),
-      r.Reman ?? "",
-      formatDateDDMMMYYYY(r.Planning),
-      r.Status ?? ""
-    ];
-    cols.forEach((val, idx) => {
-      const td = document.createElement("td");
-      if (idx === 2) td.style.textAlign = "right"; // Cost
-      td.textContent = val ?? "";
-      tr.appendChild(td);
+
+    // Kolom 1: Order
+    const tdOrder = document.createElement("td");
+    tdOrder.textContent = r.Order ?? "";
+    tr.appendChild(tdOrder);
+
+    // Kolom 2: Month (dropdown)
+    const tdMonth = document.createElement("td");
+    const monthSelect = document.createElement("select");
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    months.forEach(m => {
+      const option = document.createElement("option");
+      option.value = m;
+      option.textContent = m;
+      if (r.Month === m) option.selected = true;
+      monthSelect.appendChild(option);
     });
+    tdMonth.appendChild(monthSelect);
+    tr.appendChild(tdMonth);
+
+    // Kolom 3: Cost (editable input)
+    const tdCost = document.createElement("td");
+   ("input");
+    costInput.type = "number";
+    costInput.value = r.Cost ?? "";
+    costInput.style.width = "100px";
+    costInput.style.textAlign = "right";
+    tdCost.appendChild(costInput);
+    tr.appendChild(tdCost);
+
+    // Kolom 4: Reman (dropdown)
+    const tdReman = document.createElement("td");
+    const remanSelect = document.createElement("select");
+    ["Reman", "-"].forEach(opt => {
+      const option = document.createElement("option");
+      option.value = opt;
+      option.textContent = opt;
+      if (r.Reman === opt) option.selected = true;
+      remanSelect.appendChild(option);
+    });
+    tdReman.appendChild(remanSelect);
+    tr.appendChild(tdReman);
+
+    // Kolom 5: Planning (tanggal dari Planning file)
+    const tdPlanning = document.createElement("td");
+    tdPlanning.textContent = formatDateDDMMMYYYY(r.Planning);
+    tr.appendChild(tdPlanning);
+
+    // Kolom 6: Status (lookup dari Planning file)
+    const tdStatus = document.createElement("td");
+    tdStatus.textContent = r.Status ?? "";
+    tr.appendChild(tdStatus);
+
     tbody.appendChild(tr);
   });
-}
-
-function filterLOM() {
-  const input = document.getElementById("lom-filter-order");
-  if (!input) return;
-  const q = (input.value || "").trim().toLowerCase();
-  const filtered = lomData.filter(r => (r.Order || "").toLowerCase().includes(q));
-  renderLOMTable(filtered);
-}
-
-function resetFilterLOM() {
-  const input = document.getElementById("lom-filter-order");
-  if (input) input.value = "";
-  renderLOMTable(lomData);
 }
 
 /* ===================== FILTERS ===================== */
@@ -675,6 +701,7 @@ function asColoredStatusAMT(val) {
   }
   return safe(val);
 }
+
 
 
 
