@@ -150,7 +150,38 @@ html
             <button id="load-btn">Load JSON</button>
           </div>
         </div>
+<!-- Lembar Order Monthly -->
+<section id="lom" class="content-section">
+  <h2>Lembar Order Monthly</h2>
+  <div class="filter-group">
+    <label>Order: 
+      <input type="text" id="lom-filter-order" placeholder="Filter Order" />
+    </label>
+    <div style="margin-left:auto;display:flex;gap:8px;">
+      <button id="lom-filter-btn">Filter</button>
+      <button id="lom-reset-btn">Reset</button>
+      <button id="lom-refresh-btn">Refresh</button>
+    </div>
+  </div>
 
+  <div style="overflow:auto;max-height:520px;">
+    <table id="lom-table">
+      <thead>
+        <tr>
+          <th>Order</th>
+          <th>Month</th>
+          <th>Cost</th>
+          <th>Reman</th>
+          <th>Planning</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- rows -->
+      </tbody>
+    </table>
+  </div>
+</section>
         <div style="overflow:auto;max-height:520px;">
           <table id="output-table">
             <thead>
@@ -198,3 +229,4 @@ html
   <script src="script.js"></script>
 </body>
 </html>
+
