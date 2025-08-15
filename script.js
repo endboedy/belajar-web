@@ -502,51 +502,28 @@ function updateMonthFilterOptions() {
 }
 
 /* ===================== ADD ORDERS ===================== */
-/* ===================== ADD ORDERS ===================== */
 function addOrders() {
-    const input = document.getElementById("lom-add-order-input");
-    const ordersText = input.value.trim();
-    const status = document.getElementById("lom-add-order-status"); // optional element for messages
-
+    const ordersText = document.getElementById("lom-add-order-input").value.trim();
     if (!ordersText) {
         alert("Masukkan Order terlebih dahulu.");
         return;
     }
 
-    // Split input by comma, space, or enter
     const orders = ordersText.split(/[\s,]+/).filter(o => o);
-
-    let added = 0;
-
     orders.forEach(order => {
-        // Cek apakah order sudah ada
-        const exists = lomData.some(o => o.Order.toLowerCase() === order.toLowerCase());
-        if (!exists) {
-            lomData.push({
-                Order: order,
-                Month: "",
-                Cost: 0,
-                Reman: "",
-                Planning: "",
-                Status: ""
-            });
-            added++;
-        }
+        lomData.push({
+            Order: order,
+            Month: "",
+            Cost: 0,
+            Reman: "",
+            Planning: "",
+            Status: ""
+        });
     });
 
-    renderLOMTable(lomData); // update tabel
-    input.value = ""; // clear input
-
-    if (status) {
-        if (added > 0) {
-            status.textContent = `${added} Order berhasil ditambahkan.`;
-        } else {
-            status.textContent = "Order sudah ada di data.";
-        }
-    }
-}
-
-
+    renderLOMTable(lomData);
+    document.getElementById("lom-add-order-input").value = "";
+} // <-- cukup ini, jangan ada '});' ekstra
 /* ===================== SAVE / LOAD JSON ===================== */
 function saveToJSON() {
   if (!mergedData.length) {
@@ -697,6 +674,7 @@ function asColoredStatusAMT(val) {
   }
   return safe(val);
 }
+
 
 
 
