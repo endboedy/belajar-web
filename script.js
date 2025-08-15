@@ -503,35 +503,46 @@ function updateMonthFilterOptions() {
 
 /* ===================== ADD ORDERS ===================== */
 function addOrders() {
-    const ordersText = document.getElementById("lom-add-order-input").value.trim();
+    const input = document.getElementById("lom-add-order-input");
+    const ordersText = input.value.trim();
+    const status = document.getElementById("lom-add-order-status"); // optional element for messages
+
     if (!ordersText) {
         alert("Masukkan Order terlebih dahulu.");
         return;
     }
 
+    // Split input by comma, space, or enter
     const orders = ordersText.split(/[\s,]+/).filter(o => o);
+
+    let added = 0;
+
     orders.forEach(order => {
-        lomData.push({
-            Order: order,
-            Month: "",
-            Cost: 0,
-            Reman: "",
-            Planning: "",
-            Status: ""
-        });
+        // Cek apakah order sudah ada
+        const exists = lomData.some(o => o.Order.toLowerCase() === order.toLowerCase());
+        if (!exists) {
+            lomData.push({
+                Order: order,
+                Month: "",
+                Cost: 0,
+                Reman: "",
+                Planning: "",
+                Status: ""
+            });
+            added++;
+        }
     });
 
-    renderLOMTable(lomData);
-    document.getElementById("lom-add-order-input").value = "";
-}
-    if (added) {
-    saveUserEdits();
-    renderTable(mergedData);
-    if (status) status.textContent = `${added} Order berhasil ditambahkan.`;
-  } else {
-    if (status) status.textContent = "Order sudah ada di data.";
-  }
-  if (input) input.value = "";
+    renderLOMTable(lomData); // update tabel
+    input.value = ""; // clear input
+
+    if (status) {
+        if (added > 0) {
+            status.textContent = `${added} Order berhasil ditambahkan.`;
+        } else {
+            status.textContent = "Order sudah ada di data.";
+        }
+    }
 }
 
 /* ===================== SAVE / LOAD JSON ===================== */
@@ -684,6 +695,7 @@ function asColoredStatusAMT(val) {
   }
   return safe(val);
 }
+
 
 
 
