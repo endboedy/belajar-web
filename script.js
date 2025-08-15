@@ -499,14 +499,18 @@ function renderLOMTable(rows = lomData) {
   });
 }
 
-// ===================== Helper lookup Excel =====================
+
+// ================= Helper lookup Excel ==================
 function lookupPlanning(orderID) {
-  const row = excelData.find(r => r.OrderID === orderID);
-  return row ? row.EventStart : "";
+  if (!excelData || !Array.isArray(excelData)) return "";
+  const row = excelData.find(r => String(r.OrderID).trim().toLowerCase() === String(orderID).trim().toLowerCase());
+  return row && row.EventStart ? row.EventStart : "";
 }
+
 function lookupStatus(orderID) {
-  const row = excelData.find(r => r.OrderID === orderID);
-  return row ? row.Status : "";
+  if (!excelData || !Array.isArray(excelData)) return "";
+  const row = excelData.find(r => String(r.OrderID).trim().toLowerCase() === String(orderID).trim().toLowerCase());
+  return row && row.Status ? row.Status : "";
 }
 
 // ===================== Helper format tanggal =====================
@@ -767,6 +771,7 @@ function asColoredStatusAMT(val) {
   }
   return safe(val);
 }
+
 
 
 
