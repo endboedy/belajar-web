@@ -11,6 +11,7 @@ let data2Data = [];
 let budgetData = [];
 let lomData = [];
 let mergedData = [];
+let excelData = []; // ✨ Penting: biar lookupPlanning & lookupStatus nggak error
 
 const UI_LS_KEY = "ndarboe_ui_edits_v3";
 
@@ -443,7 +444,7 @@ function renderLOMTable(rows = lomData) {
     // === Month (dropdown) ===
     const tdMonth = document.createElement("td");
     const monthSelect = document.createElement("select");
-    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
     months.forEach(m => {
       const option = document.createElement("option");
       option.value = m;
@@ -451,7 +452,6 @@ function renderLOMTable(rows = lomData) {
       if (r.Month === m) option.selected = true;
       monthSelect.appendChild(option);
     });
-    // bind perubahan ke lomData
     monthSelect.addEventListener("change", e => r.Month = e.target.value);
     tdMonth.appendChild(monthSelect);
     tr.appendChild(tdMonth);
@@ -477,14 +477,12 @@ function renderLOMTable(rows = lomData) {
       if (r.Reman === opt || r.Reman === "0,0" || !r.Reman) option.selected = true;
       remanSelect.appendChild(option);
     });
-    // bind perubahan ke lomData
     remanSelect.addEventListener("change", e => r.Reman = e.target.value);
     tdReman.appendChild(remanSelect);
     tr.appendChild(tdReman);
 
     // === Planning (lookup dari Excel) ===
     const tdPlanning = document.createElement("td");
-    // pastikan r.Order sudah ada, lakukan lookup
     r.Planning = lookupPlanning(r.Order);
     tdPlanning.textContent = r.Planning ? formatDateDDMMMYYYY(r.Planning) : "";
     tr.appendChild(tdPlanning);
@@ -498,7 +496,6 @@ function renderLOMTable(rows = lomData) {
     tbody.appendChild(tr);
   });
 }
-
 
 // ================= Helper lookup Excel ==================
 function lookupPlanning(orderID) {
@@ -525,25 +522,19 @@ function formatDateDDMMMYYYY(dateStr) {
   return `${day}-${month}-${year}`;
 }
 
-
-
 /* ===================== FILTER LOM ===================== */
 function filterLOM() {
   const orderFilter = document.querySelector("#lom-filter-order")?.value.trim().toLowerCase();
-
   let filtered = lomData;
-
   if (orderFilter) {
     filtered = filtered.filter(r => String(r.Order || "").toLowerCase().includes(orderFilter));
   }
-
   renderLOMTable(filtered);
 }
 
 function resetFilterLOM() {
   const orderInput = document.querySelector("#lom-filter-order");
   if (orderInput) orderInput.value = "";
-
   renderLOMTable(lomData);
 }
 
@@ -599,27 +590,10 @@ function updateMonthFilterOptions() {
 
 /* ===================== ADD ORDERS ===================== */
 function addOrders() {
-    const ordersText = document.getElementById("lom-add-order-input").value.trim();
-    if (!ordersText) {
-        alert("Masukkan Order terlebih dahulu.");
-        return;
-    }
-
-    const orders = ordersText.split(/[\s,]+/).filter(o => o);
-    orders.forEach(order => {
-        lomData.push({
-            Order: order,
-            Month: "",
-            Cost: 0,
-            Reman: "",
-            Planning: "",
-            Status: ""
-        });
-    });
-
-    renderLOMTable(lomData);
-    document.getElementById("lom-add-order-input").value = "";
-} // <-- cukup ini, jangan ada '});' ekstra
+  // contoh: tambahkan 1 row baru
+  lomData.push({ Order: "", Month: "Jan", Cost: 0, Reman: "-", Planning: "", Status: "" });
+  renderLOMTable(lomData);
+}
 
 /* ===================== SAVE / LOAD JSON ===================== */
 function saveToJSON() {
@@ -771,6 +745,7 @@ function asColoredStatusAMT(val) {
   }
   return safe(val);
 }
+
 
 
 
