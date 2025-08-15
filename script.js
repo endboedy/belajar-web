@@ -522,42 +522,40 @@ function formatDateDDMMMYYYY(dateStr) {
 }
 
 
+
 /* ===================== FILTER LOM ===================== */
 function filterLOM() {
-  const monthFilter = document.querySelector("#filter-month")?.value;
-  const remanFilter = document.querySelector("#filter-reman")?.value;
+  const orderFilter = document.querySelector("#lom-filter-order")?.value.trim().toLowerCase();
 
   let filtered = lomData;
 
-  if (monthFilter && monthFilter !== "All") {
-    filtered = filtered.filter(r => r.Month === monthFilter);
-  }
-  if (remanFilter && remanFilter !== "All") {
-    filtered = filtered.filter(r => r.Reman === remanFilter);
+  if (orderFilter) {
+    filtered = filtered.filter(r => String(r.Order || "").toLowerCase().includes(orderFilter));
   }
 
   renderLOMTable(filtered);
 }
 
 function resetFilterLOM() {
-  // Reset dropdown ke "All"
-  const monthSelect = document.querySelector("#filter-month");
-  const remanSelect = document.querySelector("#filter-reman");
+  const orderInput = document.querySelector("#lom-filter-order");
+  if (orderInput) orderInput.value = "";
 
-  if (monthSelect) monthSelect.value = "All";
-  if (remanSelect) remanSelect.value = "All";
-
-  // Tampilkan semua data
   renderLOMTable(lomData);
 }
 
-/* ===================== INISIALISASI TOMBOL FILTER ===================== */
+/* ===================== INISIALISASI TOMBOL LOM ===================== */
 document.addEventListener("DOMContentLoaded", () => {
+  const addOrderBtn = document.getElementById("lom-add-order-btn");
+  if (addOrderBtn) addOrderBtn.onclick = addOrders;
+
   const lomFilterBtn = document.getElementById("lom-filter-btn");
   if (lomFilterBtn) lomFilterBtn.onclick = filterLOM;
 
   const lomResetBtn = document.getElementById("lom-reset-btn");
   if (lomResetBtn) lomResetBtn.onclick = resetFilterLOM;
+
+  const lomRefreshBtn = document.getElementById("lom-refresh-btn");
+  if (lomRefreshBtn) lomRefreshBtn.onclick = () => renderLOMTable(lomData);
 });
 
 /* ===================== FILTERS ===================== */
@@ -769,6 +767,7 @@ function asColoredStatusAMT(val) {
   }
   return safe(val);
 }
+
 
 
 
