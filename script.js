@@ -521,6 +521,24 @@ function formatDateDDMMMYYYY(dateStr) {
   return `${day}-${month}-${year}`;
 }
 
+/* ===================== FILTER LOM ===================== */
+function filterLOM() {
+  // Ambil value filter
+  const monthFilter = document.querySelector("#filter-month")?.value;
+  const remanFilter = document.querySelector("#filter-reman")?.value;
+
+  let filtered = lomData;
+
+  if (monthFilter && monthFilter !== "All") {
+    filtered = filtered.filter(r => r.Month === monthFilter);
+  }
+  if (remanFilter && remanFilter !== "All") {
+    filtered = filtered.filter(r => r.Reman === remanFilter);
+  }
+
+  renderLOMTable(filtered);
+}
+
 /* ===================== FILTERS ===================== */
 function filterData() {
   const roomFilter    = (document.getElementById("filter-room")?.value || "").trim().toLowerCase();
@@ -730,6 +748,7 @@ function asColoredStatusAMT(val) {
   }
   return safe(val);
 }
+
 
 
 
