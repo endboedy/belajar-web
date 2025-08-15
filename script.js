@@ -502,6 +502,7 @@ function updateMonthFilterOptions() {
 }
 
 /* ===================== ADD ORDERS ===================== */
+/* ===================== ADD ORDERS ===================== */
 function addOrders() {
     const input = document.getElementById("lom-add-order-input");
     const ordersText = input.value.trim();
@@ -544,6 +545,7 @@ function addOrders() {
         }
     }
 }
+
 
 /* ===================== SAVE / LOAD JSON ===================== */
 function saveToJSON() {
@@ -695,6 +697,7 @@ function asColoredStatusAMT(val) {
   }
   return safe(val);
 }
+
 
 
 
