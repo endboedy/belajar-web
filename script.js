@@ -5,13 +5,17 @@
 /* ===================== GLOBAL STATE ===================== */
 let iw39Data = [];
 let sum57Data = [];
-let planningData = [];
 let data1Data = [];
 let data2Data = [];
 let budgetData = [];
-let lomData = [];
+let lomData = [];   // hanya deklarasi sekali di sini
 let mergedData = [];
 let excelData = []; // ✨ Penting: biar lookupPlanning & lookupStatus nggak error
+
+let planningData = [   // langsung isi di sini aja, ga perlu ulang di bawah
+  { Order: "1001", "Event Start": "2025-08-20", Status: "Open" },
+  { Order: "1002", "Event Start": "2025-08-22", Status: "Closed" },
+];
 
 const UI_LS_KEY = "ndarboe_ui_edits_v3";
 
@@ -612,14 +616,6 @@ function updateMonthFilterOptions() {
   monthSelect.innerHTML = `<option value="">-- All --</option>` + months.map(m => `<option value="${m.toLowerCase()}">${m}</option>`).join("");
 }
 
-/* ===================== DATA STORAGE ===================== */
-let lomData = [];  // data untuk LOM table
-
-let planningData = [
-  { Order: "1001", "Event Start": "2025-08-20", Status: "Open" },
-  { Order: "1002", "Event Start": "2025-08-22", Status: "Closed" },
-];
-
 /* ===================== ADD ORDERS ===================== */
 function addOrders() {
   const input = document.getElementById("lom-add-orders-textarea");
@@ -966,6 +962,7 @@ function asColoredStatusAMT(val) {
   }
   return safe(val);
 }
+
 
 
 
