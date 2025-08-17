@@ -613,56 +613,29 @@ function updateMonthFilterOptions() {
 }
 
 /* ===================== ADD ORDERS ===================== */
-function renderLOMTable(data) {
-  const tbody = document.getElementById("lom-table-body");
-  if (!tbody) return;
-  tbody.innerHTML = "";
+function addOrders() {
+  const input = document.getElementById("lom-add-orders-textarea");
+  if (!input) return;
 
-  data.forEach((row, i) => {
-    const tr = document.createElement("tr");
+  const orders = input.value.split(/[\n,]+/).map(o => o.trim()).filter(o => o);
 
-    tr.innerHTML = `
-      <td>${row.Order}</td>
+  orders.forEach(order => {
+    // lookup ke planningData
+    const planningRow = planningData.find(p => String(p.Order) === order);
 
-      <!-- Month dropdown -->
-      <td>
-        <select data-index="${i}" data-field="Month">
-          ${["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
-            .map(m => `<option value="${m}" ${row.Month===m?"selected":""}>${m}</option>`).join("")}
-        </select>
-      </td>
-
-      <!-- Cost number -->
-      <td>
-        <input type="number" data-index="${i}" data-field="Cost" value="${row.Cost}" />
-      </td>
-
-      <!-- Reman dropdown -->
-      <td>
-        <select data-index="${i}" data-field="Reman">
-          ${["Reman","-"].map(opt => `<option value="${opt}" ${row.Reman===opt?"selected":""}>${opt}</option>`).join("")}
-        </select>
-      </td>
-
-      <!-- Planning lookup -->
-      <td>${row.Planning || "-"}</td>
-
-      <!-- Status lookup -->
-      <td>${row.Status || "-"}</td>
-    `;
-
-    tbody.appendChild(tr);
-  });
-
-  // Wiring: update lomData kalau ada edit
-  tbody.querySelectorAll("select, input").forEach(el => {
-    el.addEventListener("change", e => {
-      const idx = e.target.dataset.index;
-      const field = e.target.dataset.field;
-      lomData[idx][field] = e.target.value;
-      saveLOM();
+    lomData.push({
+      Order: order,
+      Month: "Jan",                          
+      Cost: 0,                               
+      Reman: "-",                            
+      Planning: planningRow ? planningRow["Event Start"] : "",
+      Status: planningRow ? planningRow["Status"] : ""
     });
   });
+
+  input.value = ""; 
+  renderLOMTable(lomData);
+  saveLOM();
 }
   
 /* ===================== SAVE / LOAD LOM ===================== */
@@ -825,6 +798,7 @@ function asColoredStatusAMT(val) {
   }
   return safe(val);
 }
+
 
 
 
