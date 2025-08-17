@@ -617,30 +617,26 @@ function addOrders() {
   const input = document.getElementById("lom-add-orders-textarea");
   if (!input) return;
 
-  // Ambil semua order dari textarea (pisah enter atau koma)
   const orders = input.value.split(/[\n,]+/).map(o => o.trim()).filter(o => o);
 
   orders.forEach(order => {
-    // Cari data order di file planning
     const planningRow = planningData.find(p => String(p.Order) === order);
 
     lomData.push({
       Order: order,
-      Month: "Jan", // default → nanti bisa diedit dropdown
-      Cost: 0,      // default angka → bisa diedit langsung
-      Reman: "-",   // default → dropdown: Reman atau "-"
+      Month: "Jan",
+      Cost: 0,
+      Reman: "-",
       Planning: planningRow ? planningRow["Event Start"] : "",
       Status: planningRow ? planningRow["Status"] : ""
     });
   });
 
-  // Kosongkan textarea setelah add
-  input.value = "";
-
-  // Render ulang tabel & simpan
-  renderLOMTable(lomData);
-  saveLOM();
+  input.value = ""; 
+  renderLOMTable(lomData);   // tampilkan di tabel
+  saveLOM();                 // simpan (kalau ada localStorage)
 }
+
 
 /* ===================== RENDER LOM TABLE ===================== */
 function renderLOMTable(data) {
@@ -855,6 +851,7 @@ function asColoredStatusAMT(val) {
   }
   return safe(val);
 }
+
 
 
 
