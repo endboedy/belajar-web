@@ -613,11 +613,8 @@ function updateMonthFilterOptions() {
 }
 
 /* ===================== DATA STORAGE ===================== */
-// Data LOM yang akan ditampilkan di tabel Menu 3
-let lomData = [];
+let lomData = [];  // data untuk LOM table
 
-// Contoh data Planning (sementara hardcode untuk tes)
-// Nanti bisa diganti ambil dari file Excel
 let planningData = [
   { Order: "1001", "Event Start": "2025-08-20", Status: "Open" },
   { Order: "1002", "Event Start": "2025-08-22", Status: "Closed" },
@@ -920,6 +917,7 @@ function asColoredStatusAMT(val) {
   }
   return safe(val);
 }
+
 
 
 
