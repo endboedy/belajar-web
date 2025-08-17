@@ -618,8 +618,6 @@ let lomData = [];  // data untuk LOM table
 let planningData = [
   { Order: "1001", "Event Start": "2025-08-20", Status: "Open" },
   { Order: "1002", "Event Start": "2025-08-22", Status: "Closed" },
-  { Order: "1003", "Event Start": "2025-08-25", Status: "In Progress" },
-  { Order: "1004", "Event Start": "2025-08-27", Status: "Open" }
 ];
 
 /* ===================== ADD ORDERS ===================== */
@@ -968,6 +966,7 @@ function asColoredStatusAMT(val) {
   }
   return safe(val);
 }
+
 
 
 
