@@ -1,7 +1,3 @@
-/****************************************************
- * Ndarboe.net - FULL script.js (Menu 1–5, revisi LOM pindah Add Order ke Menu 3)
- ****************************************************/
-
 /* ===================== GLOBAL STATE ===================== */
 let iw39Data = [];
 let sum57Data = [];
@@ -536,7 +532,7 @@ function lookupStatus(orderID) {
   return row && row.Status ? row.Status : "";
 }
 
-// ===================== Helper format tanggal =====================
+/* ===================== Helper format tanggal ===================== */
 function formatDateDDMMMYYYY(dateStr) {
   if (!dateStr) return "";
   const d = new Date(dateStr);
@@ -564,21 +560,20 @@ function resetFilterLOM() {
   renderLOMTable(lomData);
 }
 
-/* ===================== INISIALISASI TOMBOL LOM ===================== */
+/* ===================== INISIALISASI TOMBOL ===================== */
 document.addEventListener("DOMContentLoaded", () => {
-  const addOrderBtn = document.getElementById("lom-add-order-btn");
-  if (addOrderBtn) addOrderBtn.onclick = addOrders;
+  // load data dari localStorage kalau ada
+  loadLomData();
 
-  const lomFilterBtn = document.getElementById("lom-filter-btn");
-  if (lomFilterBtn) lomFilterBtn.onclick = filterLOM;
+  // event tombol
+  document.getElementById("addOrderBtn").addEventListener("click", () => {
+    const orderId = document.getElementById("orderInput").value.trim();
+    addOrder(orderId);
+  });
 
-  const lomResetBtn = document.getElementById("lom-reset-btn");
-  if (lomResetBtn) lomResetBtn.onclick = resetFilterLOM;
-
-  const lomRefreshBtn = document.getElementById("lom-refresh-btn");
-  if (lomRefreshBtn) lomRefreshBtn.onclick = () => renderLOMTable(lomData);
-
-  loadLOM(); // load saved data saat halaman dibuka
+  document.getElementById("saveOrderBtn").addEventListener("click", () => {
+    saveLomData();
+  });
 });
 
 /* ===================== FILTERS ===================== */
@@ -617,60 +612,68 @@ function updateMonthFilterOptions() {
 }
 
 /* ===================== ADD ORDERS ===================== */
-function addOrders() {
-  const input = document.getElementById("lom-add-orders-textarea");
-  if (!input) return;
+function addOrder(orderId) {
+  if (!orderId) return;
 
-  const orders = input.value.split(/[\n,]+/).map(o => o.trim()).filter(o => o);
+  // cek kalau order sudah ada di lomData
+  const existing = lomData.find(o => o.Order === orderId);
+  if (existing) {
+    alert("⚠️ Order sudah ada di list!");
+    return;
+  }
 
-  orders.forEach(order => {
-    const planningRow = planningData.find(p => String(p.Order) === order);
+  // lookup Planning & Status dari planningData
+  const planning = lookupPlanning(orderId);
+  const status = lookupStatus(orderId);
 
-    lomData.push({
-      Order: order,
-      Month: "Jan",
-      Cost: 0,
-      Reman: "-",
-      Planning: planningRow ? planningRow["Event Start"] : "",
-      Status: planningRow ? planningRow["Status"] : ""
-    });
+  // tambahkan order baru
+  lomData.push({
+    Order: orderId,
+    Planning: planning,
+    Status: status,
   });
 
-  input.value = ""; 
-  renderLOMTable(lomData);
-  saveLOM();
+  // render ulang tabel
+  renderLomTable();
+
+  // kosongkan input order setelah ditambahkan
+  document.getElementById("orderInput").value = "";
 }
 
 /* ===================== RENDER LOM TABLE ===================== */
-function renderLOMTable(data) {
-  const tbody = document.getElementById("lom-table-body");
-  if (!tbody) {
-    console.error("tbody lom-table-body tidak ditemukan!");
-    return;
-  }
-  tbody.innerHTML = "";
+function renderLomTable() {
+  const tableBody = document.getElementById("lomTableBody");
+  tableBody.innerHTML = "";
 
-  data.forEach(row => {
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>${row.Order}</td>
-      <td>${row.Month}</td>
-      <td>${row.Cost}</td>
-      <td>${row.Reman}</td>
-      <td>${row.Planning}</td>
-      <td>${row.Status}</td>
+  lomData.forEach(item => {
+    const row = document.createElement("tr");
+    row.innerHTML = `
+      <td>${item.Order}</td>
+      <td>${item.Planning}</td>
+      <td>${item.Status}</td>
     `;
-    tbody.appendChild(tr);
+    tableBody.appendChild(row);
   });
 }
-  
-<!-- ===================== LOM ADD ORDER ===================== -->
+
+/* ===================== LOOKUP FUNCTIONS ===================== */
+function lookupPlanning(orderId) {
+  const found = planningData.find(p => p.Order === orderId);
+  return found ? found["Event Start"] : "-";
+}
+
+function lookupStatus(orderId) {
+  const found = planningData.find(p => p.Order === orderId);
+  return found ? found.Status : "-";
+}
+
+/* ===================== LOM ADD ORDER ===================== */
 <div class="lom-add-order-section">
   <textarea id="lom-add-orders-textarea" placeholder="Masukkan order, pisahkan dengan koma atau enter"></textarea>
   <button id="lom-add-order-btn">Add Order</button>
 </div>
 
-<!-- ===================== LOM TABLE ===================== -->
+/* ===================== LOM TABLE ===================== */
 <table id="lom-table" border="1">
   <thead>
     <tr>
@@ -739,18 +742,21 @@ function setupButtons() {
   }
 }
 document.addEventListener("DOMContentLoaded", setupButtons);
-  
-/* ===================== SAVE & LOAD ===================== */
-function saveLOM() {
-  localStorage.setItem("lomData", JSON.stringify(lomData));
-}
 
-function loadLOM() {
-  const saved = localStorage.getItem("lomData");
-  if (saved) {
-    lomData = JSON.parse(saved);
-    renderLOMTable(lomData);
-  }
+/* ===================== RENDER LOM TABLE ===================== */
+function renderLomTable() {
+  const tableBody = document.getElementById("lomTableBody");
+  tableBody.innerHTML = "";
+
+  lomData.forEach(item => {
+    const row = document.createElement("tr");
+    row.innerHTML = `
+      <td>${item.Order}</td>
+      <td>${item.Planning}</td>
+      <td>${item.Status}</td>
+    `;
+    tableBody.appendChild(row);
+  });
 }
 
 /* ===================== LOM FUNCTIONS ===================== */
@@ -959,37 +965,3 @@ function asColoredStatusAMT(val) {
   }
   return safe(val);
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
