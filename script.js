@@ -762,6 +762,57 @@ function loadLOM() {
   }
 }
 
+/* ===================== LOM FUNCTIONS ===================== */
+function addOrders() {
+  const orderInput = document.getElementById("lom-order-input");
+  if (!orderInput || !orderInput.value.trim()) {
+    alert("Masukkan nomor order dulu bro!");
+    return;
+  }
+
+  const orderNumbers = orderInput.value.split(",").map(o => o.trim());
+
+  orderNumbers.forEach(orderNum => {
+    // cek di planningData
+    const found = planningData.find(p => p.Order === orderNum);
+    if (found) {
+      lomData.push({
+        Order: orderNum,
+        "Event Start": found["Event Start"],
+        Status: found.Status
+      });
+    } else {
+      lomData.push({
+        Order: orderNum,
+        "Event Start": "-",
+        Status: "Not Found"
+      });
+    }
+  });
+
+  orderInput.value = ""; // clear input setelah add
+  renderLOMTable(lomData);
+}
+
+function renderLOMTable(data) {
+  const tbody = document.getElementById("lom-table-body");
+  if (!tbody) {
+    console.error("tbody lom-table-body tidak ditemukan!");
+    return;
+  }
+  tbody.innerHTML = "";
+
+  data.forEach(row => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${row.Order}</td>
+      <td>${row["Event Start"]}</td>
+      <td>${row.Status}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
 /* ===================== SAVE / LOAD JSON ===================== */
 function saveToJSON() {
   if (!mergedData.length) {
@@ -917,6 +968,7 @@ function asColoredStatusAMT(val) {
   }
   return safe(val);
 }
+
 
 
 
