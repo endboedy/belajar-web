@@ -640,10 +640,7 @@ function addOrders() {
   renderLOMTable(lomData);
   saveLOM();
 }
-📝 4. Bagian JS — Render Tabel
-javascript
-Copy
-Edit
+
 /* ===================== RENDER LOM TABLE ===================== */
 function renderLOMTable(data) {
   const tbody = document.getElementById("lom-table-body");
@@ -962,6 +959,7 @@ function asColoredStatusAMT(val) {
   }
   return safe(val);
 }
+
 
 
 
