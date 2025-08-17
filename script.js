@@ -612,6 +612,19 @@ function updateMonthFilterOptions() {
   monthSelect.innerHTML = `<option value="">-- All --</option>` + months.map(m => `<option value="${m.toLowerCase()}">${m}</option>`).join("");
 }
 
+/* ===================== DATA STORAGE ===================== */
+// Data LOM yang akan ditampilkan di tabel Menu 3
+let lomData = [];
+
+// Contoh data Planning (sementara hardcode untuk tes)
+// Nanti bisa diganti ambil dari file Excel
+let planningData = [
+  { Order: "1001", "Event Start": "2025-08-20", Status: "Open" },
+  { Order: "1002", "Event Start": "2025-08-22", Status: "Closed" },
+  { Order: "1003", "Event Start": "2025-08-25", Status: "In Progress" },
+  { Order: "1004", "Event Start": "2025-08-27", Status: "Open" }
+];
+
 /* ===================== ADD ORDERS ===================== */
 function addOrders() {
   const input = document.getElementById("lom-add-orders-textarea");
@@ -633,10 +646,58 @@ function addOrders() {
   });
 
   input.value = ""; 
-  renderLOMTable(lomData);   // tampilkan di tabel
-  saveLOM();                 // simpan (kalau ada localStorage)
+  renderLOMTable(lomData);
+  saveLOM();
 }
+📝 4. Bagian JS — Render Tabel
+javascript
+Copy
+Edit
+/* ===================== RENDER LOM TABLE ===================== */
+function renderLOMTable(data) {
+  const tbody = document.getElementById("lom-table-body");
+  if (!tbody) {
+    console.error("tbody lom-table-body tidak ditemukan!");
+    return;
+  }
+  tbody.innerHTML = "";
 
+  data.forEach(row => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${row.Order}</td>
+      <td>${row.Month}</td>
+      <td>${row.Cost}</td>
+      <td>${row.Reman}</td>
+      <td>${row.Planning}</td>
+      <td>${row.Status}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+  
+<!-- ===================== LOM ADD ORDER ===================== -->
+<div class="lom-add-order-section">
+  <textarea id="lom-add-orders-textarea" placeholder="Masukkan order, pisahkan dengan koma atau enter"></textarea>
+  <button id="lom-add-order-btn">Add Order</button>
+</div>
+
+<!-- ===================== LOM TABLE ===================== -->
+<table id="lom-table" border="1">
+  <thead>
+    <tr>
+      <th>Order</th>
+      <th>Month</th>
+      <th>Cost</th>
+      <th>Reman</th>
+      <th>Planning</th>
+      <th>Status</th>
+    </tr>
+  </thead>
+  <tbody id="lom-table-body">
+    <!-- Isi tabel akan di-generate lewat JS -->
+  </tbody>
+</table>
 
 /* ===================== RENDER LOM TABLE ===================== */
 function renderLOMTable(data) {
@@ -691,16 +752,19 @@ function setupButtons() {
 }
 document.addEventListener("DOMContentLoaded", setupButtons);
   
-/* ===================== SAVE / LOAD LOM ===================== */
+/* ===================== SAVE & LOAD ===================== */
 function saveLOM() {
   localStorage.setItem("lomData", JSON.stringify(lomData));
 }
 
 function loadLOM() {
-  const data = localStorage.getItem("lomData");
-  if (data) lomData = JSON.parse(data);
-  renderLOMTable(lomData);
+  const saved = localStorage.getItem("lomData");
+  if (saved) {
+    lomData = JSON.parse(saved);
+    renderLOMTable(lomData);
+  }
 }
+
 /* ===================== SAVE / LOAD JSON ===================== */
 function saveToJSON() {
   if (!mergedData.length) {
@@ -801,9 +865,14 @@ function setupButtons() {
     };
   }
 
-  // REVISI: pindahkan Add Order ke Menu 3 (LOM)
+  /* ========== MENU 3 (LOM) ========== */
   const addOrderBtn = document.getElementById("lom-add-order-btn");
-  if (addOrderBtn) addOrderBtn.onclick = addOrders;
+  if (addOrderBtn) {
+    addOrderBtn.onclick = () => {
+      console.log("Add Order clicked"); // debug
+      addOrders();
+    };
+  }
 
   const lomFilterBtn = document.getElementById("lom-filter-btn");
   if (lomFilterBtn) lomFilterBtn.onclick = filterLOM;
@@ -851,6 +920,7 @@ function asColoredStatusAMT(val) {
   }
   return safe(val);
 }
+
 
 
 
