@@ -169,66 +169,69 @@
         </div>
       </section>
 
-      <!-- Lembar Order Monthly -->
-       <section id="lom" class="content-section">
-        <h2>Lembar Order Monthly</h2>
+     <section id="lom" class="content-section">
+  <h2>Lembar Order Monthly</h2>
 
-        <div class="lom-add-order-section">
-          <label for="lom-add-order-input">
-            Masukkan Order (pisah dengan koma atau enter):
-          </label><br />
-          <textarea id="lom-add-order-input" rows="3" placeholder="Contoh: ORD004 ORD005 ORD006"></textarea>
-          <br />
-          <button id="lom-add-order-btn" style="margin-top:8px">Add Orders</button>
-          <div id="lom-add-order-status" class="status-message"></div>
-        </div>
-
-        <div class="filter-group">
-          <label>
-            Order:
-            <input type="text" id="lom-filter-order" placeholder="Filter Order" />
-          </label>
-          <div style="margin-left:auto;display:flex;gap:8px;">
-            <button id="lom-filter-btn">Filter</button>
-            <button id="lom-reset-btn">Reset</button>
-            <button id="lom-refresh-btn">Refresh</button>
-          </div>
-        </div>
-
-        <div style="overflow:auto;max-height:520px;">
-          <table id="lom-table">
-            <thead>
-              <tr>
-                <th>Order</th>
-                <th>Month</th>
-                <th>Cost</th>
-                <th>Reman</th>
-                <th>Planning</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody id="lom-table-body"></tbody>
-          </table>
-        </div>
-      </section>
-
-      <!-- Section lain -->
-      <section id="summary" class="content-section">
-        <h2>Summary CRM</h2>
-        <p class="small">(Kosong dulu, nanti kita isi)</p>
-      </section>
-
-      <section id="download" class="content-section">
-        <h2>Download Excel</h2>
-        <p class="small">(Nanti kita tambahin fitur export)</p>
-      </section>
-    </main>
+  <!-- Tambah Order -->
+  <div class="lom-add-order-section">
+    <label for="lom-add-order-input">
+      Masukkan Order (pisah dengan koma atau enter):
+    </label><br />
+    <textarea 
+      id="lom-add-order-input" 
+      rows="3" 
+      placeholder="Contoh: ORD004, ORD005, ORD006"></textarea>
+    <br />
+    <div style="margin-top:8px; display:flex; gap:8px;">
+      <button id="lom-add-order-btn">Add Orders</button>
+      <button id="lom-save-btn">Save</button>
+    </div>
+    <div id="lom-add-order-status" class="status-message"></div>
   </div>
 
-  <!-- Panggil script.js -->
-  <script src="script.js"></script>
-</body>
-</html>
+  <!-- Filter -->
+  <div class="filter-group">
+    <label for="lom-filter-order">
+      Order:
+      <input type="text" id="lom-filter-order" placeholder="Filter Order" />
+    </label>
+    <div style="margin-left:auto; display:flex; gap:8px;">
+      <button id="lom-filter-btn">Filter</button>
+      <button id="lom-reset-btn">Reset</button>
+      <button id="lom-refresh-btn">Refresh</button>
+    </div>
+  </div>
+
+  <!-- Tabel -->
+  <div style="overflow:auto; max-height:520px;">
+    <table id="lom-table">
+      <thead>
+        <tr>
+          <th>Order</th>
+          <th>Month</th>
+          <th>Cost</th>
+          <th>Reman</th>
+          <th>Planning</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody id="lom-table-body"></tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ===================== SUMMARY ===================== -->
+<section id="summary" class="content-section">
+  <h2>Summary CRM</h2>
+  <p class="small">(Kosong dulu, nanti kita isi)</p>
+</section>
+
+<!-- ===================== DOWNLOAD ===================== -->
+<section id="download" class="content-section">
+  <h2>Download Excel</h2>
+  <p class="small">(Nanti kita tambahin fitur export)</p>
+</section>
+
 
 
 
