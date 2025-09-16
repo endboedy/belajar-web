@@ -1,237 +1,526 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Ndarboe.net</title>
-  <link rel="stylesheet" href="style.css" />
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <meta charset="UTF-8">
+  <title>LTR Daily Status</title>
   <style>
     :root{
-      --blue:#2f8be6;
-      --dark-blue:#1763b1;
-      --sidebar:#1f73c9;
-      --muted:#777;
-      --card-bg:#fff;
-      font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      --bg:#f3f6fa;
+      --orange:#e67e22;
+      --header:#2c3e50;
+      --thead:#ddd;
+      --equip:#fff8c6;
+      --st-c:#6a0dad; /* ungu tua */
+      --st-ip:#1f77b4; /* biru */
+      --dev-neg:#c0392b;
+      --date-green:#116530; /* hijau tua */
+      --border:#ccc;
     }
-    body{ margin:0; background:#f3f6f9; color:#222; }
+    body{
+      margin:0;
+      font-family: Arial, sans-serif;
+      background:var(--bg);
+      color:#222;
+    }
     header{
-      background:var(--blue);
+      background:var(--header);
       color:#fff;
-      padding:18px 24px;
+      padding:12px 16px;
+      font-weight:700;
       text-align:center;
-      font-size:34px;
+    }
+    nav{
+      display:flex;
+      gap:8px;
+      padding:8px 16px;
+      background:#fff;
+      border-bottom:1px solid #eee;
+    }
+    .tab-btn{
+      padding:6px 12px;
+      background:#f0f0f0;
+      border:1px solid #ddd;
+      border-radius:6px;
+      cursor:pointer;
+      font-weight:600;
+    }
+    .tab-btn.active{ background:var(--orange); color:#fff; border-color:transparent; }
+
+    .container{ padding:14px 16px; }
+
+    .category-wrap{
+      margin-bottom:16px;
+      border-radius:8px;
+      box-shadow:0 6px 12px rgba(0,0,0,0.06);
+      overflow:hidden;
+      background:#fff;
+    }
+    .category{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      padding:10px 12px;
+      background:var(--orange);
+      color:#fff;
+      font-weight:600;
+      font-size:14px;
+    }
+    .cat-controls button{
+      background: rgba(255,255,255,0.18);
+      border:none;
+      color:#fff;
+      padding:4px 8px;
+      margin-left:6px;
+      border-radius:4px;
+      cursor:pointer;
       font-weight:700;
     }
-    .container{ display:flex; min-height:calc(100vh - 80px); }
-    .sidebar{
-      width:200px;
-      background:var(--sidebar);
-      color:#fff;
-      padding-top:20px;
-      box-shadow: 2px 0 6px rgba(0,0,0,0.06);
+
+    .table-wrap{ padding:6px; background:#fff; border-top:1px solid var(--border); }
+
+    table{
+      width:100%;
+      border-collapse:collapse;
+      table-layout:fixed;
+      font-size:12px;
     }
-    .sidebar ul{ list-style:none; padding:0; margin:0; }
-    .sidebar .menu-item{
-      padding:12px 18px;
+    thead th{
+      background:var(--thead);
+      border:1px solid var(--border);
+      padding:3px 4px;         /* diperkecil */
+      font-weight:400;
+      font-size:11px;
+      position:sticky;
+      top:0;
+      z-index:2;
+    }
+    tbody td{
+      border:1px solid var(--border);
+      padding:2px 4px;         /* diperkecil */
+      vertical-align:middle;
+      height:22px;             /* lebih ramping */
+      overflow:hidden;
+      font-size:13px;
+      text-align:center;
+    }
+
+    /* columns */
+    .c-no{ width:36px; min-width:36px; }
+    .c-equip{ width:90px; min-width:70px; text-align:left; padding-left:6px; }
+    .c-status{ width:80px; min-width:70px; }
+    .c-desc{ width:160px; min-width:120px; text-align:left; padding-left:6px; }
+    .c-progress{ width:200px; min-width:140px; text-align:left; padding-left:6px; }
+    .c-small{ width:56px; min-width:46px; }
+    .c-dt{ width:110px; min-width:100px; } /* diperkecil */
+    .c-num{ width:64px; min-width:54px; }
+    .c-action{ width:60px; min-width:50px; }
+
+    tr.equip-row{ background:var(--equip); }
+    tr.sub-row{ background:#fff; }
+
+    /* contenteditable styling (no box) */
+    td[contenteditable="true"]{ outline:none; cursor:text; }
+    td[contenteditable="true"]::placeholder{ color:#999; }
+
+    /* small action buttons */
+    .icon-btn{
+      border:none;
+      background:#e6e6e6;
+      padding:4px 6px;
+      border-radius:4px;
       cursor:pointer;
-      color:#fff;
-      border-left:4px solid transparent;
+      margin-left:4px;
+      font-weight:700;
     }
-    .sidebar .menu-item.active{ background: rgba(0,0,0,0.08); border-left-color:#0b4f85; }
-    .content{
-      flex:1; padding:22px 28px;
+    .icon-del{ background:#f2b8b8; }
+    .icon-add{ background:#c8e6c9; }
+
+    /* status colors */
+    .st-c{ background:var(--st-c) !important; color:#fff !important; font-weight:700; }
+    .st-ip{ background:var(--st-ip) !important; color:#fff !important; font-weight:700; }
+
+    .dev-negative{ background:var(--dev-neg); color:#fff; }
+
+    /* d-part filled */
+    .filled{ background:#fff8c6; }
+
+    /* date green */
+    .date-green{ background:var(--date-green); color:#fff; font-weight:700; }
+
+    /* export buttons */
+    .controls{ display:flex; gap:8px; margin-bottom:12px; }
+    .controls button{ padding:8px 10px; border-radius:6px; border:none; cursor:pointer; background:#3498db; color:#fff; }
+
+    /* print adjustments */
+    @page { size: A4 landscape; margin: 6mm; }
+    @media print {
+      body { background: #fff; -webkit-print-color-adjust: exact; }
+      nav, .controls, .icon-btn, .cat-controls { display: none !important; }
+      table { page-break-inside: auto; width:100%; }
+      thead { display:table-header-group; }
+      tr { page-break-inside: avoid; page-break-after: auto; }
+      td, th { padding: 2px 4px; font-size:10px; }
     }
-    h2{ margin-top:4px; color:#222; }
-    .content-section{ display:none; }
-    .content-section.active{ display:block; }
-    textarea{ width:100%; box-sizing:border-box; padding:10px; border:1px solid #ddd; border-radius:4px; }
-    .add-order-section{ background:#fff; padding:12px; border-radius:6px; box-shadow:0 1px 2px rgba(0,0,0,0.03); margin-bottom:12px; }
-    .status-message{ margin-top:8px; font-style:italic; }
-    .filter-group{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:12px; }
-    .filter-group label{ display:flex; flex-direction:column; font-size:13px; color:var(--muted); }
-    .filter-group input, .filter-group select{ padding:6px 8px; width:120px; border-radius:4px; border:1px solid #ddd; }
-    .filter-group button{ background:var(--blue); color:#fff; border:0; padding:6px 10px; border-radius:6px; cursor:pointer; }
-    table{ width:100%; border-collapse:collapse; background:#fff; border-radius:6px; overflow:hidden; box-shadow:0 1px 2px rgba(0,0,0,0.04); }
-    th{ background:var(--dark-blue); color:#fff; padding:8px; text-align:left; font-size:13px; }
-    td{ padding:8px; border-bottom:1px solid #eee; font-size:13px; vertical-align:middle; }
-    .action-btn{ margin-right:6px; padding:4px 8px; border-radius:4px; border:0; cursor:pointer; font-size:12px; }
-    .edit-btn{ background:#4da6ff; color:#fff; }
-    .save-btn{ background:#28a745; color:#fff; }
-    .cancel-btn{ background:#777; color:#fff; }
-    .delete-btn{ background:#e04b4b; color:#fff; }
-    .small{ font-size:12px; color:var(--muted); }
-    .hidden{ display:none; }
-    @media (max-width:900px){ .filter-group input, .filter-group select{ width:100px; } }
+
+    /* responsive */
+    @media (max-width:900px){
+      .c-desc, .c-progress{ width:120px; }
+      .c-dt{ width:100px; }
+    }
   </style>
 </head>
 <body>
-  <header>Ndarboe.net</header>
+  <header>LTR Daily Status</header>
+
+  <nav>
+    <button class="tab-btn active" data-tab="daily">1. Daily LTR</button>
+    <button class="tab-btn" data-tab="summary">2. Summary LTR</button>
+  </nav>
 
   <div class="container">
-    <nav class="sidebar">
-      <ul>
-        <li class="menu-item active" data-menu="upload">Upload File</li>
-        <li class="menu-item" data-menu="lembar">Lembar Kerja</li>
-        <li class="menu-item" data-menu="lom">Lembar Order Monthly</li>
-        <li class="menu-item" data-menu="summary">Summary CRM</li>
-        <li class="menu-item" data-menu="download">Download Excel</li>
-      </ul>
-    </nav>
-
-    <main class="content">
-      <!-- Upload -->
-      <section id="upload" class="content-section active">
-        <h2>Upload File</h2>
-        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px;">
-          <label>
-            <div class="small">Pilih Jenis File</div>
-            <select id="file-select">
-              <option value="IW39">IW39</option>
-              <option value="SUM57">SUM57</option>
-              <option value="Planning">Planning</option>
-              <option value="Budget">Budget</option>
-              <option value="Data1">Data1</option>
-              <option value="Data2">Data2</option>
-              <option value="LOM">LOM</option>
-            </select>
-          </label>
-
-          <label>
-            <div class="small">Pilih File (.xlsx)</div>
-            <input type="file" id="file-input" accept=".xlsx,.xls" />
-          </label>
-
-          <div style="display:flex;gap:8px;">
-            <button id="upload-btn">Upload</button>
-            <button id="clear-files-btn" style="background:#777;color:#fff;border:0;padding:6px 10px;border-radius:6px;cursor:pointer">Clear</button>
-          </div>
-        </div>
-
-        <div id="upload-status" class="small"></div>
-        <div class="small" style="margin-top:10px;color:var(--muted)">
-          Catatan: Upload semua file sumber (IW39, SUM57, Planning, Data1, Data2, LOM) sebelum klik <strong>Lembar Kerja → Refresh</strong>.
-        </div>
-      </section>
-
-      <!-- Lembar Kerja -->
-      <section id="lembar" class="content-section">
-        <h2>Lembar Kerja</h2>
-
-        <div class="filter-group">
-          <label>Room: <input type="text" id="filter-room" placeholder="Filter Room" /></label>
-          <label>Order: <input type="text" id="filter-order" placeholder="Filter Order" /></label>
-          <label>CPH: <input type="text" id="filter-cph" placeholder="Filter CPH" /></label>
-          <label>MAT: <input type="text" id="filter-mat" placeholder="Filter MAT" /></label>
-          <label>Section: <input type="text" id="filter-section" placeholder="Filter Section" /></label>
-          <label>Month:
-            <select id="filter-month">
-              <option value="">-- All --</option>
-            </select>
-          </label>
-
-          <div style="margin-left:auto;display:flex;gap:8px;">
-            <button id="filter-btn">Filter</button>
-            <button id="reset-btn">Reset</button>
-            <button id="refresh-btn">Refresh</button>
-            <button id="save-btn">Save JSON</button>
-            <button id="load-btn">Load JSON</button>
-          </div>
-        </div>
-
-        <div style="overflow:auto;max-height:520px;">
-          <table id="output-table">
-            <thead>
-              <tr>
-                <th>Room</th>
-                <th>Order Type</th>
-                <th>Order</th>
-                <th>Description</th>
-                <th>Created On</th>
-                <th>User Status</th>
-                <th>MAT</th>
-                <th>CPH</th>
-                <th>Section</th>
-                <th>Status Part</th>
-                <th>Aging</th>
-                <th>Month</th>
-                <th>Cost</th>
-                <th>Reman</th>
-                <th>Include</th>
-                <th>Exclude</th>
-                <th>Planning</th>
-                <th>Status AMT</th>
-              </tr>
-            </thead>
-            <tbody></tbody>
-          </table>
-        </div>
-      </section>
-
-     <section id="lom" class="content-section">
-  <h2>Lembar Order Monthly</h2>
-
-  <!-- Tambah Order -->
-  <div class="lom-add-order-section">
-    <label for="lom-add-order-input">
-      Masukkan Order (pisah dengan koma atau enter):
-    </label><br />
-    <textarea 
-      id="lom-add-order-input" 
-      rows="3" 
-      placeholder="Contoh: ORD004, ORD005, ORD006"></textarea>
-    <br />
-    <div style="margin-top:8px; display:flex; gap:8px;">
-      <button id="lom-add-order-btn">Add Orders</button>
-      <button id="lom-save-btn">Save</button>
+    <div class="controls">
+      <button id="btnAddCategory">+ Add Category</button>
+      <button id="btnExportExcel">Download Excel</button>
+      <button id="btnExportPDF">Download PDF</button>
     </div>
-    <div id="lom-add-order-status" class="status-message"></div>
-  </div>
 
-  <!-- Filter -->
-  <div class="filter-group">
-    <label for="lom-filter-order">
-      Order:
-      <input type="text" id="lom-filter-order" placeholder="Filter Order" />
-    </label>
-    <div style="margin-left:auto; display:flex; gap:8px;">
-      <button id="lom-filter-btn">Filter</button>
-      <button id="lom-reset-btn">Reset</button>
-      <button id="lom-refresh-btn">Refresh</button>
+    <!-- categories list -->
+    <div id="categoriesList"></div>
+
+    <!-- summary placeholder -->
+    <div id="summary" style="display:none;">
+      <h3>Summary LTR</h3>
+      <p>Coming soon...</p>
     </div>
   </div>
 
-  <!-- Tabel -->
-  <div style="overflow:auto; max-height:520px;">
-    <table id="lom-table">
-      <thead>
-        <tr>
-          <th>Order</th>
-          <th>Month</th>
-          <th>Cost</th>
-          <th>Reman</th>
-          <th>Planning</th>
-          <th>Status</th>
-        </tr>
-      </thead>
-      <tbody id="lom-table-body"></tbody>
-    </table>
-  </div>
-</section>
+  <script>
+  // TAB
+  document.querySelectorAll('.tab-btn').forEach(b=>{
+    b.addEventListener('click', ()=>{ document.querySelectorAll('.tab-btn').forEach(x=>x.classList.remove('active')); b.classList.add('active');
+      const t = b.dataset.tab;
+      if(t==='daily'){ document.getElementById('categoriesList').style.display='block'; document.getElementById('summary').style.display='none'; }
+      else { document.getElementById('categoriesList').style.display='none'; document.getElementById('summary').style.display='block'; }
+    });
+  });
 
-<!-- ===================== SUMMARY ===================== -->
-<section id="summary" class="content-section">
-  <h2>Summary CRM</h2>
-  <p class="small">(Kosong dulu, nanti kita isi)</p>
-</section>
+  // Date columns dynamic (today -1 .. +6)
+  function getDateCols(){
+    const arr=[]; let today=new Date(); today.setDate(today.getDate()-1);
+    for(let i=0;i<8;i++){ const d=new Date(today); d.setDate(today.getDate()+i); arr.push({obj:d,label:String(d.getDate())}); }
+    return arr;
+  }
+  const DATE_COLS = getDateCols();
 
-<!-- ===================== DOWNLOAD ===================== -->
-<section id="download" class="content-section">
-  <h2>Download Excel</h2>
-  <p class="small">(Nanti kita tambahin fitur export)</p>
-</section>
+  // IDs
+  let catIdCounter = 0;
 
+  document.getElementById('btnAddCategory').addEventListener('click', ()=>addCategory());
+  document.getElementById('btnExportExcel').addEventListener('click', ()=>exportAllTablesToExcel());
+  document.getElementById('btnExportPDF').addEventListener('click', ()=>window.print());
 
+  function addCategory(){
+    const title = prompt('Masukkan nama Category (contoh: Loading - Sitarum):', 'Loading - Sitarum');
+    if(!title) return;
+    catIdCounter++;
+    const cid = 'cat-'+catIdCounter;
+    const wrap = document.createElement('div'); wrap.className='category-wrap'; wrap.id = cid;
 
+    // header
+    const header = document.createElement('div'); header.className='category';
+    header.innerHTML = `<div class="cat-title">${escapeHtml(title)}</div>
+                        <div class="cat-controls">
+                          <button onclick="renameCategory('${cid}')">R</button>
+                          <button onclick="deleteCategory('${cid}')">D</button>
+                        </div>`;
+    wrap.appendChild(header);
 
+    // table
+    const tw = document.createElement('div'); tw.className='table-wrap';
+    const table = document.createElement('table');
+    table.id = cid + '-table';
+    const thead = document.createElement('thead');
+    const trh = document.createElement('tr');
+
+    const headers = [
+      {k:'no',label:'No',cls:'c-no'},
+      {k:'equip',label:'Equip',cls:'c-equip'},
+      {k:'status',label:'Status',cls:'c-status'},
+      {k:'description',label:'Description',cls:'c-desc'},
+      {k:'progress',label:'Progress',cls:'c-progress'},
+      {k:'st',label:'St',cls:'c-small'},
+      {k:'delay',label:'Delay',cls:'c-small'},
+      {k:'pic',label:'PIC',cls:'c-small'},
+      {k:'down',label:'Down Time',cls:'c-dt'},
+      {k:'up',label:'Uptime',cls:'c-dt'},
+      {k:'plan',label:'Plan',cls:'c-num'},
+      {k:'actual',label:'Actual',cls:'c-num'},
+      {k:'dev',label:'Dev',cls:'c-num'},
+      {k:'pct',label:'%',cls:'c-num'},
+    ];
+    headers.forEach(h=>{ const th=document.createElement('th'); if(h.cls) th.className=h.cls; th.textContent=h.label; trh.appendChild(th); });
+
+    // date cols
+    DATE_COLS.forEach(dc=>{ const th=document.createElement('th'); th.textContent = dc.label; trh.appendChild(th); });
+
+    // Part..Weat + Action (rename labels here)
+    ['Part','Sup','Lab','Weat','Action'].forEach(lbl=>{ const th=document.createElement('th'); th.textContent = lbl; if(lbl==='Action') th.className='c-action'; trh.appendChild(th); });
+
+    thead.appendChild(trh); table.appendChild(thead);
+
+    const tbody = document.createElement('tbody'); tbody.id = cid + '-tbody'; table.appendChild(tbody);
+    tw.appendChild(table);
+    wrap.appendChild(tw);
+
+    // add new button (below)
+    const addWrap = document.createElement('div'); addWrap.style.padding='8px';
+    const addBtn = document.createElement('button'); addBtn.textContent = '+ Add New (Equip)'; addBtn.className = 'icon-btn';
+    addBtn.onclick = ()=> addEquip(tbody, cid);
+    addWrap.appendChild(addBtn);
+    wrap.appendChild(addWrap);
+
+    document.getElementById('categoriesList').appendChild(wrap);
+    wrap.dataset.nextEquip = '1';
+  }
+
+  function renameCategory(cid){
+    const wrap = document.getElementById(cid);
+    const cur = wrap.querySelector('.cat-title').textContent;
+    const n = prompt('Rename category:', cur);
+    if(n) wrap.querySelector('.cat-title').textContent = n;
+  }
+  function deleteCategory(cid){
+    if(!confirm('Hapus category?')) return;
+    document.getElementById(cid).remove();
+  }
+
+  // add equip row to tbody; numbering starts from 1 per category
+  function addEquip(tbody, cid){
+    const wrap = document.getElementById(cid);
+    let next = parseInt(wrap.dataset.nextEquip || '1',10);
+    const equipId = cid + '-equip-' + next;
+    wrap.dataset.nextEquip = String(next+1);
+
+    const tr = document.createElement('tr'); tr.className='equip-row'; tr.dataset.equipId = equipId;
+
+    // No cell (click to toggle sub)
+    const tdNo = document.createElement('td'); tdNo.className='c-no';
+    tdNo.textContent = ''; // will fill after append
+    tdNo.style.cursor = 'pointer';
+    tdNo.addEventListener('click', ()=> toggleSub(equipId, tdNo));
+    tr.appendChild(tdNo);
+
+    // Equip, Status, Description, Progress (contenteditable)
+    const names = ['equip','status','description','progress'];
+    for(let i=0;i<4;i++){
+      const td=document.createElement('td'); td.contentEditable = 'true';
+      if(names[i]==='description' || names[i]==='progress') td.style.textAlign='left';
+      tr.appendChild(td);
+    }
+
+    // St, Delay, PIC
+    ['st','delay','pic'].forEach(k=>{
+      const td=document.createElement('td'); td.contentEditable='true'; td.className='c-small'; td.style.textAlign='center';
+      td.addEventListener('input', ()=> onStChange(tr)); // optional
+      tr.appendChild(td);
+    });
+
+    // Down Time (input)
+    const tdDown = document.createElement('td'); tdDown.className='c-dt';
+    const inDown = document.createElement('input'); inDown.type='datetime-local';
+    inDown.style.border='none'; inDown.style.background='transparent'; inDown.style.width='100%';
+    inDown.addEventListener('change', ()=> recalcRow(tr));
+    tdDown.appendChild(inDown); tr.appendChild(tdDown);
+
+    // Uptime
+    const tdUp = document.createElement('td'); tdUp.className='c-dt';
+    const inUp = document.createElement('input'); inUp.type='datetime-local';
+    inUp.style.border='none'; inUp.style.background='transparent'; inUp.style.width='100%';
+    inUp.addEventListener('change', ()=> recalcRow(tr));
+    tdUp.appendChild(inUp); tr.appendChild(tdUp);
+
+    // Plan
+    const tdPlan = document.createElement('td'); tdPlan.contentEditable='true'; tdPlan.className='c-num';
+    tdPlan.addEventListener('input', ()=> recalcRow(tr));
+    tr.appendChild(tdPlan);
+
+    // Actual
+    const tdActual = document.createElement('td'); tdActual.className='actual c-num'; tdActual.textContent='0'; tr.appendChild(tdActual);
+
+    // Dev
+    const tdDev = document.createElement('td'); tdDev.className='dev c-num'; tdDev.textContent='0'; tr.appendChild(tdDev);
+
+    // %
+    const tdPct = document.createElement('td'); tdPct.className='pct c-num'; tdPct.textContent='0%'; tr.appendChild(tdPct);
+
+    // Date columns
+    for(let i=0;i<DATE_COLS.length;i++){ const td=document.createElement('td'); td.className='date-col'; td.textContent=''; tr.appendChild(td); }
+
+    // Part..Weat (no "D-")
+    ['Part','Sup','Lab','Weat'].forEach(n=>{
+      const td=document.createElement('td'); td.contentEditable='true';
+      td.addEventListener('input', ()=> td.classList.toggle('filled', td.innerText.trim() !== ''));
+      tr.appendChild(td);
+    });
+
+    // Action small: + sub and - delete
+    const tdAction = document.createElement('td'); tdAction.className='c-action';
+    const addBtn = document.createElement('button'); addBtn.textContent = '+'; addBtn.className='icon-btn icon-add';
+    addBtn.addEventListener('click', ()=> addSub(equipId, tr));
+    const delBtn = document.createElement('button'); delBtn.textContent = '-'; delBtn.className='icon-btn icon-del';
+    delBtn.addEventListener('click', ()=> {
+      if(confirm('Hapus equip?')) { removeSubs(equipId, tbody); tr.remove(); refreshNumbers(tbody, cid); }
+    });
+    tdAction.appendChild(addBtn); tdAction.appendChild(delBtn); tr.appendChild(tdAction);
+
+    tbody.appendChild(tr);
+    refreshNumbers(tbody, cid);
+  }
+
+  function addSub(equipId, equipRow){
+    const tbody = equipRow.parentElement;
+    const trSub = document.createElement('tr'); trSub.className='sub-row'; trSub.dataset.parent = equipId;
+
+    const cols = equipRow.children.length;
+    for(let i=0;i<cols;i++){
+      const td = document.createElement('td');
+      // editable for progress(index 4), st(5), delay(6), pic(7)
+      const lastIndex = cols - 1;
+      const dpartStart = lastIndex - 4; // Part starts here
+      if(i===4 || i===5 || i===6 || i===7){
+        td.contentEditable='true';
+        if(i===4){ td.style.textAlign='left'; } // progress in sub left-aligned
+        if(i===5){
+          // St cell in sub: style on input and recompute percent
+          td.addEventListener('input', ()=>{
+            const v = (td.innerText||'').trim().toUpperCase();
+            td.classList.remove('st-c','st-ip');
+            if(v==='C') td.classList.add('st-c');
+            else if(v==='IP') td.classList.add('st-ip');
+            recomputePercentForEquip(equipRow);
+          });
+        }
+      } else if(i >= dpartStart && i <= dpartStart + 3){
+        td.contentEditable='true';
+        td.addEventListener('input', ()=> td.classList.toggle('filled', td.innerText.trim() !== ''));
+      } else if(i === cols -1){
+        const del = document.createElement('button'); del.textContent='-'; del.className='icon-btn icon-del';
+        del.addEventListener('click', ()=> { if(confirm('Hapus sub?')){ trSub.remove(); recomputePercentForEquip(equipRow); }});
+        td.appendChild(del);
+      }
+      trSub.appendChild(td);
+    }
+
+    // insert after last sub of this equip or directly after equip
+    let insertAfter = equipRow;
+    let next = equipRow.nextElementSibling;
+    while(next && next.classList.contains('sub-row') && next.dataset.parent === equipId){ insertAfter = next; next = next.nextElementSibling; }
+    insertAfter.insertAdjacentElement('afterend', trSub);
+
+    recomputePercentForEquip(equipRow);
+  }
+
+  function removeSubs(equipId, tbody){
+    const subs = Array.from(tbody.querySelectorAll('tr.sub-row'));
+    subs.forEach(s=> { if(s.dataset.parent===equipId) s.remove(); });
+  }
+
+  function refreshNumbers(tbody, cid){
+    const rows = Array.from(tbody.querySelectorAll('tr.equip-row'));
+    rows.forEach((r,i)=>{ const noCell = r.querySelector('td.c-no'); if(noCell) noCell.textContent = (i+1); else r.children[0].textContent = (i+1); });
+    rows.forEach(r=> recomputePercentForEquip(r));
+  }
+
+  function toggleSub(equipId, tdNo){
+    const tbody = tdNo.closest('tbody');
+    const subs = Array.from(tbody.querySelectorAll('tr.sub-row'));
+    let any=false;
+    for(const s of subs){ if(s.dataset.parent === equipId){ any=true; break; } }
+    if(!any) return;
+    subs.forEach(s=>{ if(s.dataset.parent === equipId){ s.style.display = (s.style.display === 'none') ? '' : 'none'; }});
+  }
+
+  function recomputePercentForEquip(equipRow){
+    const tbody = equipRow.parentElement;
+    const equipId = equipRow.dataset.equipId;
+    let sub = equipRow.nextElementSibling;
+    let total = 0, complete = 0;
+    const headers = Array.from(equipRow.closest('table').querySelectorAll('thead th')).map(h=>h.textContent.trim());
+    const stIndex = headers.indexOf('St');
+    while(sub && sub.classList.contains('sub-row')){
+      if(sub.dataset.parent === equipId){
+        total++;
+        const stCell = sub.children[stIndex];
+        if(stCell && (stCell.innerText || '').trim().toUpperCase() === 'C') complete++;
+      }
+      sub = sub.nextElementSibling;
+    }
+    const pctCell = equipRow.querySelector('.pct');
+    if(total>0){ const pct = Math.round((complete/total)*100); if(pctCell) pctCell.textContent = pct + '%'; }
+    else { if(pctCell) pctCell.textContent = '0%'; }
+  }
+
+  // recalc actual/dev when down/up/plan changed
+  function recalcRow(tr){
+    const ths = Array.from(tr.closest('table').querySelectorAll('thead th')).map(h=>h.textContent.trim());
+    const downIdx = ths.indexOf('Down Time');
+    const upIdx = ths.indexOf('Uptime');
+    const planIdx = ths.indexOf('Plan');
+    const actualIdx = ths.indexOf('Actual');
+    const devIdx = ths.indexOf('Dev');
+
+    const downInput = tr.children[downIdx]?.querySelector('input');
+    const upInput = tr.children[upIdx]?.querySelector('input');
+    let actual = 0;
+    if(downInput && upInput && downInput.value && upInput.value){
+      const d = new Date(downInput.value);
+      const u = new Date(upInput.value);
+      if(!isNaN(d) && !isNaN(u) && u > d) actual = (u - d) / 36e5; // hours
+    }
+    if(tr.children[actualIdx]) tr.children[actualIdx].textContent = actual ? String(Math.round(actual)) : '0';
+    const planVal = parseFloat(tr.children[planIdx].innerText || tr.children[planIdx].textContent || '0') || 0;
+    const dev = actual - planVal;
+    if(tr.children[devIdx]){
+      tr.children[devIdx].textContent = String(Math.round(dev));
+      tr.children[devIdx].classList.toggle('dev-negative', dev < 0);
+    }
+
+    // mark date range
+    const upVal = upInput ? upInput.value : null;
+    const downVal = downInput ? downInput.value : null;
+    markDateRange(tr, upVal, downVal);
+  }
+
+  function markDateRange(tr, upVal, downVal){
+    const ths = Array.from(tr.closest('table').querySelectorAll('thead th')).map(h=>h.textContent.trim());
+    const startIndex = ths.indexOf(DATE_COLS[0].label);
+    if(startIndex === -1) return;
+    for(let i=0;i<DATE_COLS.length;i++){ const c = tr.children[startIndex + i]; if(c) c.classList.remove('date-green'); }
+    if(!upVal || !downVal) return;
+    const up = new Date(upVal), down = new Date(downVal);
+    if(isNaN(up) || isNaN(down)) return;
+    for(let i=0;i<DATE_COLS.length;i++){ const dayNum = DATE_COLS[i].obj.getDate();
+      if(dayNum >= 15 && dayNum >= down.getDate() && dayNum <= up.getDate()){
+        const cell = tr.children[startIndex + i]; if(cell) cell.classList.add('date-green');
+      }
+    }
+  }
+
+  // export: collect all tables into one workbook-like HTML
+  function exportAllTablesToExcel(){
+    const tables = document.querySelectorAll('.table-wrap table');
+    if(tables.length===0){ alert('No data to export'); return; }
+    let html = '<html><head><meta charset="UTF-8"></head><body>';
+    tables.forEach((t, idx)=>{ html += '<h3>' + escapeHtml(t.closest('.category-wrap').querySelector('.cat-title').textContent) + '</h3>'; html += t.outerHTML; html += '<br/>'; });
+    html += '</body></html>';
+    const blob = new Blob([html], {type: 'application/vnd.ms-excel'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = 'LTR_Daily_Status.xls'; a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  // helper
+  function escapeHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  </script>
+</body>
+</html>
