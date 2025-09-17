@@ -194,6 +194,55 @@
     </div>
   </div>
 
+<!-- Firebase SDK -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.27.0/firebase-app.js";
+  import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.27.0/firebase-analytics.js";
+  import { getFirestore, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/11.27.0/firebase-firestore.js";
+
+  // Firebase configuration
+  const firebaseConfig = {
+    apiKey: "AIzaSyCET8kx3EUAghmu6ctKUoiVY1RN2MIXv_s",
+    authDomain: "daily-ltr.firebaseapp.com",
+    projectId: "daily-ltr",
+    storageBucket: "daily-ltr.firebasestorage.app",
+    messagingSenderId: "227395041351",
+    appId: "1:227395041351:web:b3deaab08be421bb3bd962",
+    measurementId: "G-VXF6HH5FDW"
+  };
+
+  // Initialize Firebase
+  const app = initializeApp(firebaseConfig);
+  const analytics = getAnalytics(app);
+  const db = getFirestore(app);
+
+  // Fungsi untuk push data ke Firestore
+  async function saveEquipData(category, equipData) {
+    try {
+      const docRef = await addDoc(collection(db, "daily-ltr"), {
+        category: category,
+        equip: equipData,
+        timestamp: new Date()
+      });
+      console.log("Document written with ID: ", docRef.id);
+      alert("Data berhasil disimpan!");
+    } catch (e) {
+      console.error("Error adding document: ", e);
+      alert("Gagal menyimpan data!");
+    }
+  }
+
+  // Pasang listener tombol (pastikan tombol sudah ada di HTML)
+  const saveBtn = document.getElementById("saveBtn");
+  if(saveBtn){
+    saveBtn.addEventListener("click", () => {
+      const category = document.getElementById("categoryInput")?.value || "DefaultCategory";
+      const equip = document.getElementById("equipInput")?.value || "DefaultEquip";
+      saveEquipData(category, equip);
+    });
+  }
+</script>
+
   <script>
   // TAB
   document.querySelectorAll('.tab-btn').forEach(b=>{
