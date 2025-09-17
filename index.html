@@ -197,12 +197,9 @@
 <!-- Firebase SDK -->
 <!-- Firebase Input & Save -->
 <div style="margin-bottom:12px; padding:8px; background:#fff; border-radius:6px; box-shadow:0 4px 8px rgba(0,0,0,0.05);">
-  <input type="text" id="categoryInput" placeholder="Category" style="padding:4px 6px; margin-right:6px; border-radius:4px; border:1px solid #ccc;">
-  <input type="text" id="equipInput" placeholder="Equipment" style="padding:4px 6px; margin-right:6px; border-radius:4px; border:1px solid #ccc;">
-  <button id="saveBtn" style="padding:6px 10px; border:none; border-radius:4px; background:var(--orange); color:#fff; cursor:pointer;">Save to Firebase</button>
+  <button id="saveBtn" style="padding:6px 10px; border:none; border-radius:4px; background:var(--orange); color:#fff; cursor:pointer;">Save All to Firebase</button>
 </div>
 
-<!-- Firebase SDK -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/11.27.0/firebase-app.js";
   import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.27.0/firebase-analytics.js";
@@ -224,37 +221,80 @@
   const analytics = getAnalytics(app);
   const db = getFirestore(app);
 
-  // Fungsi push data ke Firestore
-  async function saveEquipData(category, equipData) {
+  // Fungsi untuk push semua data ke Firestore
+  async function saveAllData() {
     try {
-      const docRef = await addDoc(collection(db, "daily-ltr"), {
-        category: category,
-        equip: equipData,
-        timestamp: new Date()
+      const categories = [];
+      const allCats = document.querySelectorAll('.category-wrap');
+
+      allCats.forEach(cat => {
+        const catName = cat.querySelector('.cat-title')?.textContent.trim() || "Unnamed Category";
+        const equips = [];
+        const equipRows = cat.querySelectorAll('tr.equip-row');
+
+        equipRows.forEach(equip => {
+          const equipObj = {
+            name: equip.children[1]?.textContent.trim() || "Unnamed Equip",
+            status: equip.children[2]?.textContent.trim() || "",
+            description: equip.children[3]?.textContent.trim() || "",
+            progress: equip.children[4]?.textContent.trim() || "",
+            st: equip.children[5]?.textContent.trim() || "",
+            delay: equip.children[6]?.textContent.trim() || "",
+            pic: equip.children[7]?.textContent.trim() || "",
+            down: equip.children[8]?.querySelector('input')?.value || "",
+            up: equip.children[9]?.querySelector('input')?.value || "",
+            plan: equip.children[10]?.textContent.trim() || "",
+            actual: equip.children[11]?.textContent.trim() || "",
+            dev: equip.children[12]?.textContent.trim() || "",
+            pct: equip.children[13]?.textContent.trim() || "",
+            dates: [],
+            part: equip.children[equip.children.length-5]?.textContent.trim() || "",
+            sup: equip.children[equip.children.length-4]?.textContent.trim() || "",
+            lab: equip.children[equip.children.length-3]?.textContent.trim() || "",
+            weat: equip.children[equip.children.length-2]?.textContent.trim() || "",
+            sub: []
+          };
+
+          // Ambil kolom tanggal
+          const dateCols = equip.querySelectorAll('td.date-col');
+          dateCols.forEach(d => equipObj.dates.push(d.textContent.trim()));
+
+          // Ambil sub-rows
+          let sub = equip.nextElementSibling;
+          while(sub && sub.classList.contains('sub-row') && sub.dataset.parent === equip.dataset.equipId) {
+            const subObj = {
+              st: sub.children[5]?.textContent.trim() || "",
+              part: sub.children[sub.children.length-5]?.textContent.trim() || "",
+              sup: sub.children[sub.children.length-4]?.textContent.trim() || "",
+              lab: sub.children[sub.children.length-3]?.textContent.trim() || "",
+              weat: sub.children[sub.children.length-2]?.textContent.trim() || ""
+            };
+            equipObj.sub.push(subObj);
+            sub = sub.nextElementSibling;
+          }
+
+          equips.push(equipObj);
+        });
+
+        categories.push({ name: catName, equips: equips });
       });
+
+      // Kirim ke Firestore
+      const docRef = await addDoc(collection(db, "daily-ltr"), {
+        timestamp: new Date(),
+        categories: categories
+      });
+
       console.log("Document written with ID: ", docRef.id);
-      alert("Data berhasil disimpan!");
-    } catch (e) {
+      alert("Semua data berhasil disimpan ke Firebase!");
+    } catch(e) {
       console.error("Error adding document: ", e);
       alert("Gagal menyimpan data!");
     }
   }
 
-  // Pasang listener tombol Save
-  const saveBtn = document.getElementById("saveBtn");
-  if(saveBtn){
-    saveBtn.addEventListener("click", () => {
-      const category = document.getElementById("categoryInput")?.value.trim();
-      const equip = document.getElementById("equipInput")?.value.trim();
-      if(!category || !equip){
-        alert("Isi category dan equipment dulu!");
-        return;
-      }
-      saveEquipData(category, equip);
-    });
-  } else {
-    console.warn("Tombol #saveBtn tidak ditemukan.");
-  }
+  // Listener tombol
+  document.getElementById("saveBtn").addEventListener("click", saveAllData);
 </script>
 
   <script>
