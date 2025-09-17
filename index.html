@@ -201,12 +201,10 @@
 </div>
 
 <script type="module">
-  // Import Firebase modul yang tersedia
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
   import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-analytics.js";
   import { getFirestore, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-  // Konfigurasi Firebase
   const firebaseConfig = {
     apiKey: "AIzaSyCET8kx3EUAghmu6ctKUoiVY1RN2MIXv_s",
     authDomain: "daily-ltr.firebaseapp.com",
@@ -217,16 +215,20 @@
     measurementId: "G-VXF6HH5FDW"
   };
 
-  // Inisialisasi Firebase
   const app = initializeApp(firebaseConfig);
   const analytics = getAnalytics(app);
   const db = getFirestore(app);
 
-  // ===================== SAVE DATA =====================
-  async function saveAllData() {
+  // ===================== SAVE DATA SAFE =====================
+  async function saveAllDataSafe() {
     try {
       const categories = [];
       const allCats = document.querySelectorAll('.category-wrap');
+
+      if(allCats.length === 0) {
+        alert("Tidak ada data untuk disimpan");
+        return;
+      }
 
       allCats.forEach(cat => {
         const catName = cat.querySelector('.cat-title')?.textContent.trim() || "Unnamed Category";
@@ -257,6 +259,7 @@
             sub: []
           };
 
+          // Ambil sub rows jika ada
           let sub = equip.nextElementSibling;
           while(sub && sub.classList.contains('sub-row') && sub.dataset.parent === equip.dataset.equipId){
             const sc = sub.children;
@@ -277,11 +280,7 @@
         categories.push({ name: catName, equips });
       });
 
-      if(categories.length===0){ 
-        alert("Tidak ada data untuk disimpan"); 
-        return; 
-      }
-
+      // Push ke Firebase
       const docRef = await addDoc(collection(db, "daily-ltr"), {
         timestamp: new Date().toISOString(),
         categories
@@ -295,7 +294,7 @@
     }
   }
 
-  document.getElementById("saveBtn").addEventListener("click", saveAllData);
+  document.getElementById("saveBtn").addEventListener("click", saveAllDataSafe);
 
   // ===================== LOAD DATA =====================
   async function loadDataFromFirebase() {
@@ -303,10 +302,8 @@
       const querySnapshot = await getDocs(collection(db, "daily-ltr"));
       if(querySnapshot.empty) return;
 
-      // Clear existing categories
       document.getElementById('categoriesList').innerHTML = '';
 
-      // Ambil dokumen terakhir
       const lastDoc = querySnapshot.docs[querySnapshot.docs.length - 1];
       const data = lastDoc.data();
 
@@ -333,7 +330,6 @@
     const tw = document.createElement('div'); tw.className='table-wrap';
     const table = document.createElement('table'); table.id = cid + '-table';
     const thead = document.createElement('thead'); 
-    // Buat header tabel sama seperti addCategory
     table.appendChild(thead);
     const tbody = document.createElement('tbody'); tbody.id = cid + '-tbody'; table.appendChild(tbody);
     tw.appendChild(table); wrap.appendChild(tw);
@@ -347,7 +343,6 @@
   }
 
   function addEquipFromFirebase(tbody, cid, equip) {
-    // Mirip fungsi addEquip, tapi ambil nilai dari Firebase
     const tr = document.createElement('tr'); tr.className='equip-row'; tr.dataset.equipId = 'e-'+Math.random().toString(36).substr(2,5);
     tr.innerHTML = `<td></td>
                     <td>${equip.name}</td>
@@ -362,17 +357,20 @@
                     <td>${equip.plan}</td>
                     <td>${equip.actual}</td>
                     <td>${equip.dev}</td>
-                    <td>${equip.pct}</td>
-                    equip.dates.forEach(d => {
-  const td = document.createElement('td');
-  td.className = 'date-col';
-  td.textContent = d;
-  tr.appendChild(td);
-});
-                    <td>${equip.part}</td>
-                    <td>${equip.sup}</td>
-                    <td>${equip.lab}</td>
-                    <td>${equip.weat}</td>`;
+                    <td>${equip.pct}</td>`;
+    
+    // Tambahkan tanggal
+    equip.dates.forEach(d => {
+      const td = document.createElement('td');
+      td.className = 'date-col';
+      td.textContent = d;
+      tr.appendChild(td);
+    });
+
+    tr.innerHTML += `<td>${equip.part}</td>
+                     <td>${equip.sup}</td>
+                     <td>${equip.lab}</td>
+                     <td>${equip.weat}</td>`;
     tbody.appendChild(tr);
 
     // Sub rows
@@ -386,9 +384,7 @@
     });
   }
 
-  // Panggil load saat halaman siap
   window.addEventListener('DOMContentLoaded', loadDataFromFirebase);
-
 </script>
 
   <script>
@@ -838,6 +834,7 @@ function loadSummaryData(){
   </script>
 </body>
 </html>
+
 
 
 
