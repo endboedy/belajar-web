@@ -200,26 +200,28 @@
   <button id="saveBtn" style="padding:6px 10px; border:none; border-radius:4px; background:var(--orange); color:#fff; cursor:pointer;">Save All to Firebase</button>
 </div>
 
+<div id="categoriesList"></div>
+
 <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-analytics.js";
-  import { getFirestore, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-analytics.js";
+import { getFirestore, collection, addDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-  const firebaseConfig = {
-    apiKey: "AIzaSyCET8kx3EUAghmu6ctKUoiVY1RN2MIXv_s",
-    authDomain: "daily-ltr.firebaseapp.com",
-    projectId: "daily-ltr",
-    storageBucket: "daily-ltr.firebasestorage.app",
-    messagingSenderId: "227395041351",
-    appId: "1:227395041351:web:b3deaab08be421bb3bd962",
-    measurementId: "G-VXF6HH5FDW"
-  };
+const firebaseConfig = {
+  apiKey: "AIzaSyCET8kx3EUAghmu6ctKUoiVY1RN2MIXv_s",
+  authDomain: "daily-ltr.firebaseapp.com",
+  projectId: "daily-ltr",
+  storageBucket: "daily-ltr.appspot.com",
+  messagingSenderId: "227395041351",
+  appId: "1:227395041351:web:b3deaab08be421bb3bd962",
+  measurementId: "G-VXF6HH5FDW"
+};
 
-  const app = initializeApp(firebaseConfig);
-  const analytics = getAnalytics(app);
-  const db = getFirestore(app);
+const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);
+const db = getFirestore(app);
 
-// ===================== FIREBASE SAVE SAFE TANPA MERUSAK TABEL =====================
+// ===================== FIREBASE SAVE =====================
 async function saveLTRToFirebase() {
   try {
     const categories = Array.from(document.querySelectorAll('.category-wrap')).map(cat => {
@@ -286,99 +288,106 @@ async function saveLTRToFirebase() {
   }
 }
 
-// Listener tombol save (buat di HTML <button id="saveBtn">Save</button>)
+// Listener tombol save
 document.getElementById("saveBtn")?.addEventListener('click', saveLTRToFirebase);
 
+// ===================== LOAD REAL-TIME =====================
+function loadRealtimeFromFirebase(){
+  const colRef = collection(db,"daily-ltr");
 
-  // ===================== LOAD DATA =====================
-  async function loadDataFromFirebase() {
-    try {
-      const querySnapshot = await getDocs(collection(db, "daily-ltr"));
-      if(querySnapshot.empty) return;
+  onSnapshot(colRef, snapshot=>{
+    const categoriesList = document.getElementById('categoriesList');
+    categoriesList.innerHTML = ''; // clear dulu
+    if(snapshot.empty) return;
 
-      document.getElementById('categoriesList').innerHTML = '';
+    const lastDoc = snapshot.docs[snapshot.docs.length-1];
+    const data = lastDoc.data();
 
-      const lastDoc = querySnapshot.docs[querySnapshot.docs.length - 1];
-      const data = lastDoc.data();
-
-      data.categories.forEach(cat => {
-        addCategoryFromFirebase(cat);
-      });
-    } catch(e) {
-      console.error("Error loading data: ", e);
-    }
-  }
-
-  function addCategoryFromFirebase(cat) {
-    const cid = 'cat-' + (++window.catIdCounter || 1);
-    const wrap = document.createElement('div'); wrap.className='category-wrap'; wrap.id = cid;
-
-    const header = document.createElement('div'); header.className='category';
-    header.innerHTML = `<div class="cat-title">${cat.name}</div>
-                        <div class="cat-controls">
-                          <button onclick="renameCategory('${cid}')">R</button>
-                          <button onclick="deleteCategory('${cid}')">D</button>
-                        </div>`;
-    wrap.appendChild(header);
-
-    const tw = document.createElement('div'); tw.className='table-wrap';
-    const table = document.createElement('table'); table.id = cid + '-table';
-    const thead = document.createElement('thead'); 
-    table.appendChild(thead);
-    const tbody = document.createElement('tbody'); tbody.id = cid + '-tbody'; table.appendChild(tbody);
-    tw.appendChild(table); wrap.appendChild(tw);
-
-    cat.equips.forEach(equip => {
-      addEquipFromFirebase(tbody, cid, equip);
+    data.categories.forEach(cat=>{
+      addCategoryFromFirebase(cat);
     });
+  });
+}
 
-    document.getElementById('categoriesList').appendChild(wrap);
-    wrap.dataset.nextEquip = String(cat.equips.length + 1);
-  }
+// ===================== ADD CATEGORY & EQUIP =====================
+function addCategoryFromFirebase(cat) {
+  const cid = 'cat-' + (++window.catIdCounter || 1);
+  const wrap = document.createElement('div'); wrap.className='category-wrap'; wrap.id = cid;
 
-  function addEquipFromFirebase(tbody, cid, equip) {
-    const tr = document.createElement('tr'); tr.className='equip-row'; tr.dataset.equipId = 'e-'+Math.random().toString(36).substr(2,5);
-    tr.innerHTML = `<td></td>
-                    <td>${equip.name}</td>
-                    <td>${equip.status}</td>
-                    <td>${equip.description}</td>
-                    <td>${equip.progress}</td>
-                    <td>${equip.st}</td>
-                    <td>${equip.delay}</td>
-                    <td>${equip.pic}</td>
-                    <td><input value="${equip.down || ''}"></td>
-                    <td><input value="${equip.up || ''}"></td>
-                    <td>${equip.plan}</td>
-                    <td>${equip.actual}</td>
-                    <td>${equip.dev}</td>
-                    <td>${equip.pct}</td>`;
-    
-    // Tambahkan tanggal
-    equip.dates.forEach(d => {
-      const td = document.createElement('td');
-      td.className = 'date-col';
-      td.textContent = d;
-      tr.appendChild(td);
-    });
+  const header = document.createElement('div'); header.className='category';
+  header.innerHTML = `<div class="cat-title">${cat.category}</div>
+                      <div class="cat-controls">
+                        <button onclick="renameCategory('${cid}')">R</button>
+                        <button onclick="deleteCategory('${cid}')">D</button>
+                      </div>`;
+  wrap.appendChild(header);
 
-    tr.innerHTML += `<td>${equip.part}</td>
-                     <td>${equip.sup}</td>
-                     <td>${equip.lab}</td>
-                     <td>${equip.weat}</td>`;
-    tbody.appendChild(tr);
+  const tw = document.createElement('div'); tw.className='table-wrap';
+  const table = document.createElement('table'); table.id = cid + '-table';
+  const thead = document.createElement('thead'); 
+  table.appendChild(thead);
+  const tbody = document.createElement('tbody'); tbody.id = cid + '-tbody'; table.appendChild(tbody);
+  tw.appendChild(table); wrap.appendChild(tw);
 
-    // Sub rows
-    equip.sub.forEach(sub => {
-      const subTr = document.createElement('tr'); subTr.className='sub-row'; subTr.dataset.parent = tr.dataset.equipId;
-      subTr.innerHTML = `<td></td><td></td><td></td><td></td><td></td>
-                         <td>${sub.st}</td><td></td><td></td><td></td><td></td>
-                         <td></td><td></td><td></td><td></td>
-                         <td></td><td>${sub.part}</td><td>${sub.sup}</td><td>${sub.lab}</td><td>${sub.weat}</td>`;
-      tbody.appendChild(subTr);
-    });
-  }
+  cat.equips.forEach(equip => {
+    addEquipFromFirebase(tbody, cid, equip);
+  });
 
-  window.addEventListener('DOMContentLoaded', loadDataFromFirebase);
+  document.getElementById('categoriesList').appendChild(wrap);
+  wrap.dataset.nextEquip = String(cat.equips.length + 1);
+}
+
+function addEquipFromFirebase(tbody, cid, equip) {
+  const tr = document.createElement('tr'); 
+  tr.className='equip-row'; 
+  tr.dataset.equipId = 'e-'+Math.random().toString(36).substr(2,5);
+
+  tr.innerHTML = `<td></td>
+                  <td>${equip.equip}</td>
+                  <td>${equip.status}</td>
+                  <td>${equip.description}</td>
+                  <td>${equip.progress}</td>
+                  <td>${equip.st}</td>
+                  <td>${equip.delay}</td>
+                  <td>${equip.pic}</td>
+                  <td><input value="${equip.down || ''}" onchange="recalcRow(this.closest('tr'))"></td>
+                  <td><input value="${equip.up || ''}" onchange="recalcRow(this.closest('tr'))"></td>
+                  <td>${equip.plan}</td>
+                  <td>${equip.actual}</td>
+                  <td>${equip.dev}</td>
+                  <td>${equip.pct}</td>`;
+
+  equip.dates.forEach(d=>{
+    const td = document.createElement('td');
+    td.className='date-col';
+    td.textContent = d;
+    tr.appendChild(td);
+  });
+
+  tr.innerHTML += `<td>${equip.part}</td>
+                   <td>${equip.sup}</td>
+                   <td>${equip.lab}</td>
+                   <td>${equip.weat}</td>`;
+  tbody.appendChild(tr);
+
+  // Sub rows
+  equip.sub.forEach(sub => {
+    const subTr = document.createElement('tr'); subTr.className='sub-row'; subTr.dataset.parent = tr.dataset.equipId;
+    subTr.innerHTML = `<td></td><td></td><td></td><td></td><td></td>
+                       <td>${sub.st}</td><td></td><td></td><td></td><td></td>
+                       <td></td><td></td><td></td><td></td>
+                       <td></td><td>${sub.part}</td><td>${sub.sup}</td><td>${sub.lab}</td><td>${sub.weat}</td>`;
+    tbody.appendChild(subTr);
+  });
+}
+
+// Placeholder recalcRow agar input down/up bisa trigger perubahan
+window.recalcRow = function(tr){
+  // Contoh: tambahkan log, nanti bisa update Dev, % atau warna hijau
+  console.log("Recalculate row: ", tr);
+}
+
+window.addEventListener('DOMContentLoaded', loadRealtimeFromFirebase);
 </script>
 
   <script>
@@ -828,6 +837,7 @@ function loadSummaryData(){
   </script>
 </body>
 </html>
+
 
 
 
