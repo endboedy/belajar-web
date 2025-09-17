@@ -322,6 +322,76 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebas
       b.classList.add('active');
     });
   });
+// 🔹 Fungsi render categories & equips ke HTML
+function renderData(categories) {
+  const container = document.getElementById("categoriesList");
+  container.innerHTML = ""; // reset dulu
+  categories.forEach(cat => {
+    const wrap = document.createElement("div");
+    wrap.className = "category-wrap";
+
+    // header
+    const header = document.createElement("div");
+    header.className = "category";
+    header.innerHTML = `<div class="cat-title">${cat.name}</div>
+                        <div class="cat-controls">
+                          <button onclick="alert('Rename category manually')">R</button>
+                          <button onclick="alert('Delete category manually')">D</button>
+                        </div>`;
+    wrap.appendChild(header);
+
+    // table
+    const tw = document.createElement("div");
+    tw.className = "table-wrap";
+    const table = document.createElement("table");
+    const thead = document.createElement("thead");
+    const trh = document.createElement("tr");
+    const headers = ['No','Equip','Status','Description','Progress','St','Delay','PIC','Down Time','Uptime','Plan','Actual','Dev','%'];
+    headers.forEach(h => { const th = document.createElement("th"); th.textContent = h; trh.appendChild(th); });
+    thead.appendChild(trh);
+    table.appendChild(thead);
+
+    const tbody = document.createElement("tbody");
+    cat.equips.forEach((eq, idx) => {
+      const tr = document.createElement("tr");
+      tr.className = "equip-row";
+      const values = [
+        idx+1, eq.name, eq.status, eq.description, eq.progress,
+        eq.st, eq.delay, eq.pic, eq.down, eq.up, eq.plan, eq.actual, eq.dev, eq.pct
+      ];
+      values.forEach(v=>{
+        const td = document.createElement("td");
+        td.textContent = v;
+        tr.appendChild(td);
+      });
+      tbody.appendChild(tr);
+
+      // sub-rows
+      if(eq.sub && eq.sub.length>0){
+        eq.sub.forEach(sub=>{
+          const trSub = document.createElement("tr");
+          trSub.className = "sub-row";
+          ['','','','','',sub.st,'','','','','','','',''].forEach(v=>{
+            const td = document.createElement("td"); td.textContent=v; trSub.appendChild(td);
+          });
+          tbody.appendChild(trSub);
+        });
+      }
+    });
+    table.appendChild(tbody);
+    tw.appendChild(table);
+    wrap.appendChild(tw);
+    container.appendChild(wrap);
+  });
+}
+
+// 🔹 Render otomatis saat data di Firestore berubah
+onSnapshot(collection(db, "daily-ltr"), (snapshot) => {
+  const allDocs = snapshot.docs.map(doc => doc.data());
+  allDocs.forEach(doc => {
+    if(doc.categories) renderData(doc.categories);
+  });
+});
 
 </script>
   <script>
@@ -771,6 +841,7 @@ function loadSummaryData(){
   </script>
 </body>
 </html>
+
 
 
 
