@@ -219,82 +219,83 @@
   const analytics = getAnalytics(app);
   const db = getFirestore(app);
 
-  // ===================== SAVE DATA SAFE =====================
-  async function saveAllDataSafe() {
-    try {
-      const categories = [];
-      const allCats = document.querySelectorAll('.category-wrap');
+ // ===================== SAVE DATA FIREBASE SAFE =====================
+async function saveAllData() {
+  try {
+    const categories = [];
+    const allCats = document.querySelectorAll('.category-wrap');
 
-      if(allCats.length === 0) {
-        alert("Tidak ada data untuk disimpan");
-        return;
-      }
-
-      allCats.forEach(cat => {
-        const catName = cat.querySelector('.cat-title')?.textContent.trim() || "Unnamed Category";
-        const equips = [];
-        const equipRows = cat.querySelectorAll('tr.equip-row');
-
-        equipRows.forEach(equip => {
-          const cells = equip.children;
-          const equipObj = {
-            name: cells[1]?.textContent.trim() || "Unnamed Equip",
-            status: cells[2]?.textContent.trim() || "",
-            description: cells[3]?.textContent.trim() || "",
-            progress: cells[4]?.textContent.trim() || "",
-            st: cells[5]?.textContent.trim() || "",
-            delay: cells[6]?.textContent.trim() || "",
-            pic: cells[7]?.textContent.trim() || "",
-            down: cells[8]?.querySelector('input')?.value || "",
-            up: cells[9]?.querySelector('input')?.value || "",
-            plan: cells[10]?.textContent.trim() || "",
-            actual: cells[11]?.textContent.trim() || "",
-            dev: cells[12]?.textContent.trim() || "",
-            pct: cells[13]?.textContent.trim() || "",
-            dates: Array.from(equip.querySelectorAll('td.date-col')).map(d => d.textContent.trim() || ""),
-            part: cells[cells.length-5]?.textContent.trim() || "",
-            sup: cells[cells.length-4]?.textContent.trim() || "",
-            lab: cells[cells.length-3]?.textContent.trim() || "",
-            weat: cells[cells.length-2]?.textContent.trim() || "",
-            sub: []
-          };
-
-          // Ambil sub rows jika ada
-          let sub = equip.nextElementSibling;
-          while(sub && sub.classList.contains('sub-row') && sub.dataset.parent === equip.dataset.equipId){
-            const sc = sub.children;
-            const subObj = {
-              st: sc[5]?.textContent.trim() || "",
-              part: sc[sc.length-5]?.textContent.trim() || "",
-              sup: sc[sc.length-4]?.textContent.trim() || "",
-              lab: sc[sc.length-3]?.textContent.trim() || "",
-              weat: sc[sc.length-2]?.textContent.trim() || ""
-            };
-            equipObj.sub.push(subObj);
-            sub = sub.nextElementSibling;
-          }
-
-          equips.push(equipObj);
-        });
-
-        categories.push({ name: catName, equips });
-      });
-
-      // Push ke Firebase
-      const docRef = await addDoc(collection(db, "daily-ltr"), {
-        timestamp: new Date().toISOString(),
-        categories
-      });
-
-      console.log("Document written with ID: ", docRef.id);
-      alert("Semua data berhasil disimpan ke Firebase!");
-    } catch(e) {
-      console.error("Error adding document: ", e);
-      alert("Gagal menyimpan data! Lihat console untuk detail error.");
+    if(allCats.length === 0) {
+      alert("Tidak ada data untuk disimpan");
+      return;
     }
-  }
 
-  document.getElementById("saveBtn").addEventListener("click", saveAllDataSafe);
+    allCats.forEach(cat => {
+      const catName = cat.querySelector('.cat-title')?.textContent.trim() || "Unnamed Category";
+      const equips = [];
+      const equipRows = cat.querySelectorAll('tr.equip-row');
+
+      equipRows.forEach(equip => {
+        const cells = equip.children;
+        const equipObj = {
+          name: cells[1]?.textContent.trim() || "Unnamed Equip",
+          status: cells[2]?.textContent.trim() || "",
+          description: cells[3]?.textContent.trim() || "",
+          progress: cells[4]?.textContent.trim() || "",
+          st: cells[5]?.textContent.trim() || "",
+          delay: cells[6]?.textContent.trim() || "",
+          pic: cells[7]?.textContent.trim() || "",
+          down: cells[8]?.querySelector('input')?.value || "",
+          up: cells[9]?.querySelector('input')?.value || "",
+          plan: cells[10]?.textContent.trim() || "",
+          actual: cells[11]?.textContent.trim() || "",
+          dev: cells[12]?.textContent.trim() || "",
+          pct: cells[13]?.textContent.trim() || "",
+          dates: Array.from(equip.querySelectorAll('td.date-col')).map(d => d.textContent.trim() || ""),
+          part: cells[cells.length-5]?.textContent.trim() || "",
+          sup: cells[cells.length-4]?.textContent.trim() || "",
+          lab: cells[cells.length-3]?.textContent.trim() || "",
+          weat: cells[cells.length-2]?.textContent.trim() || "",
+          sub: []
+        };
+
+        // Ambil sub rows jika ada
+        let sub = equip.nextElementSibling;
+        while(sub && sub.classList.contains('sub-row') && sub.dataset.parent === equip.dataset.equipId){
+          const sc = sub.children;
+          const subObj = {
+            st: sc[5]?.textContent.trim() || "",
+            part: sc[sc.length-5]?.textContent.trim() || "",
+            sup: sc[sc.length-4]?.textContent.trim() || "",
+            lab: sc[sc.length-3]?.textContent.trim() || "",
+            weat: sc[sc.length-2]?.textContent.trim() || ""
+          };
+          equipObj.sub.push(subObj);
+          sub = sub.nextElementSibling;
+        }
+
+        equips.push(equipObj);
+      });
+
+      categories.push({ name: catName, equips });
+    });
+
+    // Simpan ke Firebase
+    const docRef = await addDoc(collection(db, "daily-ltr"), {
+      timestamp: new Date().toISOString(),
+      categories
+    });
+
+    console.log("Document written with ID: ", docRef.id);
+    alert("Semua data berhasil disimpan ke Firebase!");
+  } catch(e) {
+    console.error("Error adding document: ", e);
+    alert("Gagal menyimpan data! Lihat console untuk detail error.");
+  }
+}
+
+// Listener tombol tetap sama
+document.getElementById("saveBtn").addEventListener("click", saveAllData);
 
   // ===================== LOAD DATA =====================
   async function loadDataFromFirebase() {
@@ -834,6 +835,7 @@ function loadSummaryData(){
   </script>
 </body>
 </html>
+
 
 
 
