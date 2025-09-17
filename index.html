@@ -10,10 +10,10 @@
       --header:#2c3e50;
       --thead:#ddd;
       --equip:#fff8c6;
-      --st-c:#6a0dad; /* ungu tua */
-      --st-ip:#1f77b4; /* biru */
+      --st-c:#6a0dad; 
+      --st-ip:#1f77b4;
       --dev-neg:#c0392b;
-      --date-green:#116530; /* hijau tua */
+      --date-green:#116530;
       --border:#ccc;
     }
     body{
@@ -48,6 +48,16 @@
 
     .container{ padding:14px 16px; }
 
+    .controls{ display:flex; gap:8px; margin-bottom:12px; }
+    .controls button{ padding:8px 10px; border-radius:6px; border:none; cursor:pointer; background:#3498db; color:#fff; }
+
+    /* tambahkan tombol save Firebase */
+    #saveBtn{
+      background:var(--orange);
+      color:#fff;
+    }
+
+    /* category / table styling sama seperti sebelumnya */
     .category-wrap{
       margin-bottom:16px;
       border-radius:8px;
@@ -77,7 +87,6 @@
     }
 
     .table-wrap{ padding:6px; background:#fff; border-top:1px solid var(--border); }
-
     table{
       width:100%;
       border-collapse:collapse;
@@ -87,7 +96,7 @@
     thead th{
       background:var(--thead);
       border:1px solid var(--border);
-      padding:3px 4px;         /* diperkecil */
+      padding:3px 4px;
       font-weight:400;
       font-size:11px;
       position:sticky;
@@ -96,76 +105,12 @@
     }
     tbody td{
       border:1px solid var(--border);
-      padding:2px 4px;         /* diperkecil */
+      padding:2px 4px;
       vertical-align:middle;
-      height:22px;             /* lebih ramping */
+      height:22px;
       overflow:hidden;
       font-size:13px;
       text-align:center;
-    }
-
-    /* columns */
-    .c-no{ width:36px; min-width:36px; }
-    .c-equip{ width:90px; min-width:70px; text-align:left; padding-left:6px; }
-    .c-status{ width:80px; min-width:70px; }
-    .c-desc{ width:160px; min-width:120px; text-align:left; padding-left:6px; }
-    .c-progress{ width:200px; min-width:140px; text-align:left; padding-left:6px; }
-    .c-small{ width:56px; min-width:46px; }
-    .c-dt{ width:110px; min-width:100px; } /* diperkecil */
-    .c-num{ width:64px; min-width:54px; }
-    .c-action{ width:60px; min-width:50px; }
-
-    tr.equip-row{ background:var(--equip); }
-    tr.sub-row{ background:#fff; }
-
-    /* contenteditable styling (no box) */
-    td[contenteditable="true"]{ outline:none; cursor:text; }
-    td[contenteditable="true"]::placeholder{ color:#999; }
-
-    /* small action buttons */
-    .icon-btn{
-      border:none;
-      background:#e6e6e6;
-      padding:4px 6px;
-      border-radius:4px;
-      cursor:pointer;
-      margin-left:4px;
-      font-weight:700;
-    }
-    .icon-del{ background:#f2b8b8; }
-    .icon-add{ background:#c8e6c9; }
-
-    /* status colors */
-    .st-c{ background:var(--st-c) !important; color:#fff !important; font-weight:700; }
-    .st-ip{ background:var(--st-ip) !important; color:#fff !important; font-weight:700; }
-
-    .dev-negative{ background:var(--dev-neg); color:#fff; }
-
-    /* d-part filled */
-    .filled{ background:#fff8c6; }
-
-    /* date green */
-    .date-green{ background:var(--date-green); color:#fff; font-weight:700; }
-
-    /* export buttons */
-    .controls{ display:flex; gap:8px; margin-bottom:12px; }
-    .controls button{ padding:8px 10px; border-radius:6px; border:none; cursor:pointer; background:#3498db; color:#fff; }
-
-    /* print adjustments */
-    @page { size: A4 landscape; margin: 6mm; }
-    @media print {
-      body { background: #fff; -webkit-print-color-adjust: exact; }
-      nav, .controls, .icon-btn, .cat-controls { display: none !important; }
-      table { page-break-inside: auto; width:100%; }
-      thead { display:table-header-group; }
-      tr { page-break-inside: avoid; page-break-after: auto; }
-      td, th { padding: 2px 4px; font-size:10px; }
-    }
-
-    /* responsive */
-    @media (max-width:900px){
-      .c-desc, .c-progress{ width:120px; }
-      .c-dt{ width:100px; }
     }
   </style>
 </head>
@@ -182,70 +127,21 @@
       <button id="btnAddCategory">+ Add Category</button>
       <button id="btnExportExcel">Download Excel</button>
       <button id="btnExportPDF">Download PDF</button>
+      <button id="saveBtn">Save All to Firebase</button>
     </div>
 
-    <!-- categories list -->
     <div id="categoriesList"></div>
-
-    <!-- summary placeholder -->
     <div id="summary" style="display:none;">
       <h3>Summary LTR</h3>
       <p>Coming soon...</p>
     </div>
   </div>
 
-<!-- Firebase SDK -->
-<!-- Firebase Input & Save -->
-<div style="margin-bottom:12px; padding:8px; background:#fff; border-radius:6px; box-shadow:0 4px 8px rgba(0,0,0,0.05);">
-  <button id="saveBtn" style="padding:6px 10px; border:none; border-radius:4px; background:#FF7F00; color:#fff; cursor:pointer;">
-    Save All to Firebase
-  </button>
-</div>
-
-<div id="categoriesList"></div>
-
-<style>
-  /* CSS tambahan supaya input & tabel rapi */
-  .equip-table input {
-    width: 60px; /* sesuaikan lebar input */
-    box-sizing: border-box;
-  }
-
-  .equip-table {
-    border-collapse: collapse;
-    width: 100%;
-  }
-
-  .equip-table th, .equip-table td {
-    border: 1px solid #ccc;
-    padding: 4px 6px;
-    text-align: center;
-  }
-
-  .category-wrap {
-    margin-bottom: 12px;
-  }
-
-  .category {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 4px;
-    font-weight: bold;
-  }
-
-  .cat-controls button {
-    margin-left: 4px;
-    padding: 2px 6px;
-    cursor: pointer;
-  }
-</style>
-
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
-import { getFirestore, collection, addDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11/firebase-app.js";
+import { getAnalytics } from "https://www.gstatic.com/firebasejs/11/firebase-analytics.js";
+import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/11/firebase-firestore.js";
 
-// Firebase config
 const firebaseConfig = {
   apiKey: "AIzaSyCET8kx3EUAghmu6ctKUoiVY1RN2MIXv_s",
   authDomain: "daily-ltr.firebaseapp.com",
@@ -256,32 +152,18 @@ const firebaseConfig = {
   measurementId: "G-VXF6HH5FDW"
 };
 
-// Init Firebase
 const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);
 const db = getFirestore(app);
 
-// 🔹 Realtime listener Firestore
-onSnapshot(collection(db, "daily-ltr"), (snapshot) => {
-  snapshot.docChanges().forEach(change => {
-    if(change.type === "added" || change.type === "modified") {
-      renderData(change.doc.data().categories);
-    }
-  });
-});
-
-// 🔹 Save all data
 async function saveAllData() {
   try {
     const categories = [];
-    const allCats = document.querySelectorAll('.category-wrap');
-
-    allCats.forEach(cat => {
-      const catName = cat.querySelector('.cat-title')?.textContent.trim() || "Unnamed Category";
+    document.querySelectorAll('.category-wrap').forEach(cat=>{
+      const catName = cat.querySelector('.cat-title')?.textContent.trim() || "Unnamed";
       const equips = [];
-      const equipRows = cat.querySelectorAll('tr.equip-row');
-
-      equipRows.forEach(equip => {
-        const equipObj = {
+      cat.querySelectorAll('tr.equip-row').forEach(equip=>{
+        const obj = {
           name: equip.children[1]?.textContent.trim() || "",
           status: equip.children[2]?.textContent.trim() || "",
           description: equip.children[3]?.textContent.trim() || "",
@@ -295,126 +177,24 @@ async function saveAllData() {
           actual: equip.children[11]?.textContent.trim() || "",
           dev: equip.children[12]?.textContent.trim() || "",
           pct: equip.children[13]?.textContent.trim() || "",
-          dates: [],
-          part: equip.children[equip.children.length-5]?.textContent.trim() || "",
-          sup: equip.children[equip.children.length-4]?.textContent.trim() || "",
-          lab: equip.children[equip.children.length-3]?.textContent.trim() || "",
-          weat: equip.children[equip.children.length-2]?.textContent.trim() || "",
-          sub: []
+          dates: Array.from(equip.querySelectorAll('td.date-col')).map(d=>d.textContent.trim())
         };
-
-        // Ambil kolom tanggal
-        equip.querySelectorAll('td.date-col').forEach(d => equipObj.dates.push(d.textContent.trim()));
-
-        // Ambil sub-rows
-        let sub = equip.nextElementSibling;
-        while(sub && sub.classList.contains('sub-row') && equip.dataset.equipId && sub.dataset.parent === equip.dataset.equipId) {
-          const subObj = {
-            st: sub.children[5]?.textContent.trim() || "",
-            part: sub.children[sub.children.length-5]?.textContent.trim() || "",
-            sup: sub.children[sub.children.length-4]?.textContent.trim() || "",
-            lab: sub.children[sub.children.length-3]?.textContent.trim() || "",
-            weat: sub.children[sub.children.length-2]?.textContent.trim() || ""
-          };
-          equipObj.sub.push(subObj);
-          sub = sub.nextElementSibling;
-        }
-
-        equips.push(equipObj);
+        equips.push(obj);
       });
-
-      categories.push({ name: catName, equips });
+      categories.push({name:catName,equips});
     });
 
-    await addDoc(collection(db, "daily-ltr"), { timestamp: new Date(), categories });
-    alert("Semua data berhasil disimpan ke Firebase!");
-  } catch(e) {
+    await addDoc(collection(db,"daily-ltr"),{ timestamp: new Date(), categories });
+    alert("Data berhasil disimpan ke Firebase!");
+  } catch(e){
     console.error(e);
     alert("Gagal menyimpan data!");
   }
 }
 
 document.getElementById("saveBtn").addEventListener("click", saveAllData);
-
-// 🔹 Render categories & equips
-function renderData(categories) {
-  const container = document.getElementById("categoriesList");
-  container.innerHTML = ""; // reset container
-
-  categories.forEach(cat => {
-    const wrap = document.createElement("div");
-    wrap.className = "category-wrap";
-
-    // header
-    const header = document.createElement("div");
-    header.className = "category";
-    header.innerHTML = `
-      <div class="cat-title">${cat.name}</div>
-      <div class="cat-controls">
-        <button onclick="alert('Rename category manually')">R</button>
-        <button onclick="alert('Delete category manually')">D</button>
-      </div>`;
-    wrap.appendChild(header);
-
-    // table equips
-    const table = document.createElement("table");
-    table.className = "equip-table";
-
-    // header table
-    table.innerHTML = `
-      <thead>
-        <tr>
-          <th>No</th><th>Equipment</th><th>Status</th><th>Description</th><th>Progress</th>
-          <th>ST</th><th>Delay</th><th>PIC</th><th>Down</th><th>Up</th>
-          <th>Plan</th><th>Actual</th><th>Dev</th><th>%</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    `;
-    wrap.appendChild(table);
-
-    const tbody = table.querySelector("tbody");
-    cat.equips.forEach((eq, i) => {
-      const tr = document.createElement("tr");
-      tr.className = "equip-row";
-      tr.dataset.equipId = "equip-" + i;
-      tr.innerHTML = `
-        <td>${i+1}</td>
-        <td>${eq.name}</td>
-        <td>${eq.status}</td>
-        <td>${eq.description}</td>
-        <td>${eq.progress}</td>
-        <td>${eq.st}</td>
-        <td>${eq.delay}</td>
-        <td>${eq.pic}</td>
-        <td><input value="${eq.down || ''}"></td>
-        <td><input value="${eq.up || ''}"></td>
-        <td>${eq.plan}</td>
-        <td>${eq.actual}</td>
-        <td>${eq.dev}</td>
-        <td>${eq.pct}</td>
-      `;
-      tbody.appendChild(tr);
-
-      // render sub-row jika ada
-      eq.sub.forEach(sub => {
-        const trSub = document.createElement("tr");
-        trSub.className = "sub-row";
-        trSub.dataset.parent = tr.dataset.equipId;
-        trSub.innerHTML = `
-          <td></td><td></td><td></td><td></td><td></td>
-          <td>${sub.st}</td>
-          <td></td><td></td><td></td><td></td>
-          <td></td><td></td><td></td><td></td>
-        `;
-        tbody.appendChild(trSub);
-      });
-    });
-
-    container.appendChild(wrap);
-  });
-}
 </script>
+<script>
 
     // table
     const tw = document.createElement("div");
@@ -917,6 +697,7 @@ function loadSummaryData(){
   </script>
 </body>
 </html>
+
 
 
 
