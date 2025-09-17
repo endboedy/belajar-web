@@ -201,12 +201,12 @@
 </div>
 
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11/firebase-app.js";
-import { getAnalytics } from "https://www.gstatic.com/firebasejs/11/firebase-analytics.js";
-import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/11/firebase-firestore.js";
+  // Import Firebase modul yang tersedia
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11/firebase-app.js";
+  import { getAnalytics } from "https://www.gstatic.com/firebasejs/11/firebase-analytics.js";
+  import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/11/firebase-firestore.js";
 
-
-  // Firebase configuration
+  // Konfigurasi Firebase
   const firebaseConfig = {
     apiKey: "AIzaSyCET8kx3EUAghmu6ctKUoiVY1RN2MIXv_s",
     authDomain: "daily-ltr.firebaseapp.com",
@@ -217,12 +217,12 @@ import { getFirestore, collection, addDoc } from "https://www.gstatic.com/fireba
     measurementId: "G-VXF6HH5FDW"
   };
 
-  // Initialize Firebase
+  // Inisialisasi Firebase
   const app = initializeApp(firebaseConfig);
   const analytics = getAnalytics(app);
   const db = getFirestore(app);
 
-  // Fungsi untuk push semua data ke Firestore
+  // Fungsi untuk push semua data category & equip
   async function saveAllData() {
     try {
       const categories = [];
@@ -260,7 +260,7 @@ import { getFirestore, collection, addDoc } from "https://www.gstatic.com/fireba
           const dateCols = equip.querySelectorAll('td.date-col');
           dateCols.forEach(d => equipObj.dates.push(d.textContent.trim()));
 
-          // Ambil sub-rows
+          // Ambil sub-rows yang terkait
           let sub = equip.nextElementSibling;
           while(sub && sub.classList.contains('sub-row') && sub.dataset.parent === equip.dataset.equipId) {
             const subObj = {
@@ -280,7 +280,7 @@ import { getFirestore, collection, addDoc } from "https://www.gstatic.com/fireba
         categories.push({ name: catName, equips: equips });
       });
 
-      // Kirim ke Firestore
+      // Simpan ke Firestore
       const docRef = await addDoc(collection(db, "daily-ltr"), {
         timestamp: new Date(),
         categories: categories
@@ -294,10 +294,9 @@ import { getFirestore, collection, addDoc } from "https://www.gstatic.com/fireba
     }
   }
 
-  // Listener tombol
+  // Pasang listener tombol
   document.getElementById("saveBtn").addEventListener("click", saveAllData);
 </script>
-
   <script>
   // TAB
   document.querySelectorAll('.tab-btn').forEach(b=>{
@@ -744,4 +743,3 @@ function loadSummaryData(){
   </script>
 </body>
 </html>
-
