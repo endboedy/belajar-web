@@ -202,130 +202,108 @@
   </button>
 </div>
 
+<div id="categoriesList"></div>
+
 <script type="module">
-  // Import Firebase modul via jsdelivr (versi stabil terbaru)
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
-  import { getFirestore, collection, addDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
+import { getFirestore, collection, addDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
 
-  // Konfigurasi Firebase
-  const firebaseConfig = {
-    apiKey: "AIzaSyCET8kx3EUAghmu6ctKUoiVY1RN2MIXv_s",
-    authDomain: "daily-ltr.firebaseapp.com",
-    projectId: "daily-ltr",
-    storageBucket: "daily-ltr.firebasestorage.app",
-    messagingSenderId: "227395041351",
-    appId: "1:227395041351:web:b3deaab08be421bb3bd962",
-    measurementId: "G-VXF6HH5FDW"
-  };
+// Firebase config
+const firebaseConfig = {
+  apiKey: "AIzaSyCET8kx3EUAghmu6ctKUoiVY1RN2MIXv_s",
+  authDomain: "daily-ltr.firebaseapp.com",
+  projectId: "daily-ltr",
+  storageBucket: "daily-ltr.firebasestorage.app",
+  messagingSenderId: "227395041351",
+  appId: "1:227395041351:web:b3deaab08be421bb3bd962",
+  measurementId: "G-VXF6HH5FDW"
+};
 
-  // Inisialisasi Firebase
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
+// Init Firebase
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
 
-  // 🔹 Listener realtime untuk koleksi "daily-ltr"
-  onSnapshot(collection(db, "daily-ltr"), (snapshot) => {
-    snapshot.docChanges().forEach((change) => {
-      if (change.type === "added") {
-        console.log("New document: ", change.doc.data());
-      }
-      if (change.type === "modified") {
-        console.log("Modified document: ", change.doc.data());
-      }
-      if (change.type === "removed") {
-        console.log("Removed document: ", change.doc.data());
-      }
-    });
-  });
-
-  // 🔹 Fungsi push semua data category & equip ke Firestore
-  async function saveAllData() {
-    try {
-      const categories = [];
-      const allCats = document.querySelectorAll('.category-wrap');
-
-      allCats.forEach(cat => {
-        const catName = cat.querySelector('.cat-title')?.textContent.trim() || "Unnamed Category";
-        const equips = [];
-        const equipRows = cat.querySelectorAll('tr.equip-row');
-
-        equipRows.forEach(equip => {
-          const equipObj = {
-            name: equip.children[1]?.textContent.trim() || "Unnamed Equip",
-            status: equip.children[2]?.textContent.trim() || "",
-            description: equip.children[3]?.textContent.trim() || "",
-            progress: equip.children[4]?.textContent.trim() || "",
-            st: equip.children[5]?.textContent.trim() || "",
-            delay: equip.children[6]?.textContent.trim() || "",
-            pic: equip.children[7]?.textContent.trim() || "",
-            down: equip.children[8]?.querySelector('input')?.value || "",
-            up: equip.children[9]?.querySelector('input')?.value || "",
-            plan: equip.children[10]?.textContent.trim() || "",
-            actual: equip.children[11]?.textContent.trim() || "",
-            dev: equip.children[12]?.textContent.trim() || "",
-            pct: equip.children[13]?.textContent.trim() || "",
-            dates: [],
-            part: equip.children[equip.children.length-5]?.textContent.trim() || "",
-            sup: equip.children[equip.children.length-4]?.textContent.trim() || "",
-            lab: equip.children[equip.children.length-3]?.textContent.trim() || "",
-            weat: equip.children[equip.children.length-2]?.textContent.trim() || "",
-            sub: []
-          };
-
-          // Ambil kolom tanggal
-          const dateCols = equip.querySelectorAll('td.date-col');
-          dateCols.forEach(d => equipObj.dates.push(d.textContent.trim()));
-
-          // Ambil sub-rows
-          let sub = equip.nextElementSibling;
-          while(sub && sub.classList.contains('sub-row') && equip.dataset.equipId && sub.dataset.parent === equip.dataset.equipId) {
-            const subObj = {
-              st: sub.children[5]?.textContent.trim() || "",
-              part: sub.children[sub.children.length-5]?.textContent.trim() || "",
-              sup: sub.children[sub.children.length-4]?.textContent.trim() || "",
-              lab: sub.children[sub.children.length-3]?.textContent.trim() || "",
-              weat: sub.children[sub.children.length-2]?.textContent.trim() || ""
-            };
-            equipObj.sub.push(subObj);
-            sub = sub.nextElementSibling;
-          }
-
-          equips.push(equipObj);
-        });
-
-        categories.push({ name: catName, equips: equips });
-      });
-
-      // Simpan ke Firestore
-      const docRef = await addDoc(collection(db, "daily-ltr"), {
-        timestamp: new Date(),
-        categories: categories
-      });
-
-      console.log("Document written with ID: ", docRef.id);
-      alert("Semua data berhasil disimpan ke Firebase!");
-    } catch(e) {
-      console.error("Error adding document: ", e);
-      alert("Gagal menyimpan data!");
+// 🔹 Realtime listener Firestore
+onSnapshot(collection(db, "daily-ltr"), (snapshot) => {
+  snapshot.docChanges().forEach(change => {
+    if(change.type === "added" || change.type === "modified") {
+      renderData(change.doc.data().categories);
     }
-  }
-
-  // Pasang listener tombol save
-  document.getElementById("saveBtn").addEventListener("click", saveAllData);
-
-  // 🔹 Listener untuk tab button (fix syntax error)
-  document.querySelectorAll('.tab-btn').forEach(b => {
-    b.addEventListener('click', () => {
-      const target = b.dataset.tabTarget;
-      document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
-      document.querySelector(`#${target}`)?.classList.add('active');
-      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-      b.classList.add('active');
-    });
   });
-// 🔹 Fungsi render categories & equips ke HTML
+});
+
+// 🔹 Save all data
+async function saveAllData() {
+  try {
+    const categories = [];
+    const allCats = document.querySelectorAll('.category-wrap');
+
+    allCats.forEach(cat => {
+      const catName = cat.querySelector('.cat-title')?.textContent.trim() || "Unnamed Category";
+      const equips = [];
+      const equipRows = cat.querySelectorAll('tr.equip-row');
+
+      equipRows.forEach(equip => {
+        const equipObj = {
+          name: equip.children[1]?.textContent.trim() || "",
+          status: equip.children[2]?.textContent.trim() || "",
+          description: equip.children[3]?.textContent.trim() || "",
+          progress: equip.children[4]?.textContent.trim() || "",
+          st: equip.children[5]?.textContent.trim() || "",
+          delay: equip.children[6]?.textContent.trim() || "",
+          pic: equip.children[7]?.textContent.trim() || "",
+          down: equip.children[8]?.querySelector('input')?.value || "",
+          up: equip.children[9]?.querySelector('input')?.value || "",
+          plan: equip.children[10]?.textContent.trim() || "",
+          actual: equip.children[11]?.textContent.trim() || "",
+          dev: equip.children[12]?.textContent.trim() || "",
+          pct: equip.children[13]?.textContent.trim() || "",
+          dates: [],
+          part: equip.children[equip.children.length-5]?.textContent.trim() || "",
+          sup: equip.children[equip.children.length-4]?.textContent.trim() || "",
+          lab: equip.children[equip.children.length-3]?.textContent.trim() || "",
+          weat: equip.children[equip.children.length-2]?.textContent.trim() || "",
+          sub: []
+        };
+
+        // Ambil kolom tanggal
+        equip.querySelectorAll('td.date-col').forEach(d => equipObj.dates.push(d.textContent.trim()));
+
+        // Ambil sub-rows
+        let sub = equip.nextElementSibling;
+        while(sub && sub.classList.contains('sub-row') && equip.dataset.equipId && sub.dataset.parent === equip.dataset.equipId) {
+          const subObj = {
+            st: sub.children[5]?.textContent.trim() || "",
+            part: sub.children[sub.children.length-5]?.textContent.trim() || "",
+            sup: sub.children[sub.children.length-4]?.textContent.trim() || "",
+            lab: sub.children[sub.children.length-3]?.textContent.trim() || "",
+            weat: sub.children[sub.children.length-2]?.textContent.trim() || ""
+          };
+          equipObj.sub.push(subObj);
+          sub = sub.nextElementSibling;
+        }
+
+        equips.push(equipObj);
+      });
+
+      categories.push({ name: catName, equips });
+    });
+
+    await addDoc(collection(db, "daily-ltr"), { timestamp: new Date(), categories });
+    alert("Semua data berhasil disimpan ke Firebase!");
+  } catch(e) {
+    console.error(e);
+    alert("Gagal menyimpan data!");
+  }
+}
+
+document.getElementById("saveBtn").addEventListener("click", saveAllData);
+
+// 🔹 Render categories & equips (tampilan persis manual)
 function renderData(categories) {
   const container = document.getElementById("categoriesList");
-  container.innerHTML = ""; // reset dulu
+  container.innerHTML = ""; // reset
+
   categories.forEach(cat => {
     const wrap = document.createElement("div");
     wrap.className = "category-wrap";
@@ -333,12 +311,73 @@ function renderData(categories) {
     // header
     const header = document.createElement("div");
     header.className = "category";
-    header.innerHTML = `<div class="cat-title">${cat.name}</div>
-                        <div class="cat-controls">
-                          <button onclick="alert('Rename category manually')">R</button>
-                          <button onclick="alert('Delete category manually')">D</button>
-                        </div>`;
+    header.innerHTML = `
+      <div class="cat-title">${cat.name}</div>
+      <div class="cat-controls">
+        <button onclick="alert('Rename category manually')">R</button>
+        <button onclick="alert('Delete category manually')">D</button>
+      </div>`;
     wrap.appendChild(header);
+
+    // table equips
+    const table = document.createElement("table");
+    table.className = "equip-table";
+
+    // header table
+    table.innerHTML = `
+      <thead>
+        <tr>
+          <th>No</th><th>Equipment</th><th>Status</th><th>Description</th><th>Progress</th>
+          <th>ST</th><th>Delay</th><th>PIC</th><th>Down</th><th>Up</th>
+          <th>Plan</th><th>Actual</th><th>Dev</th><th>%</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    `;
+    wrap.appendChild(table);
+
+    const tbody = table.querySelector("tbody");
+    cat.equips.forEach((eq, i) => {
+      const tr = document.createElement("tr");
+      tr.className = "equip-row";
+      tr.dataset.equipId = "equip-" + i;
+      tr.innerHTML = `
+        <td>${i+1}</td>
+        <td>${eq.name}</td>
+        <td>${eq.status}</td>
+        <td>${eq.description}</td>
+        <td>${eq.progress}</td>
+        <td>${eq.st}</td>
+        <td>${eq.delay}</td>
+        <td>${eq.pic}</td>
+        <td><input value="${eq.down || ''}"></td>
+        <td><input value="${eq.up || ''}"></td>
+        <td>${eq.plan}</td>
+        <td>${eq.actual}</td>
+        <td>${eq.dev}</td>
+        <td>${eq.pct}</td>
+      `;
+      tbody.appendChild(tr);
+
+      // render sub-row jika ada
+      eq.sub.forEach(sub => {
+        const trSub = document.createElement("tr");
+        trSub.className = "sub-row";
+        trSub.dataset.parent = tr.dataset.equipId;
+        trSub.innerHTML = `
+          <td></td><td></td><td></td><td></td><td></td>
+          <td>${sub.st}</td>
+          <td></td><td></td><td></td><td></td>
+          <td></td><td></td><td></td><td></td>
+        `;
+        tbody.appendChild(trSub);
+      });
+    });
+
+    container.appendChild(wrap);
+  });
+}
+</script>
 
     // table
     const tw = document.createElement("div");
@@ -841,6 +880,7 @@ function loadSummaryData(){
   </script>
 </body>
 </html>
+
 
 
 
