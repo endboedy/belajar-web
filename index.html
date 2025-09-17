@@ -197,12 +197,49 @@
 <!-- Firebase SDK -->
 <!-- Firebase Input & Save -->
 <div style="margin-bottom:12px; padding:8px; background:#fff; border-radius:6px; box-shadow:0 4px 8px rgba(0,0,0,0.05);">
-  <button id="saveBtn" style="padding:6px 10px; border:none; border-radius:4px; background:var(--orange); color:#fff; cursor:pointer;">
+  <button id="saveBtn" style="padding:6px 10px; border:none; border-radius:4px; background:#FF7F00; color:#fff; cursor:pointer;">
     Save All to Firebase
   </button>
 </div>
 
 <div id="categoriesList"></div>
+
+<style>
+  /* CSS tambahan supaya input & tabel rapi */
+  .equip-table input {
+    width: 60px; /* sesuaikan lebar input */
+    box-sizing: border-box;
+  }
+
+  .equip-table {
+    border-collapse: collapse;
+    width: 100%;
+  }
+
+  .equip-table th, .equip-table td {
+    border: 1px solid #ccc;
+    padding: 4px 6px;
+    text-align: center;
+  }
+
+  .category-wrap {
+    margin-bottom: 12px;
+  }
+
+  .category {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+    font-weight: bold;
+  }
+
+  .cat-controls button {
+    margin-left: 4px;
+    padding: 2px 6px;
+    cursor: pointer;
+  }
+</style>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
@@ -299,10 +336,10 @@ async function saveAllData() {
 
 document.getElementById("saveBtn").addEventListener("click", saveAllData);
 
-// 🔹 Render categories & equips (tampilan persis manual)
+// 🔹 Render categories & equips
 function renderData(categories) {
   const container = document.getElementById("categoriesList");
-  container.innerHTML = ""; // reset
+  container.innerHTML = ""; // reset container
 
   categories.forEach(cat => {
     const wrap = document.createElement("div");
@@ -378,6 +415,7 @@ function renderData(categories) {
   });
 }
 </script>
+
    </script>
     // table
     const tw = document.createElement("div");
@@ -880,6 +918,7 @@ function loadSummaryData(){
   </script>
 </body>
 </html>
+
 
 
 
