@@ -222,7 +222,7 @@
   const analytics = getAnalytics(app);
   const db = getFirestore(app);
 
-  // Fungsi untuk push semua data category & equip
+  // ------------------ REVISI BAGIAN SAVE ------------------
   async function saveAllData() {
     try {
       const categories = [];
@@ -234,41 +234,39 @@
         const equipRows = cat.querySelectorAll('tr.equip-row');
 
         equipRows.forEach(equip => {
+          const cells = equip.children;
           const equipObj = {
-            name: equip.children[1]?.textContent.trim() || "Unnamed Equip",
-            status: equip.children[2]?.textContent.trim() || "",
-            description: equip.children[3]?.textContent.trim() || "",
-            progress: equip.children[4]?.textContent.trim() || "",
-            st: equip.children[5]?.textContent.trim() || "",
-            delay: equip.children[6]?.textContent.trim() || "",
-            pic: equip.children[7]?.textContent.trim() || "",
-            down: equip.children[8]?.querySelector('input')?.value || "",
-            up: equip.children[9]?.querySelector('input')?.value || "",
-            plan: equip.children[10]?.textContent.trim() || "",
-            actual: equip.children[11]?.textContent.trim() || "",
-            dev: equip.children[12]?.textContent.trim() || "",
-            pct: equip.children[13]?.textContent.trim() || "",
-            dates: [],
-            part: equip.children[equip.children.length-5]?.textContent.trim() || "",
-            sup: equip.children[equip.children.length-4]?.textContent.trim() || "",
-            lab: equip.children[equip.children.length-3]?.textContent.trim() || "",
-            weat: equip.children[equip.children.length-2]?.textContent.trim() || "",
+            name: cells[1]?.textContent.trim() || "Unnamed Equip",
+            status: cells[2]?.textContent.trim() || "",
+            description: cells[3]?.textContent.trim() || "",
+            progress: cells[4]?.textContent.trim() || "",
+            st: cells[5]?.textContent.trim() || "",
+            delay: cells[6]?.textContent.trim() || "",
+            pic: cells[7]?.textContent.trim() || "",
+            down: cells[8]?.querySelector('input')?.value || "",
+            up: cells[9]?.querySelector('input')?.value || "",
+            plan: cells[10]?.textContent.trim() || "",
+            actual: cells[11]?.textContent.trim() || "",
+            dev: cells[12]?.textContent.trim() || "",
+            pct: cells[13]?.textContent.trim() || "",
+            dates: Array.from(equip.querySelectorAll('td.date-col')).map(d => d.textContent.trim() || ""),
+            part: cells[cells.length-5]?.textContent.trim() || "",
+            sup: cells[cells.length-4]?.textContent.trim() || "",
+            lab: cells[cells.length-3]?.textContent.trim() || "",
+            weat: cells[cells.length-2]?.textContent.trim() || "",
             sub: []
           };
 
-          // Ambil kolom tanggal
-          const dateCols = equip.querySelectorAll('td.date-col');
-          dateCols.forEach(d => equipObj.dates.push(d.textContent.trim()));
-
-          // Ambil sub-rows yang terkait
+          // Ambil sub-row yang terkait
           let sub = equip.nextElementSibling;
-          while(sub && sub.classList.contains('sub-row') && sub.dataset.parent === equip.dataset.equipId) {
+          while(sub && sub.classList.contains('sub-row') && sub.dataset.parent === equip.dataset.equipId){
+            const sc = sub.children;
             const subObj = {
-              st: sub.children[5]?.textContent.trim() || "",
-              part: sub.children[sub.children.length-5]?.textContent.trim() || "",
-              sup: sub.children[sub.children.length-4]?.textContent.trim() || "",
-              lab: sub.children[sub.children.length-3]?.textContent.trim() || "",
-              weat: sub.children[sub.children.length-2]?.textContent.trim() || ""
+              st: sc[5]?.textContent.trim() || "",
+              part: sc[sc.length-5]?.textContent.trim() || "",
+              sup: sc[sc.length-4]?.textContent.trim() || "",
+              lab: sc[sc.length-3]?.textContent.trim() || "",
+              weat: sc[sc.length-2]?.textContent.trim() || ""
             };
             equipObj.sub.push(subObj);
             sub = sub.nextElementSibling;
@@ -277,24 +275,28 @@
           equips.push(equipObj);
         });
 
-        categories.push({ name: catName, equips: equips });
+        categories.push({ name: catName, equips });
       });
 
-      // Simpan ke Firestore
+      if(categories.length===0){ 
+        alert("Tidak ada data untuk disimpan"); 
+        return; 
+      }
+
       const docRef = await addDoc(collection(db, "daily-ltr"), {
-        timestamp: new Date(),
-        categories: categories
+        timestamp: new Date().toISOString(),
+        categories
       });
 
       console.log("Document written with ID: ", docRef.id);
       alert("Semua data berhasil disimpan ke Firebase!");
     } catch(e) {
       console.error("Error adding document: ", e);
-      alert("Gagal menyimpan data!");
+      alert("Gagal menyimpan data! Lihat console untuk detail error.");
     }
   }
 
-  // Pasang listener tombol
+  // Pasang listener tombol Save
   document.getElementById("saveBtn").addEventListener("click", saveAllData);
 </script>
   <script>
@@ -744,3 +746,4 @@ function loadSummaryData(){
   </script>
 </body>
 </html>
+
