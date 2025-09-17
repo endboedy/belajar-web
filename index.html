@@ -363,7 +363,12 @@
                     <td>${equip.actual}</td>
                     <td>${equip.dev}</td>
                     <td>${equip.pct}</td>
-                    <td class="date-col">${equip.dates.join('</td><td class="date-col">')}</td>
+                    equip.dates.forEach(d => {
+  const td = document.createElement('td');
+  td.className = 'date-col';
+  td.textContent = d;
+  tr.appendChild(td);
+});
                     <td>${equip.part}</td>
                     <td>${equip.sup}</td>
                     <td>${equip.lab}</td>
@@ -833,6 +838,7 @@ function loadSummaryData(){
   </script>
 </body>
 </html>
+
 
 
 
