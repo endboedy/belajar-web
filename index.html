@@ -195,13 +195,13 @@
   </div>
 
 <!-- Firebase SDK -->
-<!-- Tambahkan tombol Save di tempat yang tidak mengganggu layout -->
+<!-- Firebase Input & Save -->
 <div style="margin-bottom:12px; padding:8px; background:#fff; border-radius:6px; box-shadow:0 4px 8px rgba(0,0,0,0.05);">
   <button id="saveBtn" style="padding:6px 10px; border:none; border-radius:4px; background:var(--orange); color:#fff; cursor:pointer;">Save All to Firebase</button>
 </div>
 
 <script type="module">
-  // Import Firebase modules
+  // Import Firebase modul yang tersedia
   import { initializeApp } from "https://www.gstatic.com/firebasejs/11/firebase-app.js";
   import { getAnalytics } from "https://www.gstatic.com/firebasejs/11/firebase-analytics.js";
   import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/11/firebase-firestore.js";
@@ -217,11 +217,12 @@
     measurementId: "G-VXF6HH5FDW"
   };
 
+  // Inisialisasi Firebase
   const app = initializeApp(firebaseConfig);
   const analytics = getAnalytics(app);
   const db = getFirestore(app);
 
-  // Fungsi untuk push semua data ke Firebase
+  // Fungsi untuk push semua data category & equip
   async function saveAllData() {
     try {
       const categories = [];
@@ -234,7 +235,7 @@
 
         equipRows.forEach(equip => {
           const equipObj = {
-            name: equip.children[1]?.textContent.trim() || "",
+            name: equip.children[1]?.textContent.trim() || "Unnamed Equip",
             status: equip.children[2]?.textContent.trim() || "",
             description: equip.children[3]?.textContent.trim() || "",
             progress: equip.children[4]?.textContent.trim() || "",
@@ -247,7 +248,7 @@
             actual: equip.children[11]?.textContent.trim() || "",
             dev: equip.children[12]?.textContent.trim() || "",
             pct: equip.children[13]?.textContent.trim() || "",
-            dates: Array.from(equip.querySelectorAll('td.date-col')).map(d => d.textContent.trim()),
+            dates: [],
             part: equip.children[equip.children.length-5]?.textContent.trim() || "",
             sup: equip.children[equip.children.length-4]?.textContent.trim() || "",
             lab: equip.children[equip.children.length-3]?.textContent.trim() || "",
@@ -255,44 +256,48 @@
             sub: []
           };
 
-          // Ambil sub-rows
+          // Ambil kolom tanggal
+          const dateCols = equip.querySelectorAll('td.date-col');
+          dateCols.forEach(d => equipObj.dates.push(d.textContent.trim()));
+
+          // Ambil sub-rows yang terkait
           let sub = equip.nextElementSibling;
           while(sub && sub.classList.contains('sub-row') && sub.dataset.parent === equip.dataset.equipId) {
-            equipObj.sub.push({
+            const subObj = {
               st: sub.children[5]?.textContent.trim() || "",
               part: sub.children[sub.children.length-5]?.textContent.trim() || "",
               sup: sub.children[sub.children.length-4]?.textContent.trim() || "",
               lab: sub.children[sub.children.length-3]?.textContent.trim() || "",
               weat: sub.children[sub.children.length-2]?.textContent.trim() || ""
-            });
+            };
+            equipObj.sub.push(subObj);
             sub = sub.nextElementSibling;
           }
 
           equips.push(equipObj);
         });
 
-        categories.push({ name: catName, equips });
+        categories.push({ name: catName, equips: equips });
       });
 
       // Simpan ke Firestore
       const docRef = await addDoc(collection(db, "daily-ltr"), {
         timestamp: new Date(),
-        categories
+        categories: categories
       });
 
-      alert("Semua data berhasil disimpan ke Firebase!");
       console.log("Document written with ID: ", docRef.id);
-
+      alert("Semua data berhasil disimpan ke Firebase!");
     } catch(e) {
       console.error("Error adding document: ", e);
       alert("Gagal menyimpan data!");
     }
   }
 
+  // Pasang listener tombol
   document.getElementById("saveBtn").addEventListener("click", saveAllData);
 </script>
-  </script>
-
+  <script>
 
   // TAB
   document.querySelectorAll('.tab-btn').forEach(b=>{
@@ -739,4 +744,3 @@ function loadSummaryData(){
   </script>
 </body>
 </html>
-
