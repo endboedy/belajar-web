@@ -76,7 +76,13 @@
       font-weight:700;
     }
 
-    .table-wrap{ padding:6px; background:#fff; border-top:1px solid var(--border); }
+.table-wrap {
+  padding: 6px;
+  background: #fff;
+  border-top: 1px solid var(--border);
+  overflow-x: auto; /* <- tambahkan ini */
+  -webkit-overflow-scrolling: touch; /* <- smooth scroll di iOS */
+}
 
     table{
       width:100%;
@@ -744,3 +750,4 @@ document.getElementById('btnLoadJSON').addEventListener('click', ()=>{
   </script>
 </body>
 </html>
+
