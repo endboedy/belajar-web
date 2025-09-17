@@ -195,10 +195,18 @@
   </div>
 
 <!-- Firebase SDK -->
+<!-- Firebase Input & Save -->
+<div style="margin-bottom:12px; padding:8px; background:#fff; border-radius:6px; box-shadow:0 4px 8px rgba(0,0,0,0.05);">
+  <input type="text" id="categoryInput" placeholder="Category" style="padding:4px 6px; margin-right:6px; border-radius:4px; border:1px solid #ccc;">
+  <input type="text" id="equipInput" placeholder="Equipment" style="padding:4px 6px; margin-right:6px; border-radius:4px; border:1px solid #ccc;">
+  <button id="saveBtn" style="padding:6px 10px; border:none; border-radius:4px; background:var(--orange); color:#fff; cursor:pointer;">Save to Firebase</button>
+</div>
+
+<!-- Firebase SDK -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/11.27.0/firebase-app.js";
   import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.27.0/firebase-analytics.js";
-  import { getFirestore, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/11.27.0/firebase-firestore.js";
+  import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/11.27.0/firebase-firestore.js";
 
   // Firebase configuration
   const firebaseConfig = {
@@ -216,7 +224,7 @@
   const analytics = getAnalytics(app);
   const db = getFirestore(app);
 
-  // Fungsi untuk push data ke Firestore
+  // Fungsi push data ke Firestore
   async function saveEquipData(category, equipData) {
     try {
       const docRef = await addDoc(collection(db, "daily-ltr"), {
@@ -232,14 +240,20 @@
     }
   }
 
-  // Pasang listener tombol (pastikan tombol sudah ada di HTML)
+  // Pasang listener tombol Save
   const saveBtn = document.getElementById("saveBtn");
   if(saveBtn){
     saveBtn.addEventListener("click", () => {
-      const category = document.getElementById("categoryInput")?.value || "DefaultCategory";
-      const equip = document.getElementById("equipInput")?.value || "DefaultEquip";
+      const category = document.getElementById("categoryInput")?.value.trim();
+      const equip = document.getElementById("equipInput")?.value.trim();
+      if(!category || !equip){
+        alert("Isi category dan equipment dulu!");
+        return;
+      }
       saveEquipData(category, equip);
     });
+  } else {
+    console.warn("Tombol #saveBtn tidak ditemukan.");
   }
 </script>
 
