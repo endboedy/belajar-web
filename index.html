@@ -202,9 +202,9 @@
 
 <script type="module">
   // Import Firebase modul yang tersedia
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/11/firebase-app.js";
-  import { getAnalytics } from "https://www.gstatic.com/firebasejs/11/firebase-analytics.js";
-  import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/11/firebase-firestore.js";
+ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-analytics.js";
+  import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
   // Konfigurasi Firebase
   const firebaseConfig = {
@@ -222,7 +222,7 @@
   const analytics = getAnalytics(app);
   const db = getFirestore(app);
 
-  // ------------------ REVISI BAGIAN SAVE ------------------
+  // Fungsi saveAllData() seperti versi sebelumnya
   async function saveAllData() {
     try {
       const categories = [];
@@ -257,7 +257,6 @@
             sub: []
           };
 
-          // Ambil sub-row yang terkait
           let sub = equip.nextElementSibling;
           while(sub && sub.classList.contains('sub-row') && sub.dataset.parent === equip.dataset.equipId){
             const sc = sub.children;
@@ -296,7 +295,6 @@
     }
   }
 
-  // Pasang listener tombol Save
   document.getElementById("saveBtn").addEventListener("click", saveAllData);
 </script>
   <script>
@@ -746,4 +744,5 @@ function loadSummaryData(){
   </script>
 </body>
 </html>
+
 
