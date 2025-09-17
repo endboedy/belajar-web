@@ -197,14 +197,16 @@
 <!-- Firebase SDK -->
 <!-- Firebase Input & Save -->
 <div style="margin-bottom:12px; padding:8px; background:#fff; border-radius:6px; box-shadow:0 4px 8px rgba(0,0,0,0.05);">
-  <button id="saveBtn" style="padding:6px 10px; border:none; border-radius:4px; background:var(--orange); color:#fff; cursor:pointer;">Save All to Firebase</button>
+  <button id="saveBtn" style="padding:6px 10px; border:none; border-radius:4px; background:var(--orange); color:#fff; cursor:pointer;">
+    Save All to Firebase
+  </button>
 </div>
 
 <script type="module">
-  // Import Firebase modul yang tersedia
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/11/firebase-app.js";
-  import { getAnalytics } from "https://www.gstatic.com/firebasejs/11/firebase-analytics.js";
-  import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/11/firebase-firestore.js";
+  // Import Firebase modul via jsdelivr (versi stabil terbaru)
+  import { initializeApp } from "https://cdn.jsdelivr.net/npm/firebase@12.2.1/app.js";
+  import { getAnalytics } from "https://cdn.jsdelivr.net/npm/firebase@12.2.1/analytics.js";
+  import { getFirestore, collection, addDoc, onSnapshot } from "https://cdn.jsdelivr.net/npm/firebase@12.2.1/firestore.js";
 
   // Konfigurasi Firebase
   const firebaseConfig = {
@@ -222,7 +224,22 @@
   const analytics = getAnalytics(app);
   const db = getFirestore(app);
 
-  // Fungsi untuk push semua data category & equip
+  // 🔹 Listener realtime untuk koleksi "daily-ltr"
+  onSnapshot(collection(db, "daily-ltr"), (snapshot) => {
+    snapshot.docChanges().forEach((change) => {
+      if (change.type === "added") {
+        console.log("New document: ", change.doc.data());
+      }
+      if (change.type === "modified") {
+        console.log("Modified document: ", change.doc.data());
+      }
+      if (change.type === "removed") {
+        console.log("Removed document: ", change.doc.data());
+      }
+    });
+  });
+
+  // 🔹 Fungsi push semua data category & equip ke Firestore
   async function saveAllData() {
     try {
       const categories = [];
@@ -260,7 +277,7 @@
           const dateCols = equip.querySelectorAll('td.date-col');
           dateCols.forEach(d => equipObj.dates.push(d.textContent.trim()));
 
-          // Ambil sub-rows yang terkait
+          // Ambil sub-rows
           let sub = equip.nextElementSibling;
           while(sub && sub.classList.contains('sub-row') && sub.dataset.parent === equip.dataset.equipId) {
             const subObj = {
@@ -294,10 +311,11 @@
     }
   }
 
-  // Pasang listener tombol
+  // Pasang listener tombol save
   document.getElementById("saveBtn").addEventListener("click", saveAllData);
 </script>
-  <script>
+
+  
   // TAB
   document.querySelectorAll('.tab-btn').forEach(b=>{
     b.addEventListener('click', ()=>{
@@ -743,3 +761,4 @@ function loadSummaryData(){
   </script>
 </body>
 </html>
+
