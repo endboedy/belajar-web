@@ -202,9 +202,9 @@
 
 <script type="module">
   // Import Firebase modul yang tersedia
- import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
   import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-analytics.js";
-  import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+  import { getFirestore, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
   // Konfigurasi Firebase
   const firebaseConfig = {
@@ -222,7 +222,7 @@
   const analytics = getAnalytics(app);
   const db = getFirestore(app);
 
-  // Fungsi saveAllData() seperti versi sebelumnya
+  // ===================== SAVE DATA =====================
   async function saveAllData() {
     try {
       const categories = [];
@@ -296,7 +296,96 @@
   }
 
   document.getElementById("saveBtn").addEventListener("click", saveAllData);
+
+  // ===================== LOAD DATA =====================
+  async function loadDataFromFirebase() {
+    try {
+      const querySnapshot = await getDocs(collection(db, "daily-ltr"));
+      if(querySnapshot.empty) return;
+
+      // Clear existing categories
+      document.getElementById('categoriesList').innerHTML = '';
+
+      // Ambil dokumen terakhir
+      const lastDoc = querySnapshot.docs[querySnapshot.docs.length - 1];
+      const data = lastDoc.data();
+
+      data.categories.forEach(cat => {
+        addCategoryFromFirebase(cat);
+      });
+    } catch(e) {
+      console.error("Error loading data: ", e);
+    }
+  }
+
+  function addCategoryFromFirebase(cat) {
+    const cid = 'cat-' + (++window.catIdCounter || 1);
+    const wrap = document.createElement('div'); wrap.className='category-wrap'; wrap.id = cid;
+
+    const header = document.createElement('div'); header.className='category';
+    header.innerHTML = `<div class="cat-title">${cat.name}</div>
+                        <div class="cat-controls">
+                          <button onclick="renameCategory('${cid}')">R</button>
+                          <button onclick="deleteCategory('${cid}')">D</button>
+                        </div>`;
+    wrap.appendChild(header);
+
+    const tw = document.createElement('div'); tw.className='table-wrap';
+    const table = document.createElement('table'); table.id = cid + '-table';
+    const thead = document.createElement('thead'); 
+    // Buat header tabel sama seperti addCategory
+    table.appendChild(thead);
+    const tbody = document.createElement('tbody'); tbody.id = cid + '-tbody'; table.appendChild(tbody);
+    tw.appendChild(table); wrap.appendChild(tw);
+
+    cat.equips.forEach(equip => {
+      addEquipFromFirebase(tbody, cid, equip);
+    });
+
+    document.getElementById('categoriesList').appendChild(wrap);
+    wrap.dataset.nextEquip = String(cat.equips.length + 1);
+  }
+
+  function addEquipFromFirebase(tbody, cid, equip) {
+    // Mirip fungsi addEquip, tapi ambil nilai dari Firebase
+    const tr = document.createElement('tr'); tr.className='equip-row'; tr.dataset.equipId = 'e-'+Math.random().toString(36).substr(2,5);
+    tr.innerHTML = `<td></td>
+                    <td>${equip.name}</td>
+                    <td>${equip.status}</td>
+                    <td>${equip.description}</td>
+                    <td>${equip.progress}</td>
+                    <td>${equip.st}</td>
+                    <td>${equip.delay}</td>
+                    <td>${equip.pic}</td>
+                    <td><input value="${equip.down || ''}"></td>
+                    <td><input value="${equip.up || ''}"></td>
+                    <td>${equip.plan}</td>
+                    <td>${equip.actual}</td>
+                    <td>${equip.dev}</td>
+                    <td>${equip.pct}</td>
+                    <td class="date-col">${equip.dates.join('</td><td class="date-col">')}</td>
+                    <td>${equip.part}</td>
+                    <td>${equip.sup}</td>
+                    <td>${equip.lab}</td>
+                    <td>${equip.weat}</td>`;
+    tbody.appendChild(tr);
+
+    // Sub rows
+    equip.sub.forEach(sub => {
+      const subTr = document.createElement('tr'); subTr.className='sub-row'; subTr.dataset.parent = tr.dataset.equipId;
+      subTr.innerHTML = `<td></td><td></td><td></td><td></td><td></td>
+                         <td>${sub.st}</td><td></td><td></td><td></td><td></td>
+                         <td></td><td></td><td></td><td></td>
+                         <td></td><td>${sub.part}</td><td>${sub.sup}</td><td>${sub.lab}</td><td>${sub.weat}</td>`;
+      tbody.appendChild(subTr);
+    });
+  }
+
+  // Panggil load saat halaman siap
+  window.addEventListener('DOMContentLoaded', loadDataFromFirebase);
+
 </script>
+
   <script>
 
   // TAB
@@ -744,5 +833,6 @@ function loadSummaryData(){
   </script>
 </body>
 </html>
+
 
 
