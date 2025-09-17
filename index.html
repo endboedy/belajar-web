@@ -197,7 +197,9 @@
   <script>
   // TAB
   document.querySelectorAll('.tab-btn').forEach(b=>{
-    b.addEventListener('click', ()=>{ document.querySelectorAll('.tab-btn').forEach(x=>x.classList.remove('active')); b.classList.add('active');
+    b.addEventListener('click', ()=>{
+      document.querySelectorAll('.tab-btn').forEach(x=>x.classList.remove('active'));
+      b.classList.add('active');
       const t = b.dataset.tab;
       if(t==='daily'){ document.getElementById('categoriesList').style.display='block'; document.getElementById('summary').style.display='none'; }
       else { document.getElementById('categoriesList').style.display='none'; document.getElementById('summary').style.display='block'; }
@@ -294,7 +296,6 @@
     document.getElementById(cid).remove();
   }
 
-  // add equip row to tbody; numbering starts from 1 per category
   function addEquip(tbody, cid){
     const wrap = document.getElementById(cid);
     let next = parseInt(wrap.dataset.nextEquip || '1',10);
@@ -303,14 +304,12 @@
 
     const tr = document.createElement('tr'); tr.className='equip-row'; tr.dataset.equipId = equipId;
 
-    // No cell (click to toggle sub)
     const tdNo = document.createElement('td'); tdNo.className='c-no';
-    tdNo.textContent = ''; // will fill after append
+    tdNo.textContent = '';
     tdNo.style.cursor = 'pointer';
     tdNo.addEventListener('click', ()=> toggleSub(equipId, tdNo));
     tr.appendChild(tdNo);
 
-    // Equip, Status, Description, Progress (contenteditable)
     const names = ['equip','status','description','progress'];
     for(let i=0;i<4;i++){
       const td=document.createElement('td'); td.contentEditable = 'true';
@@ -318,59 +317,49 @@
       tr.appendChild(td);
     }
 
-    // St, Delay, PIC
     ['st','delay','pic'].forEach(k=>{
       const td=document.createElement('td'); td.contentEditable='true'; td.className='c-small'; td.style.textAlign='center';
       td.addEventListener('input', ()=> onStChange(tr)); // optional
       tr.appendChild(td);
     });
 
-    // Down Time (input)
     const tdDown = document.createElement('td'); tdDown.className='c-dt';
     const inDown = document.createElement('input'); inDown.type='datetime-local';
     inDown.style.border='none'; inDown.style.background='transparent'; inDown.style.width='100%';
     inDown.addEventListener('change', ()=> recalcRow(tr));
     tdDown.appendChild(inDown); tr.appendChild(tdDown);
 
-    // Uptime
     const tdUp = document.createElement('td'); tdUp.className='c-dt';
     const inUp = document.createElement('input'); inUp.type='datetime-local';
     inUp.style.border='none'; inUp.style.background='transparent'; inUp.style.width='100%';
     inUp.addEventListener('change', ()=> recalcRow(tr));
     tdUp.appendChild(inUp); tr.appendChild(tdUp);
 
-    // Plan
     const tdPlan = document.createElement('td'); tdPlan.contentEditable='true'; tdPlan.className='c-num';
     tdPlan.addEventListener('input', ()=> recalcRow(tr));
     tr.appendChild(tdPlan);
 
-    // Actual
     const tdActual = document.createElement('td'); tdActual.className='actual c-num'; tdActual.textContent='0'; tr.appendChild(tdActual);
-
-    // Dev
     const tdDev = document.createElement('td'); tdDev.className='dev c-num'; tdDev.textContent='0'; tr.appendChild(tdDev);
-
-    // %
     const tdPct = document.createElement('td'); tdPct.className='pct c-num'; tdPct.textContent='0%'; tr.appendChild(tdPct);
 
-    // Date columns
     for(let i=0;i<DATE_COLS.length;i++){ const td=document.createElement('td'); td.className='date-col'; td.textContent=''; tr.appendChild(td); }
 
-    // Part..Weat (no "D-")
+    // Part..Weat (editable + total)
     ['Part','Sup','Lab','Weat'].forEach(n=>{
       const td=document.createElement('td'); td.contentEditable='true';
-      td.addEventListener('input', ()=> td.classList.toggle('filled', td.innerText.trim() !== ''));
+      td.addEventListener('input', ()=>{
+        td.classList.toggle('filled', td.innerText.trim() !== '');
+        recomputeTotalsForEquip(tr); // tambahan total otomatis
+      });
       tr.appendChild(td);
     });
 
-    // Action small: + sub and - delete
     const tdAction = document.createElement('td'); tdAction.className='c-action';
     const addBtn = document.createElement('button'); addBtn.textContent = '+'; addBtn.className='icon-btn icon-add';
     addBtn.addEventListener('click', ()=> addSub(equipId, tr));
     const delBtn = document.createElement('button'); delBtn.textContent = '-'; delBtn.className='icon-btn icon-del';
-    delBtn.addEventListener('click', ()=> {
-      if(confirm('Hapus equip?')) { removeSubs(equipId, tbody); tr.remove(); refreshNumbers(tbody, cid); }
-    });
+    delBtn.addEventListener('click', ()=> { if(confirm('Hapus equip?')) { removeSubs(equipId, tbody); tr.remove(); refreshNumbers(tbody, cid); }});
     tdAction.appendChild(addBtn); tdAction.appendChild(delBtn); tr.appendChild(tdAction);
 
     tbody.appendChild(tr);
@@ -384,14 +373,12 @@
     const cols = equipRow.children.length;
     for(let i=0;i<cols;i++){
       const td = document.createElement('td');
-      // editable for progress(index 4), st(5), delay(6), pic(7)
       const lastIndex = cols - 1;
-      const dpartStart = lastIndex - 4; // Part starts here
+      const dpartStart = lastIndex - 4;
       if(i===4 || i===5 || i===6 || i===7){
         td.contentEditable='true';
-        if(i===4){ td.style.textAlign='left'; } // progress in sub left-aligned
+        if(i===4){ td.style.textAlign='left'; }
         if(i===5){
-          // St cell in sub: style on input and recompute percent
           td.addEventListener('input', ()=>{
             const v = (td.innerText||'').trim().toUpperCase();
             td.classList.remove('st-c','st-ip');
@@ -402,22 +389,25 @@
         }
       } else if(i >= dpartStart && i <= dpartStart + 3){
         td.contentEditable='true';
-        td.addEventListener('input', ()=> td.classList.toggle('filled', td.innerText.trim() !== ''));
+        td.addEventListener('input', ()=>{
+          td.classList.toggle('filled', td.innerText.trim() !== '');
+          recomputeTotalsForEquip(equipRow);
+        });
       } else if(i === cols -1){
         const del = document.createElement('button'); del.textContent='-'; del.className='icon-btn icon-del';
-        del.addEventListener('click', ()=> { if(confirm('Hapus sub?')){ trSub.remove(); recomputePercentForEquip(equipRow); }});
+        del.addEventListener('click', ()=> { if(confirm('Hapus sub?')){ trSub.remove(); recomputePercentForEquip(equipRow); recomputeTotalsForEquip(equipRow); }});
         td.appendChild(del);
       }
       trSub.appendChild(td);
     }
 
-    // insert after last sub of this equip or directly after equip
     let insertAfter = equipRow;
     let next = equipRow.nextElementSibling;
     while(next && next.classList.contains('sub-row') && next.dataset.parent === equipId){ insertAfter = next; next = next.nextElementSibling; }
     insertAfter.insertAdjacentElement('afterend', trSub);
 
     recomputePercentForEquip(equipRow);
+    recomputeTotalsForEquip(equipRow);
   }
 
   function removeSubs(equipId, tbody){
@@ -428,7 +418,7 @@
   function refreshNumbers(tbody, cid){
     const rows = Array.from(tbody.querySelectorAll('tr.equip-row'));
     rows.forEach((r,i)=>{ const noCell = r.querySelector('td.c-no'); if(noCell) noCell.textContent = (i+1); else r.children[0].textContent = (i+1); });
-    rows.forEach(r=> recomputePercentForEquip(r));
+    rows.forEach(r=>{ recomputePercentForEquip(r); recomputeTotalsForEquip(r); });
   }
 
   function toggleSub(equipId, tdNo){
@@ -460,7 +450,33 @@
     else { if(pctCell) pctCell.textContent = '0%'; }
   }
 
-  // recalc actual/dev when down/up/plan changed
+  function recomputeTotalsForEquip(equipRow){
+    const tbody = equipRow.parentElement;
+    const equipId = equipRow.dataset.equipId;
+    const headers = Array.from(equipRow.closest('table').querySelectorAll('thead th')).map(h=>h.textContent.trim());
+    const partIdx = headers.indexOf('Part');
+    const supIdx = headers.indexOf('Sup');
+    const labIdx = headers.indexOf('Lab');
+    const weatIdx = headers.indexOf('Weat');
+
+    const totals = [0,0,0,0]; // Part, Sup, Lab, Weat
+    let sub = equipRow.nextElementSibling;
+    while(sub && sub.classList.contains('sub-row')){
+      if(sub.dataset.parent === equipId){
+        totals[0] += parseFloat(sub.children[partIdx].innerText||0) || 0;
+        totals[1] += parseFloat(sub.children[supIdx].innerText||0) || 0;
+        totals[2] += parseFloat(sub.children[labIdx].innerText||0) || 0;
+        totals[3] += parseFloat(sub.children[weatIdx].innerText||0) || 0;
+      }
+      sub = sub.nextElementSibling;
+    }
+    // update equipRow totals
+    if(partIdx>=0) equipRow.children[partIdx].textContent = totals[0] || '';
+    if(supIdx>=0) equipRow.children[supIdx].textContent = totals[1] || '';
+    if(labIdx>=0) equipRow.children[labIdx].textContent = totals[2] || '';
+    if(weatIdx>=0) equipRow.children[weatIdx].textContent = totals[3] || '';
+  }
+
   function recalcRow(tr){
     const ths = Array.from(tr.closest('table').querySelectorAll('thead th')).map(h=>h.textContent.trim());
     const downIdx = ths.indexOf('Down Time');
@@ -475,17 +491,15 @@
     if(downInput && upInput && downInput.value && upInput.value){
       const d = new Date(downInput.value);
       const u = new Date(upInput.value);
-      if(!isNaN(d) && !isNaN(u) && u > d) actual = (u - d) / 36e5; // hours
+      if(!isNaN(d) && !isNaN(u) && u > d) actual = (u - d) / 36e5;
     }
     if(tr.children[actualIdx]) tr.children[actualIdx].textContent = actual ? String(Math.round(actual)) : '0';
     const planVal = parseFloat(tr.children[planIdx].innerText || tr.children[planIdx].textContent || '0') || 0;
-    const dev = actual - planVal;
+    const dev = planVal - actual;
     if(tr.children[devIdx]){
       tr.children[devIdx].textContent = String(Math.round(dev));
       tr.children[devIdx].classList.toggle('dev-negative', dev < 0);
     }
-
-    // mark date range
     const upVal = upInput ? upInput.value : null;
     const downVal = downInput ? downInput.value : null;
     markDateRange(tr, upVal, downVal);
@@ -506,7 +520,6 @@
     }
   }
 
-  // export: collect all tables into one workbook-like HTML
   function exportAllTablesToExcel(){
     const tables = document.querySelectorAll('.table-wrap table');
     if(tables.length===0){ alert('No data to export'); return; }
@@ -519,8 +532,111 @@
     URL.revokeObjectURL(url);
   }
 
-  // helper
   function escapeHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+
+// --------------------- MENU 2: Summary ---------------------
+const summaryDiv = document.getElementById('summary');
+
+document.querySelectorAll('.tab-btn').forEach(b=>{
+  b.addEventListener('click', ()=>{
+    if(b.dataset.tab === 'summary'){
+      const loadBtn = document.getElementById('btnAddCategory');
+      loadBtn.textContent = 'Load Data';
+      loadBtn.onclick = loadSummaryData;
+    }
+  });
+});
+
+function loadSummaryData(){
+  summaryDiv.innerHTML = ''; // clear dulu
+  const allCategories = document.querySelectorAll('.category-wrap');
+
+  allCategories.forEach(cat=>{
+    const catName = cat.querySelector('.cat-title').textContent;
+
+    // tabel
+    const table = document.createElement('table');
+    table.style.marginBottom = '12px';
+    table.style.width = '90%'; // perkecil
+    table.style.borderCollapse = 'collapse';
+    table.style.fontSize = '12px';
+
+    // thead
+    const thead = document.createElement('thead');
+    const trh = document.createElement('tr');
+    ['Equip','Plan','Actual','Dev','%','Part','Sup','Lab','Weat','Delay'].forEach(lbl=>{
+      const th = document.createElement('th');
+      th.textContent = lbl;
+      th.style.border = '1px solid var(--border)';
+      th.style.padding = '4px';
+      th.style.background = 'var(--thead)';
+      trh.appendChild(th);
+    });
+    thead.appendChild(trh);
+    table.appendChild(thead);
+
+    // tbody
+    const tbody = document.createElement('tbody');
+
+    // Category row (background sama seperti menu 1, selebar tabel)
+    const catRow = document.createElement('tr');
+    const catTd = document.createElement('td');
+    catTd.colSpan = 10; // sampai kolom Delay
+    catTd.style.background = 'var(--orange)';
+    catTd.style.color = '#fff';
+    catTd.style.fontWeight = '600';
+    catTd.style.textAlign = 'left';
+    catTd.style.paddingLeft = '6px';
+    catTd.textContent = catName;
+    catRow.appendChild(catTd);
+    tbody.appendChild(catRow);
+
+    const equipRows = cat.querySelectorAll('tr.equip-row');
+    equipRows.forEach(r=>{
+      const tr = document.createElement('tr');
+      tr.style.background = 'var(--equip)';
+
+      const plan = parseFloat(r.children[10]?.textContent || 0) || 0;
+      const actual = parseFloat(r.children[11]?.textContent || 0) || 0;
+      const dev = plan - actual;
+      const pct = r.children[13]?.textContent || '0%';
+
+      const part = parseFloat(r.children[r.children.length-5]?.textContent || 0) || 0;
+      const sup = parseFloat(r.children[r.children.length-4]?.textContent || 0) || 0;
+      const lab = parseFloat(r.children[r.children.length-3]?.textContent || 0) || 0;
+      const weat = parseFloat(r.children[r.children.length-2]?.textContent || 0) || 0;
+      const delay = part + sup + lab + weat;
+
+      const values = [
+        r.children[1]?.textContent || '', // Equip
+        plan, actual, dev, pct,
+        part, sup, lab, weat, delay
+      ];
+
+      values.forEach((v,i)=>{
+        const td = document.createElement('td');
+        td.textContent = v;
+        td.style.border = '1px solid var(--border)';
+        td.style.padding = '2px 4px';
+        td.style.textAlign = 'center';
+        // pewarnaan Dev
+        if(i===3 && dev<0){
+          td.style.background = 'var(--dev-neg)';
+          td.style.color = '#fff';
+          td.style.fontWeight = '600';
+        }
+        tr.appendChild(td);
+      });
+
+      tbody.appendChild(tr);
+    });
+
+    table.appendChild(tbody);
+    summaryDiv.appendChild(table);
+  });
+}
+
   </script>
 </body>
 </html>
