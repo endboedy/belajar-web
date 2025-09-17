@@ -10,10 +10,10 @@
       --header:#2c3e50;
       --thead:#ddd;
       --equip:#fff8c6;
-      --st-c:#6a0dad; 
-      --st-ip:#1f77b4;
+      --st-c:#6a0dad; /* ungu tua */
+      --st-ip:#1f77b4; /* biru */
       --dev-neg:#c0392b;
-      --date-green:#116530;
+      --date-green:#116530; /* hijau tua */
       --border:#ccc;
     }
     body{
@@ -48,16 +48,6 @@
 
     .container{ padding:14px 16px; }
 
-    .controls{ display:flex; gap:8px; margin-bottom:12px; }
-    .controls button{ padding:8px 10px; border-radius:6px; border:none; cursor:pointer; background:#3498db; color:#fff; }
-
-    /* tambahkan tombol save Firebase */
-    #saveBtn{
-      background:var(--orange);
-      color:#fff;
-    }
-
-    /* category / table styling sama seperti sebelumnya */
     .category-wrap{
       margin-bottom:16px;
       border-radius:8px;
@@ -87,6 +77,7 @@
     }
 
     .table-wrap{ padding:6px; background:#fff; border-top:1px solid var(--border); }
+
     table{
       width:100%;
       border-collapse:collapse;
@@ -96,7 +87,7 @@
     thead th{
       background:var(--thead);
       border:1px solid var(--border);
-      padding:3px 4px;
+      padding:3px 4px;         /* diperkecil */
       font-weight:400;
       font-size:11px;
       position:sticky;
@@ -105,12 +96,76 @@
     }
     tbody td{
       border:1px solid var(--border);
-      padding:2px 4px;
+      padding:2px 4px;         /* diperkecil */
       vertical-align:middle;
-      height:22px;
+      height:22px;             /* lebih ramping */
       overflow:hidden;
       font-size:13px;
       text-align:center;
+    }
+
+    /* columns */
+    .c-no{ width:36px; min-width:36px; }
+    .c-equip{ width:90px; min-width:70px; text-align:left; padding-left:6px; }
+    .c-status{ width:80px; min-width:70px; }
+    .c-desc{ width:160px; min-width:120px; text-align:left; padding-left:6px; }
+    .c-progress{ width:200px; min-width:140px; text-align:left; padding-left:6px; }
+    .c-small{ width:56px; min-width:46px; }
+    .c-dt{ width:110px; min-width:100px; } /* diperkecil */
+    .c-num{ width:64px; min-width:54px; }
+    .c-action{ width:60px; min-width:50px; }
+
+    tr.equip-row{ background:var(--equip); }
+    tr.sub-row{ background:#fff; }
+
+    /* contenteditable styling (no box) */
+    td[contenteditable="true"]{ outline:none; cursor:text; }
+    td[contenteditable="true"]::placeholder{ color:#999; }
+
+    /* small action buttons */
+    .icon-btn{
+      border:none;
+      background:#e6e6e6;
+      padding:4px 6px;
+      border-radius:4px;
+      cursor:pointer;
+      margin-left:4px;
+      font-weight:700;
+    }
+    .icon-del{ background:#f2b8b8; }
+    .icon-add{ background:#c8e6c9; }
+
+    /* status colors */
+    .st-c{ background:var(--st-c) !important; color:#fff !important; font-weight:700; }
+    .st-ip{ background:var(--st-ip) !important; color:#fff !important; font-weight:700; }
+
+    .dev-negative{ background:var(--dev-neg); color:#fff; }
+
+    /* d-part filled */
+    .filled{ background:#fff8c6; }
+
+    /* date green */
+    .date-green{ background:var(--date-green); color:#fff; font-weight:700; }
+
+    /* export buttons */
+    .controls{ display:flex; gap:8px; margin-bottom:12px; }
+    .controls button{ padding:8px 10px; border-radius:6px; border:none; cursor:pointer; background:#3498db; color:#fff; }
+
+    /* print adjustments */
+    @page { size: A4 landscape; margin: 6mm; }
+    @media print {
+      body { background: #fff; -webkit-print-color-adjust: exact; }
+      nav, .controls, .icon-btn, .cat-controls { display: none !important; }
+      table { page-break-inside: auto; width:100%; }
+      thead { display:table-header-group; }
+      tr { page-break-inside: avoid; page-break-after: auto; }
+      td, th { padding: 2px 4px; font-size:10px; }
+    }
+
+    /* responsive */
+    @media (max-width:900px){
+      .c-desc, .c-progress{ width:120px; }
+      .c-dt{ width:100px; }
     }
   </style>
 </head>
@@ -127,131 +182,117 @@
       <button id="btnAddCategory">+ Add Category</button>
       <button id="btnExportExcel">Download Excel</button>
       <button id="btnExportPDF">Download PDF</button>
-      <button id="saveBtn">Save All to Firebase</button>
     </div>
 
+    <!-- categories list -->
     <div id="categoriesList"></div>
+
+    <!-- summary placeholder -->
     <div id="summary" style="display:none;">
       <h3>Summary LTR</h3>
       <p>Coming soon...</p>
     </div>
   </div>
 
+<!-- Firebase SDK -->
+<!-- Tambahkan tombol Save di tempat yang tidak mengganggu layout -->
+<div style="margin-bottom:12px; padding:8px; background:#fff; border-radius:6px; box-shadow:0 4px 8px rgba(0,0,0,0.05);">
+  <button id="saveBtn" style="padding:6px 10px; border:none; border-radius:4px; background:var(--orange); color:#fff; cursor:pointer;">Save All to Firebase</button>
+</div>
+
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11/firebase-app.js";
-import { getAnalytics } from "https://www.gstatic.com/firebasejs/11/firebase-analytics.js";
-import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/11/firebase-firestore.js";
+  // Import Firebase modules
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11/firebase-app.js";
+  import { getAnalytics } from "https://www.gstatic.com/firebasejs/11/firebase-analytics.js";
+  import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/11/firebase-firestore.js";
 
-const firebaseConfig = {
-  apiKey: "AIzaSyCET8kx3EUAghmu6ctKUoiVY1RN2MIXv_s",
-  authDomain: "daily-ltr.firebaseapp.com",
-  projectId: "daily-ltr",
-  storageBucket: "daily-ltr.firebasestorage.app",
-  messagingSenderId: "227395041351",
-  appId: "1:227395041351:web:b3deaab08be421bb3bd962",
-  measurementId: "G-VXF6HH5FDW"
-};
+  // Konfigurasi Firebase
+  const firebaseConfig = {
+    apiKey: "AIzaSyCET8kx3EUAghmu6ctKUoiVY1RN2MIXv_s",
+    authDomain: "daily-ltr.firebaseapp.com",
+    projectId: "daily-ltr",
+    storageBucket: "daily-ltr.firebasestorage.app",
+    messagingSenderId: "227395041351",
+    appId: "1:227395041351:web:b3deaab08be421bb3bd962",
+    measurementId: "G-VXF6HH5FDW"
+  };
 
-const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
-const db = getFirestore(app);
+  const app = initializeApp(firebaseConfig);
+  const analytics = getAnalytics(app);
+  const db = getFirestore(app);
 
-async function saveAllData() {
-  try {
-    const categories = [];
-    document.querySelectorAll('.category-wrap').forEach(cat=>{
-      const catName = cat.querySelector('.cat-title')?.textContent.trim() || "Unnamed";
-      const equips = [];
-      cat.querySelectorAll('tr.equip-row').forEach(equip=>{
-        const obj = {
-          name: equip.children[1]?.textContent.trim() || "",
-          status: equip.children[2]?.textContent.trim() || "",
-          description: equip.children[3]?.textContent.trim() || "",
-          progress: equip.children[4]?.textContent.trim() || "",
-          st: equip.children[5]?.textContent.trim() || "",
-          delay: equip.children[6]?.textContent.trim() || "",
-          pic: equip.children[7]?.textContent.trim() || "",
-          down: equip.children[8]?.querySelector('input')?.value || "",
-          up: equip.children[9]?.querySelector('input')?.value || "",
-          plan: equip.children[10]?.textContent.trim() || "",
-          actual: equip.children[11]?.textContent.trim() || "",
-          dev: equip.children[12]?.textContent.trim() || "",
-          pct: equip.children[13]?.textContent.trim() || "",
-          dates: Array.from(equip.querySelectorAll('td.date-col')).map(d=>d.textContent.trim())
-        };
-        equips.push(obj);
-      });
-      categories.push({name:catName,equips});
-    });
+  // Fungsi untuk push semua data ke Firebase
+  async function saveAllData() {
+    try {
+      const categories = [];
+      const allCats = document.querySelectorAll('.category-wrap');
 
-    await addDoc(collection(db,"daily-ltr"),{ timestamp: new Date(), categories });
-    alert("Data berhasil disimpan ke Firebase!");
-  } catch(e){
-    console.error(e);
-    alert("Gagal menyimpan data!");
-  }
-}
+      allCats.forEach(cat => {
+        const catName = cat.querySelector('.cat-title')?.textContent.trim() || "Unnamed Category";
+        const equips = [];
+        const equipRows = cat.querySelectorAll('tr.equip-row');
 
-document.getElementById("saveBtn").addEventListener("click", saveAllData);
-</script>
-<script>
+        equipRows.forEach(equip => {
+          const equipObj = {
+            name: equip.children[1]?.textContent.trim() || "",
+            status: equip.children[2]?.textContent.trim() || "",
+            description: equip.children[3]?.textContent.trim() || "",
+            progress: equip.children[4]?.textContent.trim() || "",
+            st: equip.children[5]?.textContent.trim() || "",
+            delay: equip.children[6]?.textContent.trim() || "",
+            pic: equip.children[7]?.textContent.trim() || "",
+            down: equip.children[8]?.querySelector('input')?.value || "",
+            up: equip.children[9]?.querySelector('input')?.value || "",
+            plan: equip.children[10]?.textContent.trim() || "",
+            actual: equip.children[11]?.textContent.trim() || "",
+            dev: equip.children[12]?.textContent.trim() || "",
+            pct: equip.children[13]?.textContent.trim() || "",
+            dates: Array.from(equip.querySelectorAll('td.date-col')).map(d => d.textContent.trim()),
+            part: equip.children[equip.children.length-5]?.textContent.trim() || "",
+            sup: equip.children[equip.children.length-4]?.textContent.trim() || "",
+            lab: equip.children[equip.children.length-3]?.textContent.trim() || "",
+            weat: equip.children[equip.children.length-2]?.textContent.trim() || "",
+            sub: []
+          };
 
-    // table
-    const tw = document.createElement("div");
-    tw.className = "table-wrap";
-    const table = document.createElement("table");
-    const thead = document.createElement("thead");
-    const trh = document.createElement("tr");
-    const headers = ['No','Equip','Status','Description','Progress','St','Delay','PIC','Down Time','Uptime','Plan','Actual','Dev','%'];
-    headers.forEach(h => { const th = document.createElement("th"); th.textContent = h; trh.appendChild(th); });
-    thead.appendChild(trh);
-    table.appendChild(thead);
+          // Ambil sub-rows
+          let sub = equip.nextElementSibling;
+          while(sub && sub.classList.contains('sub-row') && sub.dataset.parent === equip.dataset.equipId) {
+            equipObj.sub.push({
+              st: sub.children[5]?.textContent.trim() || "",
+              part: sub.children[sub.children.length-5]?.textContent.trim() || "",
+              sup: sub.children[sub.children.length-4]?.textContent.trim() || "",
+              lab: sub.children[sub.children.length-3]?.textContent.trim() || "",
+              weat: sub.children[sub.children.length-2]?.textContent.trim() || ""
+            });
+            sub = sub.nextElementSibling;
+          }
 
-    const tbody = document.createElement("tbody");
-    cat.equips.forEach((eq, idx) => {
-      const tr = document.createElement("tr");
-      tr.className = "equip-row";
-      const values = [
-        idx+1, eq.name, eq.status, eq.description, eq.progress,
-        eq.st, eq.delay, eq.pic, eq.down, eq.up, eq.plan, eq.actual, eq.dev, eq.pct
-      ];
-      values.forEach(v=>{
-        const td = document.createElement("td");
-        td.textContent = v;
-        tr.appendChild(td);
-      });
-      tbody.appendChild(tr);
-
-      // sub-rows
-      if(eq.sub && eq.sub.length>0){
-        eq.sub.forEach(sub=>{
-          const trSub = document.createElement("tr");
-          trSub.className = "sub-row";
-          ['','','','','',sub.st,'','','','','','','',''].forEach(v=>{
-            const td = document.createElement("td"); td.textContent=v; trSub.appendChild(td);
-          });
-          tbody.appendChild(trSub);
+          equips.push(equipObj);
         });
-      }
-    });
-    table.appendChild(tbody);
-    tw.appendChild(table);
-    wrap.appendChild(tw);
-    container.appendChild(wrap);
-  });
-}
 
-// 🔹 Render otomatis saat data di Firestore berubah
-onSnapshot(collection(db, "daily-ltr"), (snapshot) => {
-  const allDocs = snapshot.docs.map(doc => doc.data());
-  allDocs.forEach(doc => {
-    if(doc.categories) renderData(doc.categories);
-  });
-});
+        categories.push({ name: catName, equips });
+      });
 
+      // Simpan ke Firestore
+      const docRef = await addDoc(collection(db, "daily-ltr"), {
+        timestamp: new Date(),
+        categories
+      });
+
+      alert("Semua data berhasil disimpan ke Firebase!");
+      console.log("Document written with ID: ", docRef.id);
+
+    } catch(e) {
+      console.error("Error adding document: ", e);
+      alert("Gagal menyimpan data!");
+    }
+  }
+
+  document.getElementById("saveBtn").addEventListener("click", saveAllData);
 </script>
-  <script>
-  
+
+
   // TAB
   document.querySelectorAll('.tab-btn').forEach(b=>{
     b.addEventListener('click', ()=>{
@@ -697,13 +738,3 @@ function loadSummaryData(){
   </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
