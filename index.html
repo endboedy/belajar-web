@@ -205,7 +205,6 @@
 <script type="module">
   // Import Firebase modul via jsdelivr (versi stabil terbaru)
   import { initializeApp } from "https://cdn.jsdelivr.net/npm/firebase@12.2.1/app.js";
-  import { getAnalytics } from "https://cdn.jsdelivr.net/npm/firebase@12.2.1/analytics.js";
   import { getFirestore, collection, addDoc, onSnapshot } from "https://cdn.jsdelivr.net/npm/firebase@12.2.1/firestore.js";
 
   // Konfigurasi Firebase
@@ -221,7 +220,6 @@
 
   // Inisialisasi Firebase
   const app = initializeApp(firebaseConfig);
-  const analytics = getAnalytics(app);
   const db = getFirestore(app);
 
   // 🔹 Listener realtime untuk koleksi "daily-ltr"
@@ -279,7 +277,7 @@
 
           // Ambil sub-rows
           let sub = equip.nextElementSibling;
-          while(sub && sub.classList.contains('sub-row') && sub.dataset.parent === equip.dataset.equipId) {
+          while(sub && sub.classList.contains('sub-row') && equip.dataset.equipId && sub.dataset.parent === equip.dataset.equipId) {
             const subObj = {
               st: sub.children[5]?.textContent.trim() || "",
               part: sub.children[sub.children.length-5]?.textContent.trim() || "",
@@ -313,6 +311,18 @@
 
   // Pasang listener tombol save
   document.getElementById("saveBtn").addEventListener("click", saveAllData);
+
+  // 🔹 Listener untuk tab button (fix syntax error)
+  document.querySelectorAll('.tab-btn').forEach(b => {
+    b.addEventListener('click', () => {
+      const target = b.dataset.tabTarget;
+      document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
+      document.querySelector(`#${target}`)?.classList.add('active');
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      b.classList.add('active');
+    });
+  });
+
 </script>
 
   
@@ -761,4 +771,5 @@ function loadSummaryData(){
   </script>
 </body>
 </html>
+
 
