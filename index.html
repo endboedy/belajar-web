@@ -83,7 +83,6 @@
   overflow-x: auto; /* <- tambahkan ini */
   -webkit-overflow-scrolling: touch; /* <- smooth scroll di iOS */
 }
-
     table{
       width:100%;
       border-collapse:collapse;
@@ -344,8 +343,9 @@
     inUp.addEventListener('change', ()=> recalcRow(tr));
     tdUp.appendChild(inUp); tr.appendChild(tdUp);
 
-    const tdPlan = document.createElement('td'); tdPlan.contentEditable='true'; tdPlan.className='c-num';
-    tdPlan.addEventListener('input', ()=> recalcRow(tr));
+    const tdPlan = document.createElement('td'); 
+    tdPlan.className='plan c-num'; 
+    tdPlan.textContent = '0'; 
     tr.appendChild(tdPlan);
 
     const tdActual = document.createElement('td'); tdActual.className='actual c-num'; tdActual.textContent='0'; tr.appendChild(tdActual);
@@ -375,173 +375,239 @@
     refreshNumbers(tbody, cid);
   }
 
-  function addSub(equipId, equipRow){
-    const tbody = equipRow.parentElement;
-    const trSub = document.createElement('tr'); trSub.className='sub-row'; trSub.dataset.parent = equipId;
+ function addSub(equipId, equipRow){
+  const tbody = equipRow.parentElement;
+  const trSub = document.createElement('tr'); 
+  trSub.className='sub-row'; 
+  trSub.dataset.parent = equipId;
 
-    const cols = equipRow.children.length;
-    for(let i=0;i<cols;i++){
-      const td = document.createElement('td');
-      const lastIndex = cols - 1;
-      const dpartStart = lastIndex - 4;
-      if(i===4 || i===5 || i===6 || i===7){
-        td.contentEditable='true';
-        if(i===4){ td.style.textAlign='left'; }
-        if(i===5){
-          td.addEventListener('input', ()=>{
-            const v = (td.innerText||'').trim().toUpperCase();
-            td.classList.remove('st-c','st-ip');
-            if(v==='C') td.classList.add('st-c');
-            else if(v==='IP') td.classList.add('st-ip');
-            recomputePercentForEquip(equipRow);
-          });
-        }
-      } else if(i >= dpartStart && i <= dpartStart + 3){
-        td.contentEditable='true';
+  const cols = equipRow.children.length;
+  for(let i=0;i<cols;i++){
+    const td = document.createElement('td');
+    const lastIndex = cols - 1;
+    const dpartStart = lastIndex - 4;
+
+    if(i===4 || i===5 || i===6 || i===7){
+      td.contentEditable='true';
+      if(i===4){ td.style.textAlign='left'; }
+      if(i===5){
         td.addEventListener('input', ()=>{
-          td.classList.toggle('filled', td.innerText.trim() !== '');
-          recomputeTotalsForEquip(equipRow);
+          const v = (td.innerText||'').trim().toUpperCase();
+          td.classList.remove('st-c','st-ip');
+          if(v==='C') td.classList.add('st-c');
+          else if(v==='IP') td.classList.add('st-ip');
+          recomputePercentForEquip(equipRow);
         });
-      } else if(i === cols -1){
-        const del = document.createElement('button'); del.textContent='-'; del.className='icon-btn icon-del';
-        del.addEventListener('click', ()=> { if(confirm('Hapus sub?')){ trSub.remove(); recomputePercentForEquip(equipRow); recomputeTotalsForEquip(equipRow); }});
-        td.appendChild(del);
       }
-      trSub.appendChild(td);
+    } else if(i >= dpartStart && i <= dpartStart + 3){
+      td.contentEditable='true';
+      td.addEventListener('input', ()=>{
+        td.classList.toggle('filled', td.innerText.trim() !== '');
+        recomputeTotalsForEquip(equipRow);
+      });
+    } else if(i === cols -1){
+      const del = document.createElement('button'); 
+      del.textContent='-'; 
+      del.className='icon-btn icon-del';
+      del.addEventListener('click', ()=> { 
+        if(confirm('Hapus sub?')){
+          trSub.remove(); 
+          recomputePercentForEquip(equipRow); 
+          recomputeTotalsForEquip(equipRow); 
+        }
+      });
+      td.appendChild(del);
     }
-
-    let insertAfter = equipRow;
-    let next = equipRow.nextElementSibling;
-    while(next && next.classList.contains('sub-row') && next.dataset.parent === equipId){ insertAfter = next; next = next.nextElementSibling; }
-    insertAfter.insertAdjacentElement('afterend', trSub);
-
-    recomputePercentForEquip(equipRow);
-    recomputeTotalsForEquip(equipRow);
+    trSub.appendChild(td);
   }
 
-  function removeSubs(equipId, tbody){
-    const subs = Array.from(tbody.querySelectorAll('tr.sub-row'));
-    subs.forEach(s=> { if(s.dataset.parent===equipId) s.remove(); });
+  let insertAfter = equipRow;
+  let next = equipRow.nextElementSibling;
+  while(next && next.classList.contains('sub-row') && next.dataset.parent === equipId){ 
+    insertAfter = next; 
+    next = next.nextElementSibling; 
   }
+  insertAfter.insertAdjacentElement('afterend', trSub);
 
-  function refreshNumbers(tbody, cid){
-    const rows = Array.from(tbody.querySelectorAll('tr.equip-row'));
-    rows.forEach((r,i)=>{ const noCell = r.querySelector('td.c-no'); if(noCell) noCell.textContent = (i+1); else r.children[0].textContent = (i+1); });
-    rows.forEach(r=>{ recomputePercentForEquip(r); recomputeTotalsForEquip(r); });
+  recomputePercentForEquip(equipRow);
+  recomputeTotalsForEquip(equipRow);
+}
+
+function removeSubs(equipId, tbody){
+  const subs = Array.from(tbody.querySelectorAll('tr.sub-row'));
+  subs.forEach(s=> { if(s.dataset.parent===equipId) s.remove(); });
+}
+
+function refreshNumbers(tbody, cid){
+  const rows = Array.from(tbody.querySelectorAll('tr.equip-row'));
+  rows.forEach((r,i)=>{ 
+    const noCell = r.querySelector('td.c-no'); 
+    if(noCell) noCell.textContent = (i+1); 
+    else r.children[0].textContent = (i+1); 
+  });
+  rows.forEach(r=>{ 
+    recomputePercentForEquip(r); 
+    recomputeTotalsForEquip(r); 
+  });
+}
+
+function toggleSub(equipId, tdNo){
+  const tbody = tdNo.closest('tbody');
+  const subs = Array.from(tbody.querySelectorAll('tr.sub-row'));
+  let any=false;
+  for(const s of subs){ 
+    if(s.dataset.parent === equipId){ any=true; break; } 
   }
+  if(!any) return;
+  subs.forEach(s=>{ 
+    if(s.dataset.parent === equipId){ 
+      s.style.display = (s.style.display === 'none') ? '' : 'none'; 
+    } 
+  });
+}
 
-  function toggleSub(equipId, tdNo){
-    const tbody = tdNo.closest('tbody');
-    const subs = Array.from(tbody.querySelectorAll('tr.sub-row'));
-    let any=false;
-    for(const s of subs){ if(s.dataset.parent === equipId){ any=true; break; } }
-    if(!any) return;
-    subs.forEach(s=>{ if(s.dataset.parent === equipId){ s.style.display = (s.style.display === 'none') ? '' : 'none'; }});
-  }
-
-  function recomputePercentForEquip(equipRow){
-    const tbody = equipRow.parentElement;
-    const equipId = equipRow.dataset.equipId;
-    let sub = equipRow.nextElementSibling;
-    let total = 0, complete = 0;
-    const headers = Array.from(equipRow.closest('table').querySelectorAll('thead th')).map(h=>h.textContent.trim());
-    const stIndex = headers.indexOf('St');
-    while(sub && sub.classList.contains('sub-row')){
-      if(sub.dataset.parent === equipId){
-        total++;
-        const stCell = sub.children[stIndex];
-        if(stCell && (stCell.innerText || '').trim().toUpperCase() === 'C') complete++;
-      }
-      sub = sub.nextElementSibling;
+function recomputePercentForEquip(equipRow){
+  const tbody = equipRow.parentElement;
+  const equipId = equipRow.dataset.equipId;
+  let sub = equipRow.nextElementSibling;
+  let total = 0, complete = 0;
+  const headers = Array.from(equipRow.closest('table').querySelectorAll('thead th')).map(h=>h.textContent.trim());
+  const stIndex = headers.indexOf('St');
+  while(sub && sub.classList.contains('sub-row')){
+    if(sub.dataset.parent === equipId){
+      total++;
+      const stCell = sub.children[stIndex];
+      if(stCell && (stCell.innerText || '').trim().toUpperCase() === 'C') complete++;
     }
-    const pctCell = equipRow.querySelector('.pct');
-    if(total>0){ const pct = Math.round((complete/total)*100); if(pctCell) pctCell.textContent = pct + '%'; }
-    else { if(pctCell) pctCell.textContent = '0%'; }
+    sub = sub.nextElementSibling;
   }
+  const pctCell = equipRow.querySelector('.pct');
+  if(total>0){ 
+    const pct = Math.round((complete/total)*100); 
+    if(pctCell) pctCell.textContent = pct + '%'; 
+  }
+  else { 
+    if(pctCell) pctCell.textContent = '0%'; 
+  }
+}
 
-  function recomputeTotalsForEquip(equipRow){
-    const tbody = equipRow.parentElement;
-    const equipId = equipRow.dataset.equipId;
-    const headers = Array.from(equipRow.closest('table').querySelectorAll('thead th')).map(h=>h.textContent.trim());
-    const partIdx = headers.indexOf('Part');
-    const supIdx = headers.indexOf('Sup');
-    const labIdx = headers.indexOf('Lab');
-    const weatIdx = headers.indexOf('Weat');
+function recomputeTotalsForEquip(equipRow){
+  const tbody = equipRow.parentElement;
+  const equipId = equipRow.dataset.equipId;
+  const headers = Array.from(equipRow.closest('table').querySelectorAll('thead th')).map(h=>h.textContent.trim());
+  const partIdx = headers.indexOf('Part');
+  const supIdx = headers.indexOf('Sup');
+  const labIdx = headers.indexOf('Lab');
+  const weatIdx = headers.indexOf('Weat');
 
-    const totals = [0,0,0,0]; // Part, Sup, Lab, Weat
-    let sub = equipRow.nextElementSibling;
-    while(sub && sub.classList.contains('sub-row')){
-      if(sub.dataset.parent === equipId){
-        totals[0] += parseFloat(sub.children[partIdx].innerText||0) || 0;
-        totals[1] += parseFloat(sub.children[supIdx].innerText||0) || 0;
-        totals[2] += parseFloat(sub.children[labIdx].innerText||0) || 0;
-        totals[3] += parseFloat(sub.children[weatIdx].innerText||0) || 0;
-      }
-      sub = sub.nextElementSibling;
+  const totals = [0,0,0,0]; // Part, Sup, Lab, Weat
+  let sub = equipRow.nextElementSibling;
+  while(sub && sub.classList.contains('sub-row')){
+    if(sub.dataset.parent === equipId){
+      totals[0] += parseFloat(sub.children[partIdx].innerText||0) || 0;
+      totals[1] += parseFloat(sub.children[supIdx].innerText||0) || 0;
+      totals[2] += parseFloat(sub.children[labIdx].innerText||0) || 0;
+      totals[3] += parseFloat(sub.children[weatIdx].innerText||0) || 0;
     }
-    // update equipRow totals
-    if(partIdx>=0) equipRow.children[partIdx].textContent = totals[0] || '';
-    if(supIdx>=0) equipRow.children[supIdx].textContent = totals[1] || '';
-    if(labIdx>=0) equipRow.children[labIdx].textContent = totals[2] || '';
-    if(weatIdx>=0) equipRow.children[weatIdx].textContent = totals[3] || '';
+    sub = sub.nextElementSibling;
+  }
+  // update equipRow totals
+  if(partIdx>=0) equipRow.children[partIdx].textContent = totals[0] || '';
+  if(supIdx>=0) equipRow.children[supIdx].textContent = totals[1] || '';
+  if(labIdx>=0) equipRow.children[labIdx].textContent = totals[2] || '';
+  if(weatIdx>=0) equipRow.children[weatIdx].textContent = totals[3] || '';
+}
+
+function recalcRow(tr){
+  const ths = Array.from(tr.closest('table').querySelectorAll('thead th')).map(h=>h.textContent.trim());
+  const downIdx = ths.indexOf('Down Time');
+  const upIdx = ths.indexOf('Uptime');
+  const planIdx = ths.indexOf('Plan');
+  const actualIdx = ths.indexOf('Actual');
+  const devIdx = ths.indexOf('Dev');
+
+  const downInput = tr.children[downIdx]?.querySelector('input');
+  const upInput = tr.children[upIdx]?.querySelector('input');
+ 
+  let plan = 0, actual = 0;
+
+  // PLAN = Uptime - Downtime
+  if(downInput && upInput && downInput.value && upInput.value){
+    const d = new Date(downInput.value);
+    const u = new Date(upInput.value);
+    if(!isNaN(d) && !isNaN(u) && u > d) plan = (u - d) / 36e5;
   }
 
-  function recalcRow(tr){
-    const ths = Array.from(tr.closest('table').querySelectorAll('thead th')).map(h=>h.textContent.trim());
-    const downIdx = ths.indexOf('Down Time');
-    const upIdx = ths.indexOf('Uptime');
-    const planIdx = ths.indexOf('Plan');
-    const actualIdx = ths.indexOf('Actual');
-    const devIdx = ths.indexOf('Dev');
+  // ACTUAL = NOW - Downtime
+  if(downInput && downInput.value){
+    const d = new Date(downInput.value);
+    const now = new Date();
+    if(!isNaN(d) && now > d) actual = (now - d) / 36e5;
+  }
 
-    const downInput = tr.children[downIdx]?.querySelector('input');
-    const upInput = tr.children[upIdx]?.querySelector('input');
-    let actual = 0;
-    if(downInput && upInput && downInput.value && upInput.value){
-      const d = new Date(downInput.value);
-      const u = new Date(upInput.value);
-      if(!isNaN(d) && !isNaN(u) && u > d) actual = (u - d) / 36e5;
+  if(tr.children[planIdx]) tr.children[planIdx].textContent = plan ? String(Math.round(plan)) : '0';
+  if(tr.children[actualIdx]) tr.children[actualIdx].textContent = actual ? String(Math.round(actual)) : '0';
+
+  const dev = plan - actual;
+  if(tr.children[devIdx]){
+    tr.children[devIdx].textContent = String(Math.round(dev));
+    tr.children[devIdx].classList.toggle('dev-negative', dev < 0);
+  }
+
+  const upVal = upInput ? upInput.value : null;
+  const downVal = downInput ? downInput.value : null;
+  markDateRange(tr, upVal, downVal);
+}
+
+function markDateRange(tr, upVal, downVal){
+  const ths = Array.from(tr.closest('table').querySelectorAll('thead th')).map(h=>h.textContent.trim());
+  const startIndex = ths.indexOf(DATE_COLS[0].label);
+  if(startIndex === -1) return;
+
+  for(let i=0;i<DATE_COLS.length;i++){ 
+    const c = tr.children[startIndex + i]; 
+    if(c) c.classList.remove('date-green'); 
+  }
+  if(!upVal || !downVal) return;
+
+  const up = new Date(upVal), down = new Date(downVal);
+  if(isNaN(up) || isNaN(down)) return;
+
+  for(let i=0;i<DATE_COLS.length;i++){ 
+    const dayNum = DATE_COLS[i].obj.getDate();
+    if(dayNum >= down.getDate() && dayNum <= up.getDate()){
+      const cell = tr.children[startIndex + i]; 
+      if(cell) cell.classList.add('date-green');
     }
-    if(tr.children[actualIdx]) tr.children[actualIdx].textContent = actual ? String(Math.round(actual)) : '0';
-    const planVal = parseFloat(tr.children[planIdx].innerText || tr.children[planIdx].textContent || '0') || 0;
-    const dev = planVal - actual;
-    if(tr.children[devIdx]){
-      tr.children[devIdx].textContent = String(Math.round(dev));
-      tr.children[devIdx].classList.toggle('dev-negative', dev < 0);
-    }
-    const upVal = upInput ? upInput.value : null;
-    const downVal = downInput ? downInput.value : null;
-    markDateRange(tr, upVal, downVal);
   }
+}
 
-  function markDateRange(tr, upVal, downVal){
-    const ths = Array.from(tr.closest('table').querySelectorAll('thead th')).map(h=>h.textContent.trim());
-    const startIndex = ths.indexOf(DATE_COLS[0].label);
-    if(startIndex === -1) return;
-    for(let i=0;i<DATE_COLS.length;i++){ const c = tr.children[startIndex + i]; if(c) c.classList.remove('date-green'); }
-    if(!upVal || !downVal) return;
-    const up = new Date(upVal), down = new Date(downVal);
-    if(isNaN(up) || isNaN(down)) return;
-    for(let i=0;i<DATE_COLS.length;i++){ const dayNum = DATE_COLS[i].obj.getDate();
-      if(dayNum >= 15 && dayNum >= down.getDate() && dayNum <= up.getDate()){
-        const cell = tr.children[startIndex + i]; if(cell) cell.classList.add('date-green');
-      }
-    }
+function exportAllTablesToExcel(){
+  const tables = document.querySelectorAll('.table-wrap table');
+  if(tables.length===0){ 
+    alert('No data to export'); 
+    return; 
   }
+  let html = '<html><head><meta charset="UTF-8"></head><body>';
+  tables.forEach((t, idx)=>{ 
+    html += '<h3>' + escapeHtml(t.closest('.category-wrap').querySelector('.cat-title').textContent) + '</h3>'; 
+    html += t.outerHTML; 
+    html += '<br/>'; 
+  });
+  html += '</body></html>';
+  const blob = new Blob([html], {type: 'application/vnd.ms-excel'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); 
+  a.href = url; 
+  a.download = 'LTR_Daily_Status.xls'; 
+  a.click();
+  URL.revokeObjectURL(url);
+}
 
-  function exportAllTablesToExcel(){
-    const tables = document.querySelectorAll('.table-wrap table');
-    if(tables.length===0){ alert('No data to export'); return; }
-    let html = '<html><head><meta charset="UTF-8"></head><body>';
-    tables.forEach((t, idx)=>{ html += '<h3>' + escapeHtml(t.closest('.category-wrap').querySelector('.cat-title').textContent) + '</h3>'; html += t.outerHTML; html += '<br/>'; });
-    html += '</body></html>';
-    const blob = new Blob([html], {type: 'application/vnd.ms-excel'});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a'); a.href = url; a.download = 'LTR_Daily_Status.xls'; a.click();
-    URL.revokeObjectURL(url);
-  }
+function escapeHtml(s){ 
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); 
+}
 
-  function escapeHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
 
 // --------------------- MENU 2: Summary ---------------------
@@ -750,4 +816,3 @@ document.getElementById('btnLoadJSON').addEventListener('click', ()=>{
   </script>
 </body>
 </html>
-
